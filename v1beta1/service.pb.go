@@ -230,6 +230,7 @@ func (c *kMSServiceClient) Decrypt(ctx context.Context, in *DecryptRequest, opts
 }
 
 func (c *kMSServiceClient) Encrypt(ctx context.Context, in *EncryptRequest, opts ...grpc.CallOption) (*EncryptResponse, error) {
+	fmt.Println(in)
 	out := new(EncryptResponse)
 	err := grpc.Invoke(ctx, "/v1beta1.KMSService/Encrypt", in, out, c.cc, opts...)
 	if err != nil {
@@ -291,6 +292,7 @@ func _KMSService_Decrypt_Handler(srv interface{}, ctx context.Context, dec func(
 
 func _KMSService_Encrypt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EncryptRequest)
+	fmt.Println(in)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
