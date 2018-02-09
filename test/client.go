@@ -35,7 +35,6 @@ func main() {
 	if err != nil {
 		fmt.Errorf("encrypt err: %v", err)
 	}
-	fmt.Println(string(encryptResponse.Cipher))
 	decryptRequest := k8spb.DecryptRequest{Version: version, Cipher: encryptResponse.Cipher}
 	decryptResponse, err := client.Decrypt(context.Background(), &decryptRequest)
 	if err != nil {

@@ -146,9 +146,6 @@ func getServicePrincipalToken(endpoint string) (adal.OAuthTokenProvider, error) 
 }
 
 func GetKeyvaultToken(grantType OAuthGrantType) (authorizer autorest.Authorizer, err error) {
-	fmt.Println(tenantID)
-	fmt.Println(clientID)
-	fmt.Println(clientSecret)
 	config, err := adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, tenantID)
 	updatedAuthorizeEndpoint, err := url.Parse("https://login.windows.net/" + tenantID + "/oauth2/token")
 	config.AuthorizeEndpoint = *updatedAuthorizeEndpoint

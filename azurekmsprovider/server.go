@@ -28,6 +28,9 @@ const (
 	version        = "v1beta1"
 	runtime        = "Microsoft AzureKMS"
 	runtimeVersion = "0.0.1"
+	providerVaultBaseURL   = "https://ritaacikeyvault.vault.azure.net/"
+	providerKeyName	       = "testkey"
+	providerKeyVersion     = "590a4737fe4a4eaeae3cd9df81f991fe"
 )
 
 type KMSServiceServer struct {
@@ -56,32 +59,39 @@ func GetVault(ctx context.Context, vaultName string) (keyvault.Vault, error) {
 	return vaultsClient.Get(ctx, ResourceGroupName(), vaultName)
 }
 
-// GetKey returns an existing key
-func doEncrypt(ctx context.Context, vaultName string, keyName string, data string) (*string, error) {
+// doEncrypt encrypts with an existing key
+func doEncrypt(ctx context.Context, vaultBaseURL string, keyName string, keyVersion string, data []byte) (*string, error) {
 	vaultsClient := getKeysClient()
-	// vault, err := GetVault(ctx, vaultName)
-	// if err != nil {
-	// 	fmt.Print("failed to get vault, error: %v", err)
-	// 	return nil, err
-	// }
-	// fmt.Println(*vault.Name)
 
-	sample := []byte("Hello, World!")
- 	value := base64.RawURLEncoding.EncodeToString(sample)
+ 	value := base64.RawURLEncoding.EncodeToString(data)
 	parameter := kv.KeyOperationsParameters {
 		Algorithm: kv.RSA15,
 		Value: &value,
 	}
 	
-	result, err := vaultsClient.Encrypt(ctx, "https://ritaacikeyvault.vault.azure.net/", "testkey", "590a4737fe4a4eaeae3cd9df81f991fe", parameter)
+	result, err := vaultsClient.Encrypt(ctx, vaultBaseURL, keyName, keyVersion, parameter)
 	if err != nil {
 		fmt.Print("failed to encrypt, error: %v", err)
 		return nil, err
 	}
-
-	fmt.Println("result.Result")
-	fmt.Println(result.Result)
 	return result.Result, nil
+}
+
+// doDecrypt decrypts with an existing key
+func doDecrypt(ctx context.Context, vaultBaseURL string, keyName string, keyVersion string, data string) ([]byte, error) {
+	vaultsClient := getKeysClient()
+	parameter := kv.KeyOperationsParameters {
+		Algorithm: kv.RSA15,
+		Value: &data,
+	}
+	
+	result, err := vaultsClient.Decrypt(ctx, vaultBaseURL, keyName, keyVersion, parameter)
+	if err != nil {
+		fmt.Print("failed to decrypt, error: %v", err)
+		return nil, err
+	}
+	bytes, err := base64.RawURLEncoding.DecodeString(*result.Result)
+	return bytes, nil
 }
 
 func New(pathToUnixSocketFile string) *KMSServiceServer {
@@ -135,29 +145,24 @@ func (s *KMSServiceServer) Version(ctx context.Context, request *k8spb.VersionRe
 func (s *KMSServiceServer) Encrypt(ctx context.Context, request *k8spb.EncryptRequest) (*k8spb.EncryptResponse, error) {
 
 	fmt.Println("Processing EncryptRequest: ")
-	///TODO
-	cipher, err := doEncrypt(ctx, "ritaacikeyvault", "testkey", string(request.Plain))
+	cipher, err := doEncrypt(ctx, providerVaultBaseURL, providerKeyName, providerKeyVersion, request.Plain)
 	if err != nil {
 		fmt.Print("failed to doencrypt, error: %v", err)
-		return nil, err
+		return &k8spb.EncryptResponse{}, err
 	}
-	// cipher := base64.StdEncoding.EncodeToString(request.Plain)
 	return &k8spb.EncryptResponse{Cipher: []byte(*cipher)}, nil
 }
 
 func (s *KMSServiceServer) Decrypt(ctx context.Context, request *k8spb.DecryptRequest) (*k8spb.DecryptResponse, error) {
 
 	fmt.Println("Processing DecryptRequest: ")
-
-	///TODO
-
-	plain, err := base64.StdEncoding.DecodeString(string(request.Cipher))
+	plain, err := doDecrypt(ctx, providerVaultBaseURL, providerKeyName, providerKeyVersion, string(request.Cipher))
 	if err != nil {
-		fmt.Print("failed to decode, error: %v", err)
+		fmt.Print("failed to decrypt, error: %v", err)
 		return &k8spb.DecryptResponse{}, err
 	}
-
-	return &k8spb.DecryptResponse{Plain: []byte(plain)}, nil
+	fmt.Println(string(plain))
+	return &k8spb.DecryptResponse{Plain: plain}, nil
 }
 
 func (s *KMSServiceServer) cleanSockFile() error {
