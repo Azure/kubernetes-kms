@@ -13,5 +13,5 @@
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
 setenv.sh
-azurekmsprovider/azurekmsprovider
-vendor/
+k8s-azure-kms-plugin
+vendor

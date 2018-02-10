@@ -4,14 +4,14 @@
 [[projects]]
   name = "github.com/Azure/azure-sdk-for-go"
   packages = ["services/keyvault/2016-10-01/keyvault","services/keyvault/mgmt/2016-10-01/keyvault"]
-  revision = "f111fc2fa3861c5fdced76cae4c9c71821969577"
-  version = "v12.4.0-beta"
+  revision = "2d1d76c9013c4feb6695a2346f0e66ea0ef77aa6"
+  version = "v11.3.0-beta"
 
 [[projects]]
   name = "github.com/Azure/go-autorest"
   packages = ["autorest","autorest/adal","autorest/azure","autorest/date","autorest/to","autorest/validation"]
-  revision = "fc3b03a2d2d1f43fad3007038bd16f044f870722"
-  version = "v9.10.0"
+  revision = "5a06e9ddbe3c22262059b8e061777b9934f982bd"
+  version = "v10.1.0"
 
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
@@ -41,7 +41,7 @@
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","http2","http2/hpack","idna","internal/timeseries","lex/httplex","trace"]
-  revision = "2fb46b16b8dda405028c50f7c7f0f9dd1fa6bfb1"
+  revision = "f5dfe339be1d06f81b22525fe34671ee7d2c8904"
 
 [[projects]]
   branch = "master"
@@ -53,7 +53,7 @@
   branch = "master"
   name = "golang.org/x/text"
   packages = ["collate","collate/build","internal/colltab","internal/gen","internal/tag","internal/triegen","internal/ucd","language","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
-  revision = "e19ae1496984b1c655b8044a65c0300a3c878dd3"
+  revision = "4e4a3210bb54bb31f6ab2cdca2edcc0b50c420c1"
 
 [[projects]]
   branch = "master"
@@ -70,6 +70,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4c56f8467d78bab03cbf439f358e3bf3f332cc0516b8b9fa078f41a7239fcd04"
+  inputs-digest = "c7f5ffc51588cbae707fbc9541eca117d266b4eee442986f7a77caa3975d43c4"
   solver-name = "gps-cdcl"
   solver-version = 1

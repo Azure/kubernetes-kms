@@ -46,18 +46,18 @@ func getVaultsClient() keyvault.VaultsClient {
 	return vaultsClient
 }
 
-func getKeysClient() kv.BaseClient {
+func getKeysClient() kv.ManagementClient {
 	token, _ := GetKeyvaultToken(AuthGrantType())
 	vmClient := kv.New()
 	vmClient.Authorizer = token
 	return vmClient
 }
 
-// GetVault returns an existing vault
-func GetVault(ctx context.Context, vaultName string) (keyvault.Vault, error) {
-	vaultsClient := getVaultsClient()
-	return vaultsClient.Get(ctx, ResourceGroupName(), vaultName)
-}
+// // GetVault returns an existing vault
+// func GetVault(ctx context.Context, vaultName string) (keyvault.Vault, error) {
+// 	vaultsClient := getVaultsClient()
+// 	return vaultsClient.Get(ctx, ResourceGroupName(), vaultName)
+// }
 
 // doEncrypt encrypts with an existing key
 func doEncrypt(ctx context.Context, vaultBaseURL string, keyName string, keyVersion string, data []byte) (*string, error) {
@@ -69,7 +69,7 @@ func doEncrypt(ctx context.Context, vaultBaseURL string, keyName string, keyVers
 		Value: &value,
 	}
 	
-	result, err := vaultsClient.Encrypt(ctx, vaultBaseURL, keyName, keyVersion, parameter)
+	result, err := vaultsClient.Encrypt(vaultBaseURL, keyName, keyVersion, parameter)
 	if err != nil {
 		fmt.Print("failed to encrypt, error: %v", err)
 		return nil, err
@@ -85,7 +85,7 @@ func doDecrypt(ctx context.Context, vaultBaseURL string, keyName string, keyVers
 		Value: &data,
 	}
 	
-	result, err := vaultsClient.Decrypt(ctx, vaultBaseURL, keyName, keyVersion, parameter)
+	result, err := vaultsClient.Decrypt(vaultBaseURL, keyName, keyVersion, parameter)
 	if err != nil {
 		fmt.Print("failed to decrypt, error: %v", err)
 		return nil, err
