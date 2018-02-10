@@ -14,7 +14,7 @@ import (
 	kv "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
 	"github.com/Azure/go-autorest/autorest"
 
-	k8spb "github.com/ritazh/k8s-azure-kms-plugin/v1beta1"
+	k8spb "github.com/ritazh/k8s-azure-kms/v1beta1"
 	"golang.org/x/sys/unix"
 	"google.golang.org/grpc"
 	"net"

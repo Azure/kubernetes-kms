@@ -4,7 +4,7 @@ import(
 	// "log"
 	// "testing"
 
-	k8spb "github.com/ritazh/k8s-azure-kms-plugin/v1beta1"
+	k8spb "github.com/ritazh/k8s-azure-kms/v1beta1"
 
 	"golang.org/x/net/context"
 	"fmt"
