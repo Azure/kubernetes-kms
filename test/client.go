@@ -14,12 +14,13 @@ import(
 )
 
 const (
-  pathToUnixSocket = "/tmp/test.socket"
+  	pathToUnixSocket = "/tmp/test.socket"
+  	timeout = 30 * time.Second
+  	version = "v1beta1"
 )
 
 func main() {
 	plainText := []byte("secret")
-	version := "v1beta1"
 
 	connection, err := newUnixSocketConnection(pathToUnixSocket)
 	if err != nil {
@@ -28,6 +29,12 @@ func main() {
 	defer connection.Close()
 
 	client := k8spb.NewKMSServiceClient(connection)
+
+	err = checkAPIVersion(client)
+ 	if err != nil {
+ 		connection.Close()
+ 		fmt.Errorf("failed check version for %q, error: %v", pathToUnixSocket, err)
+ 	}
 
 	encryptRequest := k8spb.EncryptRequest{Version: version, Plain: plainText}
 	encryptResponse, err := client.Encrypt(context.Background(), &encryptRequest)
@@ -59,4 +66,24 @@ func newUnixSocketConnection(path string) (*grpc.ClientConn, error)  {
 	}
 
   return connection, nil
+}
+
+// Check the KMS provider API version.
+// Only matching version is supported now.
+func checkAPIVersion(kmsClient k8spb.KMSServiceClient) error {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	request := &k8spb.VersionRequest{Version: version}
+	response, err := kmsClient.Version(ctx, request)
+	if err != nil {
+		return fmt.Errorf("failed get version from remote KMS provider: %v", err)
+	}
+	if response.Version != version {
+		return fmt.Errorf("KMS provider api version %s is not supported, only %s is supported now",
+			response.Version, version)
+	}
+
+	fmt.Println("KMS provider ", response.RuntimeName, "initialized, version:", response.RuntimeVersion)
+	return nil
 }

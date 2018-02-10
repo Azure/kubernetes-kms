@@ -139,6 +139,8 @@ func main() {
 }
 
 func (s *KMSServiceServer) Version(ctx context.Context, request *k8spb.VersionRequest) (*k8spb.VersionResponse, error) {
+	fmt.Println("Processing Version: ")
+	fmt.Println(version)
 	return &k8spb.VersionResponse{Version: version, RuntimeName: runtime, RuntimeVersion: runtimeVersion}, nil
 }
 
