@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"log"
 
-	//"github.com/golang/glog"
+	// "github.com/golang/glog"
 
 	"golang.org/x/net/context"
 	"golang.org/x/net/trace"
-	"github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2016-10-01/keyvault"
+	// "github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2016-10-01/keyvault"
 	kv "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
-	"github.com/Azure/go-autorest/autorest"
+	// "github.com/Azure/go-autorest/autorest"
 
 	k8spb "github.com/ritazh/k8s-azure-kms/v1beta1"
 	"golang.org/x/sys/unix"
@@ -25,6 +25,7 @@ import (
 const (
 	// Unix Domain Socket
 	netProtocol    = "unix"
+	socketPath	   = "/tmp/azurekms.socket"
 	version        = "v1beta1"
 	runtime        = "Microsoft AzureKMS"
 	runtimeVersion = "0.0.1"
@@ -39,25 +40,12 @@ type KMSServiceServer struct {
 	*grpc.Server
 }
 
-func getVaultsClient() keyvault.VaultsClient {
-	token, _ := GetResourceManagementToken(AuthGrantType())
-	vaultsClient := keyvault.NewVaultsClient(SubscriptionID())
-	vaultsClient.Authorizer = autorest.NewBearerAuthorizer(token)
-	return vaultsClient
-}
-
 func getKeysClient() kv.ManagementClient {
 	token, _ := GetKeyvaultToken(AuthGrantType())
 	vmClient := kv.New()
 	vmClient.Authorizer = token
 	return vmClient
 }
-
-// // GetVault returns an existing vault
-// func GetVault(ctx context.Context, vaultName string) (keyvault.Vault, error) {
-// 	vaultsClient := getVaultsClient()
-// 	return vaultsClient.Get(ctx, ResourceGroupName(), vaultName)
-// }
 
 // doEncrypt encrypts with an existing key
 func doEncrypt(ctx context.Context, vaultBaseURL string, keyName string, keyVersion string, data []byte) (*string, error) {
@@ -116,7 +104,7 @@ func main() {
 	}
 
 	log.Println("KMSServiceServer service starting...")
-	s := New("/tmp/test.socket")
+	s := New(socketPath)
 	if err := s.cleanSockFile(); err != nil {
 		fmt.Errorf("failed to clean sockfile, error: %v", err)
 	}
@@ -163,7 +151,6 @@ func (s *KMSServiceServer) Decrypt(ctx context.Context, request *k8spb.DecryptRe
 		fmt.Print("failed to decrypt, error: %v", err)
 		return &k8spb.DecryptResponse{}, err
 	}
-	fmt.Println(string(plain))
 	return &k8spb.DecryptResponse{Plain: plain}, nil
 }
 

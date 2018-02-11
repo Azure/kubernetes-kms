@@ -7,7 +7,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"net/url"
 	"os"
@@ -17,15 +16,12 @@ import (
 )
 
 const (
-	samplesAppID = "bee3737f-b06f-444f-b3c3-5b0f3fce46ea"
 )
 
 var (
 	// for service principal and device
 	clientID    			string
 	oauthConfig 			*adal.OAuthConfig
-	armToken    			adal.OAuthTokenProvider
-	graphToken  			adal.OAuthTokenProvider
 	resourceGroupName       string
 	subscriptionID   		string
 	tenantID       			string
@@ -50,10 +46,6 @@ func init() {
 }
 
 func parseArgs() error {
-	err := LoadEnvVars()
-	if err != nil {
-		return err
-	}
 
 	tenantID = os.Getenv("AZ_TENANT_ID")
 	if tenantID == "" {
@@ -81,68 +73,15 @@ func parseArgs() error {
 		return errors.New("tenant id, client id, and client secret must be specified via env var or flags")
 	}
 
-	oauthConfig, err = adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, tenantID)
-
+	oauthConfig, err := adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, tenantID)
+	if err != nil || oauthConfig == nil {
+		log.Println("failed to get oauth config: error: %v", err)
+	}
 	return err
-}
-
-// ClientID gets the client ID
-func ClientID() string {
-	return clientID
-}
-
-// TenantID gets the client ID
-func TenantID() string {
-	return tenantID
-}
-
-// ClientSecret gets the client secret
-func ClientSecret() string {
-	return clientSecret
 }
 
 func AuthGrantType() OAuthGrantType {
 	return OAuthGrantTypeServicePrincipal
-}
-
-// SubscriptionID returns the ID of the subscription to use.
-func SubscriptionID() string {
-	fmt.Println("subscriptionID:")
-	fmt.Println(subscriptionID)
-	return subscriptionID
-}
-
-// ResourceGroupName returns the name of the resource group to use.
-func ResourceGroupName() string {
-	fmt.Println("ResourceGroupName:")
-	fmt.Println(resourceGroupName)
-	return resourceGroupName
-}
-
-// GetResourceManagementToken gets an OAuth token for managing resources using the specified grant type.
-func GetResourceManagementToken(grantType OAuthGrantType) (adal.OAuthTokenProvider, error) {
-	if armToken != nil {
-		return armToken, nil
-	}
-
-	token, err := getToken(grantType, azure.PublicCloud.ResourceManagerEndpoint)
-	if err == nil {
-		armToken = token
-	}
-
-	return token, err
-}
-
-func getToken(grantType OAuthGrantType, endpoint string) (token adal.OAuthTokenProvider, err error) {
-	return getServicePrincipalToken(endpoint)
-}
-
-func getServicePrincipalToken(endpoint string) (adal.OAuthTokenProvider, error) {
-	return adal.NewServicePrincipalToken(
-		*oauthConfig,
-		clientID,
-		clientSecret,
-		endpoint)
 }
 
 func GetKeyvaultToken(grantType OAuthGrantType) (authorizer autorest.Authorizer, err error) {

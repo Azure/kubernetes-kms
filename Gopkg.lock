@@ -3,7 +3,7 @@
 
 [[projects]]
   name = "github.com/Azure/azure-sdk-for-go"
-  packages = ["services/keyvault/2016-10-01/keyvault","services/keyvault/mgmt/2016-10-01/keyvault"]
+  packages = ["services/keyvault/2016-10-01/keyvault"]
   revision = "2d1d76c9013c4feb6695a2346f0e66ea0ef77aa6"
   version = "v11.3.0-beta"
 
@@ -24,18 +24,6 @@
   packages = ["proto","ptypes","ptypes/any","ptypes/duration","ptypes/timestamp"]
   revision = "925541529c1fa6821df4e44ce2723319eb2be768"
   version = "v1.0.0"
-
-[[projects]]
-  name = "github.com/satori/go.uuid"
-  packages = ["."]
-  revision = "f58768cc1a7a7e77a3bd49e98cdd21419399b6a3"
-  version = "v1.2.0"
-
-[[projects]]
-  name = "github.com/subosito/gotenv"
-  packages = ["."]
-  revision = "009e1f9581dc712aba5682a279dee155ca3eeded"
-  version = "v1.1.0"
 
 [[projects]]
   branch = "master"
@@ -70,6 +58,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c7f5ffc51588cbae707fbc9541eca117d266b4eee442986f7a77caa3975d43c4"
+  inputs-digest = "d0bfefba6b4c3525a0774b226d62525f115bc648e144cd432bddcc3c80067576"
   solver-name = "gps-cdcl"
   solver-version = 1

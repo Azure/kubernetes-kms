@@ -14,7 +14,8 @@ import(
 )
 
 const (
-  	pathToUnixSocket = "/tmp/test.socket"
+	netProtocol    = "unix"
+  	pathToUnixSocket = "/tmp/azurekms.socket"
   	timeout = 30 * time.Second
   	version = "v1beta1"
 )
@@ -45,7 +46,7 @@ func main() {
 	decryptRequest := k8spb.DecryptRequest{Version: version, Cipher: encryptResponse.Cipher}
 	decryptResponse, err := client.Decrypt(context.Background(), &decryptRequest)
 	if err != nil {
-		fmt.Errorf("%v", err)
+		fmt.Errorf("decrypt err: %v", err)
 	}
 	fmt.Println(string(decryptResponse.Plain))
 	if string(decryptResponse.Plain) != string(plainText){
@@ -54,9 +55,9 @@ func main() {
 }
 
 func newUnixSocketConnection(path string) (*grpc.ClientConn, error)  {
-	protocol, addr := "unix", path
+	addr := path
 	dialer := func(addr string, timeout time.Duration) (net.Conn, error) {
-		return net.DialTimeout(protocol, addr, timeout)
+		return net.DialTimeout(netProtocol, addr, timeout)
 	}
 	connection, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithDialer(dialer))
 	if err != nil {
