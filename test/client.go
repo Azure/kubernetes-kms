@@ -41,17 +41,19 @@ func main() {
 	encryptResponse, err := client.Encrypt(context.Background(), &encryptRequest)
 	
 	if err != nil {
-		fmt.Errorf("encrypt err: %v", err)
+		fmt.Println(fmt.Errorf("encrypt err: %v", err))
+	} else {
+		decryptRequest := k8spb.DecryptRequest{Version: version, Cipher: encryptResponse.Cipher}
+		decryptResponse, err := client.Decrypt(context.Background(), &decryptRequest)
+		if err != nil {
+			fmt.Errorf("decrypt err: %v", err)
+		}
+		fmt.Println(string(decryptResponse.Plain))
+		if string(decryptResponse.Plain) != string(plainText){
+			fmt.Println("Expected secret, but got %s", string(decryptResponse.Plain))
+		}
 	}
-	decryptRequest := k8spb.DecryptRequest{Version: version, Cipher: encryptResponse.Cipher}
-	decryptResponse, err := client.Decrypt(context.Background(), &decryptRequest)
-	if err != nil {
-		fmt.Errorf("decrypt err: %v", err)
-	}
-	fmt.Println(string(decryptResponse.Plain))
-	if string(decryptResponse.Plain) != string(plainText){
-		fmt.Println("Expected secret, but got %s", string(decryptResponse.Plain))
-	}
+	
 }
 
 func newUnixSocketConnection(path string) (*grpc.ClientConn, error)  {

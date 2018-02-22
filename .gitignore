@@ -15,3 +15,4 @@
 setenv.sh
 k8s-azure-kms
 vendor
+azure.json

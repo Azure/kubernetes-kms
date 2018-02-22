@@ -20,10 +20,28 @@
   version = "v3.1.0"
 
 [[projects]]
+  name = "github.com/ghodss/yaml"
+  packages = ["."]
+  revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
+  version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/golang/glog"
+  packages = ["."]
+  revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
+
+[[projects]]
   name = "github.com/golang/protobuf"
   packages = ["proto","ptypes","ptypes/any","ptypes/duration","ptypes/timestamp"]
   revision = "925541529c1fa6821df4e44ce2723319eb2be768"
   version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/crypto"
+  packages = ["pkcs12","pkcs12/internal/rc2"]
+  revision = "9de5f2eaf759b4c4550b3db39fed2e9e5f86f45c"
 
 [[projects]]
   branch = "master"
@@ -55,9 +73,15 @@
   revision = "6b51017f791ae1cfbec89c52efdf444b13b550ef"
   version = "v1.9.2"
 
+[[projects]]
+  branch = "v2"
+  name = "gopkg.in/yaml.v2"
+  packages = ["."]
+  revision = "d670f9405373e636a5a2765eea47fac0c9bc91a4"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d0bfefba6b4c3525a0774b226d62525f115bc648e144cd432bddcc3c80067576"
+  inputs-digest = "494be75bddaf9d291cefe548cb2caebcf65a3a1a576abb3297f16fd70256720e"
   solver-name = "gps-cdcl"
   solver-version = 1
