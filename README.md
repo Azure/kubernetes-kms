@@ -32,11 +32,26 @@ resources:
     - identity: {}
 ```
 
-2. Modify `/etc/kubernetes/manifests/kube-apiserver.yaml` to include the following flag:
+2. Modify `/etc/kubernetes/manifests/kube-apiserver.yaml` 
+Add the following flag:
 
 ```yaml
 --experimental-encryption-provider-config=/etc/kubernetes/manifests/encryptionconfig.yaml
 ```  
+Mount `/tmp` to access the socket:
+
+```yaml
+...
+ volumeMounts:
+        - name: "sock"
+          mountPath: "/tmp"
+...
+ volumes:
+    - name: "sock"
+      hostPath:
+        path: "/tmp"
+
+```
 
 3. Update `/etc/kubernetes/azure.json` to add the following configurations:
 
@@ -51,10 +66,16 @@ resources:
 * `providerKeyName`: name of the key created in azure key vault
 * `providerKeyVersion`: key version of the key created in azure key vault
 
-4. Run the following command to kickoff the gRPC service
+4. Drop [`kube-azurekmspod.yaml`](kubernetes/kube-azurekmspod.yaml) under `/etc/kubernetes/manifests`, kubelet will create a static pod that starts the gRPC service. The pod will be named similar to `azurekms-k8s-master-32960228-0`. To verify the gRPC service is running,  you should see the following from the pod logs. You should also see the /tmp/azurekms.socket created.
 
 ```bash
-sudo docker run -v /tmp:/tmp -v /etc/kubernetes:/etc/kubernetes -v '/etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt' -it ritazh/k8s-azure-kms:latest
+$ kubectl logs azurekms-k8s-master-32960228-0 
+/tmp/azurekms.socket
+2018/02/26 22:52:26 KMSServiceServer service starting...
+2018/02/26 22:52:26 KMSServiceServer service started successfully.
+
+ls /tmp/azu*
+/tmp/azurekms.socket
 ```
 
 5. Restart apiserver

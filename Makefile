@@ -1,7 +1,7 @@
 binary := azuremksprovider
 DOCKER_IMAGE := ritazh/k8s-azure-kms
 
-VERSION          := $(shell git describe --tags --always --dirty="-dev")
+VERSION          := latest
 
 .PHONY: build
 build: authors deps

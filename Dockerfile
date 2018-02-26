@@ -3,4 +3,4 @@ WORKDIR /bin
 
 ADD ./k8s-azure-kms /bin/k8s-azure-kms
 
-ENTRYPOINT ["./k8s-azure-kms"] 
+CMD ["./k8s-azure-kms"] 
