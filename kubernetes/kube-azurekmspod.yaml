@@ -1,0 +1,26 @@
+apiVersion: v1 
+kind: Pod 
+metadata: 
+ name: azurekms 
+spec: 
+ containers: 
+ - name: azurekms 
+   image: ritazh/k8s-azure-kms:latest
+   imagePullPolicy: Always
+   volumeMounts:
+   - mountPath: /tmp
+     name: tmp
+   - mountPath: /etc/kubernetes
+     name: kube
+   - mountPath: /etc/ssl/certs/
+     name: certs
+ volumes:
+ - name: tmp
+   hostPath:
+    path: /tmp
+ - name: kube
+   hostPath:
+     path: /etc/kubernetes
+ - name: certs
+   hostPath:
+     path: /etc/ssl/certs/
