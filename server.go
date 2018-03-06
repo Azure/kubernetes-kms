@@ -20,6 +20,8 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 const (
@@ -102,6 +104,14 @@ func doDecrypt(ctx context.Context, data string) ([]byte, error) {
 }
 
 func main() {
+	shutdown := make(chan int)
+	sigChan := make(chan os.Signal, 1)
+	//register for interupt (Ctrl+C) and SIGTERM (docker)
+	signal.Notify(sigChan, os.Interrupt, 
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
 
 	var (
 		debugListenAddr = flag.String("debug-listen-addr", "127.0.0.1:7901", "HTTP listen address.")
@@ -125,9 +135,39 @@ func main() {
 	s.Server = server
 
 	go server.Serve(listener)
-
 	trace.AuthRequest = func(req *http.Request) (any, sensitive bool) { return true, true }
 	log.Println("KMSServiceServer service started successfully.")
+	
+
+	go func() {
+		for {
+			s := <-sigChan
+			switch s {
+			case syscall.SIGHUP:
+				fmt.Println("hungup")
+			case syscall.SIGINT:
+				fmt.Println("Ctrl+c")
+				shutdown <- 0
+			case syscall.SIGTERM:
+				fmt.Println("force stop")
+				shutdown <- 0
+			case syscall.SIGQUIT:
+				fmt.Println("stop and core dump")
+				shutdown <- 0
+			default:
+				fmt.Println("Unknown signal.")
+				shutdown <- 1
+			}
+		}
+	}()
+
+	go func() {
+		code := <-shutdown
+		fmt.Println("Shutting down gRPC service...")
+		server.GracefulStop()
+		os.Exit(code)
+	}()
+
 	log.Fatal(http.ListenAndServe(*debugListenAddr, nil))
 }
 
