@@ -20,6 +20,8 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 const (
@@ -102,6 +104,9 @@ func doDecrypt(ctx context.Context, data string) ([]byte, error) {
 }
 
 func main() {
+	sigChan := make(chan os.Signal, 1)
+	// register for SIGTERM (docker)
+	signal.Notify(sigChan, syscall.SIGTERM)
 
 	var (
 		debugListenAddr = flag.String("debug-listen-addr", "127.0.0.1:7901", "HTTP listen address.")
@@ -125,9 +130,21 @@ func main() {
 	s.Server = server
 
 	go server.Serve(listener)
-
 	trace.AuthRequest = func(req *http.Request) (any, sensitive bool) { return true, true }
 	log.Println("KMSServiceServer service started successfully.")
+
+	go func() {
+		for {
+			s := <-sigChan
+			if s == syscall.SIGTERM {
+				fmt.Println("force stop")
+				fmt.Println("Shutting down gRPC service...")
+				server.GracefulStop()
+				os.Exit(0)
+			} 
+		}
+	}()
+
 	log.Fatal(http.ListenAndServe(*debugListenAddr, nil))
 }
 
