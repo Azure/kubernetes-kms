@@ -75,14 +75,20 @@ func getKey(subscriptionID string) (kv.ManagementClient, string, string, string,
 	
 	kvClient.Authorizer = token
 	_, keyName, keyVersion, err := GetKMSProvider(configFilePath)
-	if keyName == nil {
-		return kvClient, "", "", "", fmt.Errorf("failed to find KMS providerKeyName in config")
+	if err != nil {
+		return kvClient, "", "", "", err
 	}
-	if keyVersion == nil {
-		fmt.Println("Unable to find KMS providerKeyVersion in configs, getting keyVersion")
-		keyVersion, err := getKeyVersion(kvClient, *vaultUrl, *keyName)
+
+	fmt.Println("Verify key version from key vault ", *keyName, *keyVersion, *vaultUrl)
+	_, err = kvClient.GetKey(*vaultUrl, *keyName, *keyVersion)
+	if err != nil {
+		if *keyVersion != "" {
+			return kvClient, "", "", "", fmt.Errorf("failed to verify the provided key version, error: %v", err)
+		}
+		// when we are not able to verify the latest key version for keyName, create key
+		keyVersion, err := createKey(kvClient, *vaultUrl, *keyName)
 		if err != nil {
-			return kvClient, "", "", "", fmt.Errorf("failed to get/create key, error: %v", err)
+			return kvClient, "", "", "", fmt.Errorf("failed to create key, error: %v", err)
 		}
 		version := to.String(keyVersion)
 		index := strings.LastIndex(version, "/" )
@@ -91,12 +97,7 @@ func getKey(subscriptionID string) (kv.ManagementClient, string, string, string,
 			fmt.Println(version)
 		}
 		return kvClient, *vaultUrl, *keyName, version, nil
-	}
 
-	fmt.Println("Verify key version from key vault ", *keyName, *keyVersion, *vaultUrl)
-	_, err = kvClient.GetKey(*vaultUrl, *keyName, *keyVersion)
-	if err != nil {
-		return kvClient, "", "", "", fmt.Errorf("failed to verify key version, error: %v", err)
 	}
 	
 	return kvClient, *vaultUrl, *keyName, *keyVersion, nil
@@ -113,8 +114,8 @@ func getVaultsClient(subscriptionID string) kvmgmt.VaultsClient {
 func getVault(subscriptionID string) (vaultUrl *string, err error) {
 	vaultsClient := getVaultsClient(subscriptionID)
 	providerVaultName, _, _, err := GetKMSProvider(configFilePath)
-	if providerVaultName == nil {
-		return nil, fmt.Errorf("Unable to find KMS providerVaultName in configs")
+	if err != nil {
+		return nil, err
 	}
 	resourceGroup, err := GetResourceGroup(configFilePath)
 	vault, err := vaultsClient.Get(*resourceGroup, *providerVaultName)
@@ -125,16 +126,7 @@ func getVault(subscriptionID string) (vaultUrl *string, err error) {
 	return vault.Properties.VaultURI, nil
 }
 
-func getKeyVersion(keyClient kv.ManagementClient, vaultUrl string, keyName string) (*string, error) {
-	fmt.Println("Get key from key vault ", keyName, vaultUrl)
-	result, err := keyClient.GetKeyVersions(vaultUrl, keyName, to.Int32Ptr(1))
-	if err == nil {
-		if result.Value != nil && len(* result.Value) > 0 {
-			fmt.Println("Found existing kms key")
-			version := (* result.Value)[0].Kid
-			return version, nil
-		}
-	}
+func createKey(keyClient kv.ManagementClient, vaultUrl string, keyName string) (*string, error) {
 	fmt.Println("Key not found. Creating a new key...")
 	key, err := keyClient.CreateKey(
 		vaultUrl,

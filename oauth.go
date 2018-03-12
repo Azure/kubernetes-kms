@@ -105,14 +105,15 @@ func GetKMSProvider(configFilePath string) (vaultName *string, keyName *string, 
 		
 		if (config.ProviderVaultName != "" ) {
 			vaultName = &config.ProviderVaultName
-		} 
+		} else {
+			return nil, nil, nil, fmt.Errorf("Unable to find KMS providerVaultName in configs")
+		}
 		if (config.ProviderKeyName != "" ) {
 			keyName = &config.ProviderKeyName
-		} 
-		if ( config.ProviderKeyVersion != "" ) {
-			keyVersion = &config.ProviderKeyVersion
-		} 
-
+		} else {
+			return nil, nil, nil, fmt.Errorf("Unable to find KMS providerKeyName in configs")
+		}
+		keyVersion = &config.ProviderKeyVersion
 		return vaultName, keyName, keyVersion, nil
 	}
 	return nil, nil, nil, fmt.Errorf("Cloud provider configuration file is missing")
