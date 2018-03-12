@@ -40,37 +40,35 @@ const (
 // AzureAuthConfig holds auth related part of cloud config
 type AzureAuthConfig struct {
 	// The cloud environment identifier. Takes values from https://github.com/Azure/go-autorest/blob/ec5f4903f77ed9927ac95b19ab8e44ada64c1356/autorest/azure/environments.go#L13
-	Cloud string `json:"cloud" yaml:"cloud"`
+	Cloud string `json:"cloud"`
 	// The AAD Tenant ID for the Subscription that the cluster is deployed in
-	TenantID string `json:"tenantId" yaml:"tenantId"`
+	TenantID string `json:"tenantId"`
 	// The ClientID for an AAD application with RBAC access to talk to Azure RM APIs
-	AADClientID string `json:"aadClientId" yaml:"aadClientId"`
+	AADClientID string `json:"aadClientId"`
 	// The ClientSecret for an AAD application with RBAC access to talk to Azure RM APIs
-	AADClientSecret string `json:"aadClientSecret" yaml:"aadClientSecret"`
+	AADClientSecret string `json:"aadClientSecret"`
 	// The path of a client certificate for an AAD application with RBAC access to talk to Azure RM APIs
-	AADClientCertPath string `json:"aadClientCertPath" yaml:"aadClientCertPath"`
+	AADClientCertPath string `json:"aadClientCertPath"`
 	// The password of the client certificate for an AAD application with RBAC access to talk to Azure RM APIs
-	AADClientCertPassword string `json:"aadClientCertPassword" yaml:"aadClientCertPassword"`
+	AADClientCertPassword string `json:"aadClientCertPassword"`
 	// Use managed service identity for the virtual machine to access Azure ARM APIs
 	UseManagedIdentityExtension bool `json:"useManagedIdentityExtension"`
 	// The ID of the Azure Subscription that the cluster is deployed in
-	SubscriptionID string `json:"subscriptionId" yaml:"subscriptionId"`
+	SubscriptionID string `json:"subscriptionId"`
 }
 
 // Config holds the configuration parsed from the --cloud-config flag
 // All fields are required unless otherwise specified
 type Config struct {
 	AzureAuthConfig
-	// Location for cluster
-	Location string `json:"location" yaml:"location"`
 	// Resource Group for cluster
-	ResourceGroup string `json:"resourceGroup" yaml:"resourceGroup"`
+	ResourceGroup string `json:"resourceGroup"`
 	// The kms provider vault name
-	ProviderVaultName string `json:"providerVaultName" yaml:"providerVaultName"`
+	ProviderVaultName string `json:"providerVaultName"`
 	// The kms provider key name
-	ProviderKeyName string `json:"providerKeyName" yaml:"providerKeyName"`
+	ProviderKeyName string `json:"providerKeyName"`
 	// The kms provider key version
-	ProviderKeyVersion string `json:"providerKeyVersion" yaml:"providerKeyVersion"`
+	ProviderKeyVersion string `json:"providerKeyVersion"`
 }
 
 func AuthGrantType() OAuthGrantType {
