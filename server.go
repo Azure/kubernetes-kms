@@ -36,8 +36,8 @@ const (
 	runtime        = "Microsoft AzureKMS"
 	runtimeVersion = "0.0.1"
 	configFilePath  = "/etc/kubernetes/azure.json"
-	azureResourceURL = "https://management.azure.com/"
-	vaultResourceURL = "https://vault.azure.net"
+	azureResourceUrl = "https://management.azure.com/"
+	vaultResourceUrl = "https://vault.azure.net"
 )
 
 // KMSServiceServer is a gRPC server.
@@ -63,12 +63,12 @@ func New(pathToUnixSocketFile string) *KMSServiceServer {
 func getKey(subscriptionID string) (kv.ManagementClient, string, string, string, error)  {
 	kvClient := kv.New()
 
-	vaultURL, err := getVault(subscriptionID)
+	vaultUrl, err := getVault(subscriptionID)
 	if err != nil {
 		return kvClient, "", "", "", fmt.Errorf("failed to get vault, error: %v", err)
 	}
 	
-	token, err := GetKeyvaultToken(AuthGrantType(), configFilePath, vaultResourceURL)
+	token, err := GetKeyvaultToken(AuthGrantType(), configFilePath, vaultResourceUrl)
 	if err != nil {
 		return kvClient, "", "", "", fmt.Errorf("failed to get token, error: %v", err)
 	}
@@ -80,7 +80,7 @@ func getKey(subscriptionID string) (kv.ManagementClient, string, string, string,
 	}
 	if keyVersion == nil {
 		fmt.Println("Unable to find KMS providerKeyVersion in configs, getting keyVersion")
-		keyVersion, err := getKeyVersion(kvClient, *vaultURL, *keyName)
+		keyVersion, err := getKeyVersion(kvClient, *vaultUrl, *keyName)
 		if err != nil {
 			return kvClient, "", "", "", fmt.Errorf("failed to get/create key, error: %v", err)
 		}
@@ -90,27 +90,27 @@ func getKey(subscriptionID string) (kv.ManagementClient, string, string, string,
 			version = version[index+1:]
 			fmt.Println(version)
 		}
-		return kvClient, *vaultURL, *keyName, version, nil
+		return kvClient, *vaultUrl, *keyName, version, nil
 	}
 
-	fmt.Println("Verify key version from key vault ", *keyName, *keyVersion, *vaultURL)
-	_, err = kvClient.GetKey(*vaultURL, *keyName, *keyVersion)
+	fmt.Println("Verify key version from key vault ", *keyName, *keyVersion, *vaultUrl)
+	_, err = kvClient.GetKey(*vaultUrl, *keyName, *keyVersion)
 	if err != nil {
 		return kvClient, "", "", "", fmt.Errorf("failed to verify key version, error: %v", err)
 	}
 	
-	return kvClient, *vaultURL, *keyName, *keyVersion, nil
+	return kvClient, *vaultUrl, *keyName, *keyVersion, nil
 }
 
 func getVaultsClient(subscriptionID string) kvmgmt.VaultsClient {
 	
 	vaultsClient := kvmgmt.NewVaultsClient(subscriptionID)
-	token, _ := GetKeyvaultToken(AuthGrantType(), configFilePath, azureResourceURL)
+	token, _ := GetKeyvaultToken(AuthGrantType(), configFilePath, azureResourceUrl)
 	vaultsClient.Authorizer = token
 	return vaultsClient
 }
 
-func getVault(subscriptionID string) (vaultURL *string, err error) {
+func getVault(subscriptionID string) (vaultUrl *string, err error) {
 	vaultsClient := getVaultsClient(subscriptionID)
 	providerVaultName, _, _, err := GetKMSProvider(configFilePath)
 	if providerVaultName == nil {
@@ -125,9 +125,9 @@ func getVault(subscriptionID string) (vaultURL *string, err error) {
 	return vault.Properties.VaultURI, nil
 }
 
-func getKeyVersion(keyClient kv.ManagementClient, vaultURL string, keyName string) (*string, error) {
-	fmt.Println("Get key from key vault ", keyName, vaultURL)
-	result, err := keyClient.GetKeyVersions(vaultURL, keyName, to.Int32Ptr(1))
+func getKeyVersion(keyClient kv.ManagementClient, vaultUrl string, keyName string) (*string, error) {
+	fmt.Println("Get key from key vault ", keyName, vaultUrl)
+	result, err := keyClient.GetKeyVersions(vaultUrl, keyName, to.Int32Ptr(1))
 	if err == nil {
 		if result.Value != nil && len(* result.Value) > 0 {
 			fmt.Println("Found existing kms key")
@@ -137,7 +137,7 @@ func getKeyVersion(keyClient kv.ManagementClient, vaultURL string, keyName strin
 	}
 	fmt.Println("Key not found. Creating a new key...")
 	key, err := keyClient.CreateKey(
-		vaultURL,
+		vaultUrl,
 		keyName,
 		kv.KeyCreateParameters{
 			KeyAttributes: &kv.KeyAttributes{
@@ -159,7 +159,7 @@ func getKeyVersion(keyClient kv.ManagementClient, vaultURL string, keyName strin
 
 // doEncrypt encrypts with an existing key
 func doEncrypt(ctx context.Context, data []byte, subscriptionID string) (*string, error) {
-	kvClient, vaultBaseURL, keyName, keyVersion, err := getKey(subscriptionID)
+	kvClient, vaultBaseUrl, keyName, keyVersion, err := getKey(subscriptionID)
 
 	if err != nil {
 		return nil, err
@@ -171,7 +171,7 @@ func doEncrypt(ctx context.Context, data []byte, subscriptionID string) (*string
 		Value: &value,
 	}
 	
-	result, err := kvClient.Encrypt(vaultBaseURL, keyName, keyVersion, parameter)
+	result, err := kvClient.Encrypt(vaultBaseUrl, keyName, keyVersion, parameter)
 	if err != nil {
 		fmt.Println("Failed to encrypt, error: ", err)
 		return nil, err
@@ -181,7 +181,7 @@ func doEncrypt(ctx context.Context, data []byte, subscriptionID string) (*string
 
 // doDecrypt decrypts with an existing key
 func doDecrypt(ctx context.Context, data string, subscriptionID string) ([]byte, error) {
-	kvClient, vaultBaseURL, keyName, keyVersion, err := getKey(subscriptionID)
+	kvClient, vaultBaseUrl, keyName, keyVersion, err := getKey(subscriptionID)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +190,7 @@ func doDecrypt(ctx context.Context, data string, subscriptionID string) ([]byte,
 		Value: &data,
 	}
 	
-	result, err := kvClient.Decrypt(vaultBaseURL, keyName, keyVersion, parameter)
+	result, err := kvClient.Decrypt(vaultBaseUrl, keyName, keyVersion, parameter)
 	if err != nil {
 		fmt.Print("failed to decrypt, error: ", err)
 		return nil, err
