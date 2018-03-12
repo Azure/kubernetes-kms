@@ -155,7 +155,7 @@ func GetKeyvaultToken(grantType OAuthGrantType, configFilePath string, resource 
 	} 
 	return
 }
-func GetSubscriptionId(configFilePath string) (subscriptionId *string, err error) {
+func GetAzureAuthConfig(configFilePath string) (azConfig *AzureAuthConfig, err error) {
 	var configReader io.Reader
 	var config Config
 
@@ -183,11 +183,10 @@ func GetSubscriptionId(configFilePath string) (subscriptionId *string, err error
 			return nil, err
 		}
 		
-		if ( config.SubscriptionID != "" ) {
-			subscriptionId = &config.SubscriptionID
-			return subscriptionId, nil
+		if ( &config.AzureAuthConfig != nil ) {
+			return &config.AzureAuthConfig, nil
 		}
-		return nil, fmt.Errorf("Cloud provider configuration file is missing subscriptionId")
+		return nil, fmt.Errorf("Cloud provider configuration file is missing AzureAuthConfig")
 	}
 	return nil, fmt.Errorf("Cloud provider configuration file is missing")
 }
