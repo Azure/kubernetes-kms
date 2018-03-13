@@ -1,3 +1,8 @@
+// Copyright (c) Microsoft and contributors.  All rights reserved.
+//
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
 package main
 
 import (
@@ -5,23 +10,22 @@ import (
 	"flag"
 	"fmt"
 	"log"
-
-	// "github.com/golang/glog"
-
-	"golang.org/x/net/context"
-	"golang.org/x/net/trace"
-	// "github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2016-10-01/keyvault"
-	kv "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
-	// "github.com/Azure/go-autorest/autorest"
-
-	k8spb "github.com/ritazh/k8s-azure-kms/v1beta1"
-	"golang.org/x/sys/unix"
-	"google.golang.org/grpc"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
+
+	"golang.org/x/net/context"
+	"golang.org/x/net/trace"
+	"golang.org/x/sys/unix"
+	"google.golang.org/grpc"
+	kvmgmt "github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2016-10-01/keyvault"
+	kv "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
+	"github.com/Azure/go-autorest/autorest/to"
+
+	k8spb "github.com/ritazh/k8s-azure-kms/v1beta1"
 )
 
 const (
@@ -32,39 +36,126 @@ const (
 	runtime        = "Microsoft AzureKMS"
 	runtimeVersion = "0.0.1"
 	configFilePath  = "/etc/kubernetes/azure.json"
+	azureResourceUrl = "https://management.azure.com/"
+	vaultResourceUrl = "https://vault.azure.net"
 )
 
+// KMSServiceServer is a gRPC server.
 type KMSServiceServer struct {
-	pathToUnixSocket string
-	net.Listener
 	*grpc.Server
+	azConfig *AzureAuthConfig
+	pathToUnixSocket string
+    providerVaultName *string
+    providerKeyName *string
+    providerKeyVersion *string
+	net.Listener
 }
 
-func New(pathToUnixSocketFile string) *KMSServiceServer {
+// New creates an instance of the KMS Service Server.
+func New(pathToUnixSocketFile string) (*KMSServiceServer, error) {
 	kmsServiceServer := new(KMSServiceServer)
 	kmsServiceServer.pathToUnixSocket = pathToUnixSocketFile
 	fmt.Println(kmsServiceServer.pathToUnixSocket)
-	return kmsServiceServer
+	kmsServiceServer.azConfig, _ = GetAzureAuthConfig(configFilePath)
+	if kmsServiceServer.azConfig.SubscriptionID == "" {
+		return nil, fmt.Errorf("Missing SubscriptionID in azure config")
+	}
+	vaultName, keyName, keyVersion, err := GetKMSProvider(configFilePath)
+	if err != nil {
+		return nil, err
+	}
+	kmsServiceServer.providerVaultName = vaultName
+	kmsServiceServer.providerKeyName = keyName
+	kmsServiceServer.providerKeyVersion = keyVersion
+
+	return kmsServiceServer, nil
 }
 
-func getKeysClient() (kv.ManagementClient, string, string, string, error)  {
-	vmClient := kv.New()
-	token, err := GetKeyvaultToken(AuthGrantType(), configFilePath)
+func getKey(subscriptionID string, providerVaultName string, providerKeyName string, providerKeyVersion string) (kv.ManagementClient, string, string, string, error)  {
+	kvClient := kv.New()
+
+	vaultUrl, err := getVault(subscriptionID, providerVaultName)
 	if err != nil {
-		return vmClient, "", "", "", fmt.Errorf("failed to get token, error: %v", err)
+		return kvClient, "", "", "", fmt.Errorf("failed to get vault, error: %v", err)
 	}
 	
-	vmClient.Authorizer = token
-	vaultBaseURL, keyName, keyVersion, err := GetKMSProvider(configFilePath)
+	token, err := GetKeyvaultToken(AuthGrantType(), configFilePath, vaultResourceUrl)
 	if err != nil {
-		return vmClient, "", "", "", fmt.Errorf("failed to get KMS provider configs, error: %v", err)
+		return kvClient, "", "", "", fmt.Errorf("failed to get token, error: %v", err)
 	}
-	return vmClient, *vaultBaseURL, *keyName, *keyVersion, nil
+	
+	kvClient.Authorizer = token
+
+	fmt.Println("Verify key version from key vault ", providerKeyName, providerKeyVersion, *vaultUrl)
+	_, err = kvClient.GetKey(*vaultUrl, providerKeyName, providerKeyVersion)
+	if err != nil {
+		if providerKeyVersion != "" {
+			return kvClient, "", "", "", fmt.Errorf("failed to verify the provided key version, error: %v", err)
+		}
+		// when we are not able to verify the latest key version for keyName, create key
+		keyVersion, err := createKey(kvClient, *vaultUrl, providerKeyName)
+		if err != nil {
+			return kvClient, "", "", "", fmt.Errorf("failed to create key, error: %v", err)
+		}
+		version := to.String(keyVersion)
+		index := strings.LastIndex(version, "/" )
+		if (index > -1 && index < len(version)-1) {
+			version = version[index+1:]
+			fmt.Println(version)
+		}
+		return kvClient, *vaultUrl, providerKeyName, version, nil
+
+	}
+	
+	return kvClient, *vaultUrl, providerKeyName, providerKeyVersion, nil
+}
+
+func getVaultsClient(subscriptionID string) kvmgmt.VaultsClient {
+	
+	vaultsClient := kvmgmt.NewVaultsClient(subscriptionID)
+	token, _ := GetKeyvaultToken(AuthGrantType(), configFilePath, azureResourceUrl)
+	vaultsClient.Authorizer = token
+	return vaultsClient
+}
+
+func getVault(subscriptionID string, vaultName string) (vaultUrl *string, err error) {
+	vaultsClient := getVaultsClient(subscriptionID)
+	resourceGroup, err := GetResourceGroup(configFilePath)
+	vault, err := vaultsClient.Get(*resourceGroup, vaultName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get vault, error: %v", err)
+	}
+	fmt.Println(to.String(vault.Properties.VaultURI))
+	return vault.Properties.VaultURI, nil
+}
+
+func createKey(keyClient kv.ManagementClient, vaultUrl string, keyName string) (*string, error) {
+	fmt.Println("Key not found. Creating a new key...")
+	key, err := keyClient.CreateKey(
+		vaultUrl,
+		keyName,
+		kv.KeyCreateParameters{
+			KeyAttributes: &kv.KeyAttributes{
+				Enabled: to.BoolPtr(true),
+			},
+			KeySize: to.Int32Ptr(2048), 
+			KeyOps: &[]kv.JSONWebKeyOperation{
+				kv.Encrypt,
+				kv.Decrypt,
+			},
+			Kty: kv.RSA,
+		})
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("Created new kms key")
+	return key.Key.Kid, nil
 }
 
 // doEncrypt encrypts with an existing key
-func doEncrypt(ctx context.Context, data []byte) (*string, error) {
-	vaultsClient, vaultBaseURL, keyName, keyVersion, err := getKeysClient()
+func doEncrypt(ctx context.Context, data []byte, subscriptionID string, providerVaultName string, providerKeyName string, providerKeyVersion string) (*string, error) {
+	kvClient, vaultBaseUrl, keyName, keyVersion, err := getKey(subscriptionID, providerVaultName, providerKeyName, providerKeyVersion)
+
 	if err != nil {
 		return nil, err
 	}
@@ -75,17 +166,17 @@ func doEncrypt(ctx context.Context, data []byte) (*string, error) {
 		Value: &value,
 	}
 	
-	result, err := vaultsClient.Encrypt(vaultBaseURL, keyName, keyVersion, parameter)
+	result, err := kvClient.Encrypt(vaultBaseUrl, keyName, keyVersion, parameter)
 	if err != nil {
-		fmt.Print("failed to encrypt, error: %v", err)
+		fmt.Println("Failed to encrypt, error: ", err)
 		return nil, err
 	}
 	return result.Result, nil
 }
 
 // doDecrypt decrypts with an existing key
-func doDecrypt(ctx context.Context, data string) ([]byte, error) {
-	vaultsClient, vaultBaseURL, keyName, keyVersion, err := getKeysClient()
+func doDecrypt(ctx context.Context, data string, subscriptionID string, providerVaultName string, providerKeyName string, providerKeyVersion string) ([]byte, error) {
+	kvClient, vaultBaseUrl, keyName, keyVersion, err := getKey(subscriptionID, providerVaultName, providerKeyName, providerKeyVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -94,9 +185,9 @@ func doDecrypt(ctx context.Context, data string) ([]byte, error) {
 		Value: &data,
 	}
 	
-	result, err := vaultsClient.Decrypt(vaultBaseURL, keyName, keyVersion, parameter)
+	result, err := kvClient.Decrypt(vaultBaseUrl, keyName, keyVersion, parameter)
 	if err != nil {
-		fmt.Print("failed to decrypt, error: %v", err)
+		fmt.Print("failed to decrypt, error: ", err)
 		return nil, err
 	}
 	bytes, err := base64.RawURLEncoding.DecodeString(*result.Result)
@@ -114,14 +205,17 @@ func main() {
 	flag.Parse()
 
 	log.Println("KMSServiceServer service starting...")
-	s := New(socketPath)
+	s, err := New(socketPath)
+	if err != nil {
+		log.Fatalf("Failed to start, error: %v", err)
+	}
 	if err := s.cleanSockFile(); err != nil {
-		fmt.Errorf("failed to clean sockfile, error: %v", err)
+		log.Fatalf("Failed to clean sockfile, error: %v", err)
 	}
 
 	listener, err := net.Listen(netProtocol, s.pathToUnixSocket)
 	if err != nil {
-		fmt.Errorf("failed to start listener, error: %v", err)
+		log.Fatalf("Failed to start listener, error: %v", err)
 	}
 	s.Listener = listener
 
@@ -149,7 +243,6 @@ func main() {
 }
 
 func (s *KMSServiceServer) Version(ctx context.Context, request *k8spb.VersionRequest) (*k8spb.VersionResponse, error) {
-	fmt.Println("Processing Version: ")
 	fmt.Println(version)
 	return &k8spb.VersionResponse{Version: version, RuntimeName: runtime, RuntimeVersion: runtimeVersion}, nil
 }
@@ -157,7 +250,7 @@ func (s *KMSServiceServer) Version(ctx context.Context, request *k8spb.VersionRe
 func (s *KMSServiceServer) Encrypt(ctx context.Context, request *k8spb.EncryptRequest) (*k8spb.EncryptResponse, error) {
 
 	fmt.Println("Processing EncryptRequest: ")
-	cipher, err := doEncrypt(ctx, request.Plain)
+	cipher, err := doEncrypt(ctx, request.Plain, s.azConfig.SubscriptionID, *(s.providerVaultName), *(s.providerKeyName), *(s.providerKeyVersion))
 	if err != nil {
 		fmt.Print("failed to doencrypt, error: ", err)
 		return &k8spb.EncryptResponse{}, err
@@ -168,9 +261,9 @@ func (s *KMSServiceServer) Encrypt(ctx context.Context, request *k8spb.EncryptRe
 func (s *KMSServiceServer) Decrypt(ctx context.Context, request *k8spb.DecryptRequest) (*k8spb.DecryptResponse, error) {
 
 	fmt.Println("Processing DecryptRequest: ")
-	plain, err := doDecrypt(ctx, string(request.Cipher))
+	plain, err := doDecrypt(ctx, string(request.Cipher), s.azConfig.SubscriptionID, *(s.providerVaultName), *(s.providerKeyName), *(s.providerKeyVersion))
 	if err != nil {
-		fmt.Print("failed to decrypt, error: ", err)
+		fmt.Println("failed to decrypt, error: ", err)
 		return &k8spb.DecryptResponse{}, err
 	}
 	return &k8spb.DecryptResponse{Plain: plain}, nil
@@ -179,7 +272,7 @@ func (s *KMSServiceServer) Decrypt(ctx context.Context, request *k8spb.DecryptRe
 func (s *KMSServiceServer) cleanSockFile() error {
 	err := unix.Unlink(s.pathToUnixSocket)
 	if err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to delete the socket file, error: %v", err)
+		return fmt.Errorf("failed to delete the socket file, error: ", err)
 	}
 	return nil
 }
