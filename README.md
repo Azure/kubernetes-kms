@@ -57,14 +57,14 @@ Mount `/tmp` to access the socket:
 
 ```json
 ...
-    "providerVaultBaseURL": "",
+    "providerVaultName": "",
     "providerKeyName": "",
     "providerKeyVersion": ""
 
 ```
-* `providerVaultBaseURL`: should look something like this: `https://yourkeyvaultname.vault.azure.net/`
-* `providerKeyName`: name of the key created in azure key vault
-* `providerKeyVersion`: key version of the key created in azure key vault
+* `providerVaultName`: name of the key vault you have created in the same resource group as your k8s cluster. If the provided key vault is not found, service will return an error.
+* `providerKeyName`: name of the key created in azure key vault. If the provided key is not found, service will create a key `providerKeyName` in the `providerVaultName` key vault.
+* `providerKeyVersion`: [OPTIONAL] key version of the key created in azure key vault. If the provided key version is not found, service will return an error. If not provided, service will use a key version from key `providerKeyName` in the `providerVaultName` key vault.
 
 4. Drop [`kube-azurekmspod.yaml`](kubernetes/kube-azurekmspod.yaml) under `/etc/kubernetes/manifests`, kubelet will create a static pod that starts the gRPC service. The pod will be named similar to `azurekms-k8s-master-32960228-0`. To verify the gRPC service is running,  you should see the following from the pod logs. You should also see the /tmp/azurekms.socket created.
 
