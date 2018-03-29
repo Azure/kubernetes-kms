@@ -71,8 +71,8 @@ Mount `/tmp` to access the socket:
 ```bash
 $ kubectl logs azurekms-k8s-master-32960228-0 
 /tmp/azurekms.socket
-2018/02/26 22:52:26 KMSServiceServer service starting...
-2018/02/26 22:52:26 KMSServiceServer service started successfully.
+2018/02/26 22:52:26 KeyManagementServiceServer service starting...
+2018/02/26 22:52:26 KeyManagementServiceServer service started successfully.
 
 ls /tmp/azu*
 /tmp/azurekms.socket
