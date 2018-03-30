@@ -192,9 +192,9 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for KMSService service
+// Client API for KeyManagementService service
 
-type KMSServiceClient interface {
+type KeyManagementServiceClient interface {
 	// Version returns the runtime name and runtime version of the KMS provider.
 	Version(ctx context.Context, in *VersionRequest, opts ...grpc.CallOption) (*VersionResponse, error)
 	// Execute decryption operation in KMS provider.
@@ -203,44 +203,44 @@ type KMSServiceClient interface {
 	Encrypt(ctx context.Context, in *EncryptRequest, opts ...grpc.CallOption) (*EncryptResponse, error)
 }
 
-type kMSServiceClient struct {
+type keyManagementServiceClient struct {
 	cc *grpc.ClientConn
 }
 
-func NewKMSServiceClient(cc *grpc.ClientConn) KMSServiceClient {
-	return &kMSServiceClient{cc}
+func NewKeyManagementServiceClient(cc *grpc.ClientConn) KeyManagementServiceClient {
+	return &keyManagementServiceClient{cc}
 }
 
-func (c *kMSServiceClient) Version(ctx context.Context, in *VersionRequest, opts ...grpc.CallOption) (*VersionResponse, error) {
+func (c *keyManagementServiceClient) Version(ctx context.Context, in *VersionRequest, opts ...grpc.CallOption) (*VersionResponse, error) {
 	out := new(VersionResponse)
-	err := grpc.Invoke(ctx, "/v1beta1.KMSService/Version", in, out, c.cc, opts...)
+	err := grpc.Invoke(ctx, "/v1beta1.KeyManagementService/Version", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *kMSServiceClient) Decrypt(ctx context.Context, in *DecryptRequest, opts ...grpc.CallOption) (*DecryptResponse, error) {
+func (c *keyManagementServiceClient) Decrypt(ctx context.Context, in *DecryptRequest, opts ...grpc.CallOption) (*DecryptResponse, error) {
 	out := new(DecryptResponse)
-	err := grpc.Invoke(ctx, "/v1beta1.KMSService/Decrypt", in, out, c.cc, opts...)
+	err := grpc.Invoke(ctx, "/v1beta1.KeyManagementService/Decrypt", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *kMSServiceClient) Encrypt(ctx context.Context, in *EncryptRequest, opts ...grpc.CallOption) (*EncryptResponse, error) {
+func (c *keyManagementServiceClient) Encrypt(ctx context.Context, in *EncryptRequest, opts ...grpc.CallOption) (*EncryptResponse, error) {
 	out := new(EncryptResponse)
-	err := grpc.Invoke(ctx, "/v1beta1.KMSService/Encrypt", in, out, c.cc, opts...)
+	err := grpc.Invoke(ctx, "/v1beta1.KeyManagementService/Encrypt", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for KMSService service
+// Server API for KeyManagementService service
 
-type KMSServiceServer interface {
+type KeyManagementServiceServer interface {
 	// Version returns the runtime name and runtime version of the KMS provider.
 	Version(context.Context, *VersionRequest) (*VersionResponse, error)
 	// Execute decryption operation in KMS provider.
@@ -249,79 +249,79 @@ type KMSServiceServer interface {
 	Encrypt(context.Context, *EncryptRequest) (*EncryptResponse, error)
 }
 
-func RegisterKMSServiceServer(s *grpc.Server, srv KMSServiceServer) {
-	s.RegisterService(&_KMSService_serviceDesc, srv)
+func RegisterKeyManagementServiceServer(s *grpc.Server, srv KeyManagementServiceServer) {
+	s.RegisterService(&_KeyManagementService_serviceDesc, srv)
 }
 
-func _KMSService_Version_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _KeyManagementService_Version_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(VersionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(KMSServiceServer).Version(ctx, in)
+		return srv.(KeyManagementServiceServer).Version(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/v1beta1.KMSService/Version",
+		FullMethod: "/v1beta1.KeyManagementService/Version",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KMSServiceServer).Version(ctx, req.(*VersionRequest))
+		return srv.(KeyManagementServiceServer).Version(ctx, req.(*VersionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _KMSService_Decrypt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _KeyManagementService_Decrypt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DecryptRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(KMSServiceServer).Decrypt(ctx, in)
+		return srv.(KeyManagementServiceServer).Decrypt(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/v1beta1.KMSService/Decrypt",
+		FullMethod: "/v1beta1.KeyManagementService/Decrypt",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KMSServiceServer).Decrypt(ctx, req.(*DecryptRequest))
+		return srv.(KeyManagementServiceServer).Decrypt(ctx, req.(*DecryptRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _KMSService_Encrypt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _KeyManagementService_Encrypt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EncryptRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(KMSServiceServer).Encrypt(ctx, in)
+		return srv.(KeyManagementServiceServer).Encrypt(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/v1beta1.KMSService/Encrypt",
+		FullMethod: "/v1beta1.KeyManagementService/Encrypt",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KMSServiceServer).Encrypt(ctx, req.(*EncryptRequest))
+		return srv.(KeyManagementServiceServer).Encrypt(ctx, req.(*EncryptRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _KMSService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "v1beta1.KMSService",
-	HandlerType: (*KMSServiceServer)(nil),
+var _KeyManagementService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "v1beta1.KeyManagementService",
+	HandlerType: (*KeyManagementServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Version",
-			Handler:    _KMSService_Version_Handler,
+			Handler:    _KeyManagementService_Version_Handler,
 		},
 		{
 			MethodName: "Decrypt",
-			Handler:    _KMSService_Decrypt_Handler,
+			Handler:    _KeyManagementService_Decrypt_Handler,
 		},
 		{
 			MethodName: "Encrypt",
-			Handler:    _KMSService_Encrypt_Handler,
+			Handler:    _KeyManagementService_Encrypt_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

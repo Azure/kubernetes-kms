@@ -4,7 +4,7 @@ import(
 	// "log"
 	// "testing"
 
-	k8spb "github.com/ritazh/k8s-azure-kms/v1beta1"
+	k8spb "github.com/Azure/kubernetes-kms/v1beta1"
 
 	"golang.org/x/net/context"
 	"fmt"
@@ -29,7 +29,7 @@ func main() {
 	}
 	defer connection.Close()
 
-	client := k8spb.NewKMSServiceClient(connection)
+	client := k8spb.NewKeyManagementServiceClient(connection)
 
 	err = checkAPIVersion(client)
  	if err != nil {
@@ -73,7 +73,7 @@ func newUnixSocketConnection(path string) (*grpc.ClientConn, error)  {
 
 // Check the KMS provider API version.
 // Only matching version is supported now.
-func checkAPIVersion(kmsClient k8spb.KMSServiceClient) error {
+func checkAPIVersion(kmsClient k8spb.KeyManagementServiceClient) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 

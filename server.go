@@ -25,7 +25,7 @@ import (
 	kv "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
 	"github.com/Azure/go-autorest/autorest/to"
 
-	k8spb "github.com/ritazh/k8s-azure-kms/v1beta1"
+	k8spb "github.com/Azure/kubernetes-kms/v1beta1"
 )
 
 const (
@@ -40,8 +40,8 @@ const (
 	vaultResourceUrl = "https://vault.azure.net"
 )
 
-// KMSServiceServer is a gRPC server.
-type KMSServiceServer struct {
+// KeyManagementServiceServer is a gRPC server.
+type KeyManagementServiceServer struct {
 	*grpc.Server
 	azConfig *AzureAuthConfig
 	pathToUnixSocket string
@@ -52,23 +52,23 @@ type KMSServiceServer struct {
 }
 
 // New creates an instance of the KMS Service Server.
-func New(pathToUnixSocketFile string) (*KMSServiceServer, error) {
-	kmsServiceServer := new(KMSServiceServer)
-	kmsServiceServer.pathToUnixSocket = pathToUnixSocketFile
-	fmt.Println(kmsServiceServer.pathToUnixSocket)
-	kmsServiceServer.azConfig, _ = GetAzureAuthConfig(configFilePath)
-	if kmsServiceServer.azConfig.SubscriptionID == "" {
+func New(pathToUnixSocketFile string) (*KeyManagementServiceServer, error) {
+	keyManagementServiceServer := new(KeyManagementServiceServer)
+	keyManagementServiceServer.pathToUnixSocket = pathToUnixSocketFile
+	fmt.Println(keyManagementServiceServer.pathToUnixSocket)
+	keyManagementServiceServer.azConfig, _ = GetAzureAuthConfig(configFilePath)
+	if keyManagementServiceServer.azConfig.SubscriptionID == "" {
 		return nil, fmt.Errorf("Missing SubscriptionID in azure config")
 	}
 	vaultName, keyName, keyVersion, err := GetKMSProvider(configFilePath)
 	if err != nil {
 		return nil, err
 	}
-	kmsServiceServer.providerVaultName = vaultName
-	kmsServiceServer.providerKeyName = keyName
-	kmsServiceServer.providerKeyVersion = keyVersion
+	keyManagementServiceServer.providerVaultName = vaultName
+	keyManagementServiceServer.providerKeyName = keyName
+	keyManagementServiceServer.providerKeyVersion = keyVersion
 
-	return kmsServiceServer, nil
+	return keyManagementServiceServer, nil
 }
 
 func getKey(subscriptionID string, providerVaultName string, providerKeyName string, providerKeyVersion string) (kv.ManagementClient, string, string, string, error)  {
@@ -204,7 +204,7 @@ func main() {
 	)
 	flag.Parse()
 
-	log.Println("KMSServiceServer service starting...")
+	log.Println("KeyManagementServiceServer service starting...")
 	s, err := New(socketPath)
 	if err != nil {
 		log.Fatalf("Failed to start, error: %v", err)
@@ -220,12 +220,12 @@ func main() {
 	s.Listener = listener
 
 	server := grpc.NewServer()
-	k8spb.RegisterKMSServiceServer(server, s)
+	k8spb.RegisterKeyManagementServiceServer(server, s)
 	s.Server = server
 
 	go server.Serve(listener)
 	trace.AuthRequest = func(req *http.Request) (any, sensitive bool) { return true, true }
-	log.Println("KMSServiceServer service started successfully.")
+	log.Println("KeyManagementServiceServer service started successfully.")
 
 	go func() {
 		for {
@@ -242,12 +242,12 @@ func main() {
 	log.Fatal(http.ListenAndServe(*debugListenAddr, nil))
 }
 
-func (s *KMSServiceServer) Version(ctx context.Context, request *k8spb.VersionRequest) (*k8spb.VersionResponse, error) {
+func (s *KeyManagementServiceServer) Version(ctx context.Context, request *k8spb.VersionRequest) (*k8spb.VersionResponse, error) {
 	fmt.Println(version)
 	return &k8spb.VersionResponse{Version: version, RuntimeName: runtime, RuntimeVersion: runtimeVersion}, nil
 }
 
-func (s *KMSServiceServer) Encrypt(ctx context.Context, request *k8spb.EncryptRequest) (*k8spb.EncryptResponse, error) {
+func (s *KeyManagementServiceServer) Encrypt(ctx context.Context, request *k8spb.EncryptRequest) (*k8spb.EncryptResponse, error) {
 
 	fmt.Println("Processing EncryptRequest: ")
 	cipher, err := doEncrypt(ctx, request.Plain, s.azConfig.SubscriptionID, *(s.providerVaultName), *(s.providerKeyName), *(s.providerKeyVersion))
@@ -258,7 +258,7 @@ func (s *KMSServiceServer) Encrypt(ctx context.Context, request *k8spb.EncryptRe
 	return &k8spb.EncryptResponse{Cipher: []byte(*cipher)}, nil
 }
 
-func (s *KMSServiceServer) Decrypt(ctx context.Context, request *k8spb.DecryptRequest) (*k8spb.DecryptResponse, error) {
+func (s *KeyManagementServiceServer) Decrypt(ctx context.Context, request *k8spb.DecryptRequest) (*k8spb.DecryptResponse, error) {
 
 	fmt.Println("Processing DecryptRequest: ")
 	plain, err := doDecrypt(ctx, string(request.Cipher), s.azConfig.SubscriptionID, *(s.providerVaultName), *(s.providerKeyName), *(s.providerKeyVersion))
@@ -269,7 +269,7 @@ func (s *KMSServiceServer) Decrypt(ctx context.Context, request *k8spb.DecryptRe
 	return &k8spb.DecryptResponse{Plain: plain}, nil
 }
 
-func (s *KMSServiceServer) cleanSockFile() error {
+func (s *KeyManagementServiceServer) cleanSockFile() error {
 	err := unix.Unlink(s.pathToUnixSocket)
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to delete the socket file, error: ", err)
