@@ -1,4 +1,4 @@
-binary := azuremksprovider
+binary := kubernetes-kms
 DOCKER_IMAGE := ritazh/k8s-azure-kms
 
 VERSION          := latest
@@ -12,7 +12,7 @@ build: authors deps
 
 .PHONY: clean deps
 
-deps:
+deps: setup
 	@echo "Ensuring Dependencies..."
 	$Q go env
 	$Q dep ensure
@@ -20,6 +20,10 @@ deps:
 clean:
 	@echo "Clean..."
 	$Q rm -rf $(binary)
+
+setup: clean
+	@echo "Setup..."
+	go get -u github.com/golang/dep/cmd/dep
 
 authors:
 	$Q git log --all --format='%aN <%cE>' | sort -u  | sed -n '/github/!p' > GITAUTHORS
