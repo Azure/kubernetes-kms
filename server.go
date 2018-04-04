@@ -31,7 +31,7 @@ import (
 const (
 	// Unix Domain Socket
 	netProtocol    = "unix"
-	socketPath	   = "/tmp/azurekms.socket"
+	socketPath	   = "/opt/azurekms.socket"
 	version        = "v1beta1"
 	runtime        = "Microsoft AzureKMS"
 	runtimeVersion = "0.0.1"

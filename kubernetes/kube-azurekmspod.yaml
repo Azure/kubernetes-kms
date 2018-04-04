@@ -8,16 +8,16 @@ spec:
    image: ritazh/k8s-azure-kms:latest
    imagePullPolicy: Always
    volumeMounts:
-   - mountPath: /tmp
-     name: tmp
+   - mountPath: /opt
+     name: opt
    - mountPath: /etc/kubernetes
      name: kube
    - mountPath: /etc/ssl/certs/
      name: certs
  volumes:
- - name: tmp
+ - name: opt
    hostPath:
-    path: /tmp
+    path: /opt
  - name: kube
    hostPath:
      path: /etc/kubernetes
