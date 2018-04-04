@@ -15,7 +15,7 @@ import(
 
 const (
 	netProtocol    = "unix"
-  	pathToUnixSocket = "/tmp/azurekms.socket"
+  	pathToUnixSocket = "/opt/azurekms.socket"
   	timeout = 30 * time.Second
   	version = "v1beta1"
 )
