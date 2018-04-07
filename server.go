@@ -31,13 +31,11 @@ import (
 const (
 	// Unix Domain Socket
 	netProtocol    = "unix"
-	socketPath	   = "/tmp/azurekms.socket"
+	socketPath	   = "/opt/azurekms.socket"
 	version        = "v1beta1"
 	runtime        = "Microsoft AzureKMS"
 	runtimeVersion = "0.0.1"
 	configFilePath  = "/etc/kubernetes/azure.json"
-	azureResourceUrl = "https://management.azure.com/"
-	vaultResourceUrl = "https://vault.azure.net"
 )
 
 // KeyManagementServiceServer is a gRPC server.
@@ -78,8 +76,8 @@ func getKey(subscriptionID string, providerVaultName string, providerKeyName str
 	if err != nil {
 		return kvClient, "", "", "", fmt.Errorf("failed to get vault, error: %v", err)
 	}
-	
-	token, err := GetKeyvaultToken(AuthGrantType(), configFilePath, vaultResourceUrl)
+
+	token, err := GetKeyvaultToken(AuthGrantType(), configFilePath)
 	if err != nil {
 		return kvClient, "", "", "", fmt.Errorf("failed to get token, error: %v", err)
 	}
@@ -111,9 +109,8 @@ func getKey(subscriptionID string, providerVaultName string, providerKeyName str
 }
 
 func getVaultsClient(subscriptionID string) kvmgmt.VaultsClient {
-	
 	vaultsClient := kvmgmt.NewVaultsClient(subscriptionID)
-	token, _ := GetKeyvaultToken(AuthGrantType(), configFilePath, azureResourceUrl)
+	token, _ := GetManagementToken(AuthGrantType(), configFilePath)
 	vaultsClient.Authorizer = token
 	return vaultsClient
 }
@@ -125,7 +122,6 @@ func getVault(subscriptionID string, vaultName string) (vaultUrl *string, err er
 	if err != nil {
 		return nil, fmt.Errorf("failed to get vault, error: %v", err)
 	}
-	fmt.Println(to.String(vault.Properties.VaultURI))
 	return vault.Properties.VaultURI, nil
 }
 

@@ -118,11 +118,10 @@ func GetKMSProvider(configFilePath string) (vaultName *string, keyName *string, 
 	}
 	return nil, nil, nil, fmt.Errorf("Cloud provider configuration file is missing")
 }
-
-func GetKeyvaultToken(grantType OAuthGrantType, configFilePath string, resource string) (authorizer autorest.Authorizer, err error) {
+func GetManagementToken(grantType OAuthGrantType, configFilePath string) (authorizer autorest.Authorizer, err error) {
 	var configReader io.Reader
 	var config Config
-
+	
 	if configFilePath != "" {
 		var configFile *os.File
 		configFile, err = os.Open(configFilePath)
@@ -147,7 +146,50 @@ func GetKeyvaultToken(grantType OAuthGrantType, configFilePath string, resource 
 			return nil, err
 		}
 
-		servicePrincipalToken, err := GetServicePrincipalToken(&config.AzureAuthConfig, env, resource)
+		rmEndPoint := env.ResourceManagerEndpoint
+		servicePrincipalToken, err := GetServicePrincipalToken(&config.AzureAuthConfig, env, rmEndPoint)
+		if err != nil {
+			return nil, err
+		}
+		authorizer = autorest.NewBearerAuthorizer(servicePrincipalToken)
+		return authorizer, nil
+	} 
+	return
+}
+
+func GetKeyvaultToken(grantType OAuthGrantType, configFilePath string) (authorizer autorest.Authorizer, err error) {
+	var configReader io.Reader
+	var config Config
+	
+	if configFilePath != "" {
+		var configFile *os.File
+		configFile, err = os.Open(configFilePath)
+		if err != nil {
+			glog.Fatalf("Couldn't open cloud provider configuration %s: %#v",
+				configFilePath, err)
+			return nil, err
+		}
+
+		defer configFile.Close()
+		configReader = configFile
+		configContents, err := ioutil.ReadAll(configReader)
+		if err != nil {
+			return nil, err
+		}
+		err = yaml.Unmarshal(configContents, &config)
+		if err != nil {
+			return nil, err
+		}
+		env, err := ParseAzureEnvironment(config.Cloud)
+		if err != nil {
+			return nil, err
+		}
+
+		kvEndPoint := env.KeyVaultEndpoint
+		if '/' == kvEndPoint[len(kvEndPoint)-1] {
+			kvEndPoint = kvEndPoint[:len(kvEndPoint)-1]
+		}
+		servicePrincipalToken, err := GetServicePrincipalToken(&config.AzureAuthConfig, env, kvEndPoint)
 		if err != nil {
 			return nil, err
 		}
@@ -244,7 +286,7 @@ func GetServicePrincipalToken(config *AzureAuthConfig, env *azure.Environment, r
 		}
 		return adal.NewServicePrincipalTokenFromMSI(
 			msiEndpoint,
-			env.ServiceManagementEndpoint)
+			resource)
 	}
 
 	if len(config.AADClientSecret) > 0 {

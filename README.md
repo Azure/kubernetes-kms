@@ -8,9 +8,9 @@ Azure KMS plugin for Kubernetes - Enable encryption of secret data at rest in Ku
 
 ### Prerequisites: ### 
 
-Make sure you have a Kubernetes cluster v1.10+, as you will need the [PR](https://github.com/kubernetes/kubernetes/pull/55684) that added the gRPC-based KMS plugin service. You can also use my image [ritazh/hyperkube-amd64:v1.10.3](https://hub.docker.com/r/ritazh/hyperkube-amd64) if you don't want to build your own.
+Make sure you have a Kubernetes cluster v1.10+, which is the minimum version required that supports KMS provider.
 
-> :triangular_flag_on_post: NOTE: Until the end to end has been added to acs-engine, you will need to do the following manually.
+> :triangular_flag_on_post: NOTE: Until the end to end has been added to acs-engine, you will need to do the following manually. 
 
 ### Configurations ###
 
@@ -27,7 +27,7 @@ resources:
     providers:
     - kms:
         name: azurekmsprovider
-        endpoint: unix:///tmp/azurekms.socket
+        endpoint: unix:///opt/azurekms.socket
         cachesize: 0
     - identity: {}
 ```
@@ -38,18 +38,18 @@ Add the following flag:
 ```yaml
 --experimental-encryption-provider-config=/etc/kubernetes/manifests/encryptionconfig.yaml
 ```  
-Mount `/tmp` to access the socket:
+Mount `/opt` to access the socket:
 
 ```yaml
 ...
  volumeMounts:
         - name: "sock"
-          mountPath: "/tmp"
+          mountPath: "/opt"
 ...
  volumes:
     - name: "sock"
       hostPath:
-        path: "/tmp"
+        path: "/opt"
 
 ```
 
@@ -66,16 +66,16 @@ Mount `/tmp` to access the socket:
 * `providerKeyName`: name of the key created in azure key vault. If the provided key is not found, service will create a key `providerKeyName` in the `providerVaultName` key vault.
 * `providerKeyVersion`: [OPTIONAL] key version of the key created in azure key vault. If the provided key version is not found, service will return an error. If not provided, service will use a key version from key `providerKeyName` in the `providerVaultName` key vault.
 
-4. Drop [`kube-azurekmspod.yaml`](kubernetes/kube-azurekmspod.yaml) under `/etc/kubernetes/manifests`, kubelet will create a static pod that starts the gRPC service. The pod will be named similar to `azurekms-k8s-master-32960228-0`. To verify the gRPC service is running,  you should see the following from the pod logs. You should also see the /tmp/azurekms.socket created.
+4. Drop [`kube-azurekmspod.yaml`](kubernetes/kube-azurekmspod.yaml) under `/etc/kubernetes/manifests`, kubelet will create a static pod that starts the gRPC service. The pod will be named similar to `azurekms-k8s-master-32960228-0`. To verify the gRPC service is running,  you should see the following from the pod logs. You should also see the /opt/azurekms.socket created.
 
 ```bash
 $ kubectl logs azurekms-k8s-master-32960228-0 
-/tmp/azurekms.socket
+/opt/azurekms.socket
 2018/02/26 22:52:26 KeyManagementServiceServer service starting...
 2018/02/26 22:52:26 KeyManagementServiceServer service started successfully.
 
-ls /tmp/azu*
-/tmp/azurekms.socket
+ls /opt/azu*
+/opt/azurekms.socket
 ```
 
 5. Restart apiserver
