@@ -164,7 +164,7 @@ func GetAzureAuthConfig(configFilePath string) (azConfig *AzureAuthConfig, err e
 		var configFile *os.File
 		configFile, err = os.Open(configFilePath)
 		if err != nil {
-			glog.Fatalf("Couldn't open cloud provider configuration %s: %#v",
+			glog.Errorf("Couldn't open cloud provider configuration %s: %#v",
 				configFilePath, err)
 			return nil, err
 		}

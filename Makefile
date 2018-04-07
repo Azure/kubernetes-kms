@@ -10,7 +10,7 @@ build: authors deps
 	@echo "Building docker image..."
 	$Q docker build -t $(DOCKER_IMAGE):$(VERSION) .
 
-.PHONY: clean deps
+.PHONY: clean deps test
 
 deps:
 	@echo "Ensuring Dependencies..."
@@ -27,3 +27,7 @@ authors:
 	$Q mv NEWAUTHORS AUTHORS
 	$Q rm -f NEWAUTHORS
 	$Q rm -f GITAUTHORS
+
+test:
+	@echo "Testing..."
+	$Q go test -v -cover ./...
