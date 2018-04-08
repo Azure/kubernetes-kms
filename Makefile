@@ -32,8 +32,10 @@ authors:
 	$Q rm -f NEWAUTHORS
 	$Q rm -f GITAUTHORS
 
-testint:
+testint: deps
+	@echo "Running Integration tests..."
 	$Q sudo GOPATH=$(GOPATH) go test -v -count=1 github.com/Azure/kubernetes-kms/tests/client
 
-test: 
+test: deps
+	@echo "Running Unit Tests..."
 	go test -v `go list ./... | grep -v client`
