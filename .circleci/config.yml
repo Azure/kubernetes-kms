@@ -21,8 +21,7 @@ variables:
   - &testsint
     name: Integration Tests
     command: |
-      sudo ln -s /usr/local/go/bin/go /usr/bin/go
-      sudo GOPATH=$GOPATH go run test/client.go
+      make testint
   - &testsunit
     name: Unit Tests
     command: |
@@ -37,6 +36,7 @@ jobs:
     working_directory: *workdir
     steps:
       - checkout
+      - setup_remote_docker
       - run: *create-credentials
       - run: *testsunit
       - run: *build
