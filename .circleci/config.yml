@@ -40,27 +40,35 @@ jobs:
     docker: *docker-image
     working_directory: *workdir
     steps:
-      - checkout
       - run: *create-credentials
 
   build:
     docker: *docker-image
     working_directory: *workdir
     steps:
+      - checkout
       - setup_remote_docker
       - run: *testsunit
       - run: *build
+      - persist_to_workspace:
+          root: *workdir
+          paths:
+            - ./*
 
   run:
     docker: *docker-image
     working_directory: *workdir
     steps:
+      - attach_workspace:
+          at: *workdir
       - run: *run
 
   tests:
     docker: *docker-image
     working_directory: *workdir
     steps:
+      - attach_workspace:
+          at: *workdir
       - run: *testsint
 
   teardown:
