@@ -16,7 +16,7 @@ variables:
   - &run
     name: Run
     command: |
-      sudo ./kubernetes-kms
+      sudo ./kubernetes-kms > /dev/null
     background: true
   - &testsint
     name: Integration Tests
@@ -29,10 +29,6 @@ variables:
     name: Unit Tests
     command: |
       make test
-  - &teardown
-    name: Teardown the Env.
-    command: |
-      echo "Teardown the environnement"
   - &debug-credentials
     name: Degug credentials file
     command:
