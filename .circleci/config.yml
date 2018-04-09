@@ -93,6 +93,3 @@ workflows:
       - run:
           requires:
             - build
-      - teardown:
-          requires:
-            - tests
