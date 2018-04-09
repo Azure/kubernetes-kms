@@ -27,38 +27,63 @@ variables:
     name: Unit Tests
     command: |
       make test
+  - &teardown
+    name: Teardown the Env.
+    command: |
+      echo "Teardown the environnement"
   - &debug-credentials
     name: Degug credentials file
     command:
       sudo cat /etc/kubernetes/azure.json
 jobs:
-  build:
+  setup:
     docker: *docker-image
     working_directory: *workdir
     steps:
       - checkout
-      - setup_remote_docker
       - run: *create-credentials
+
+  build:
+    docker: *docker-image
+    working_directory: *workdir
+    steps:
+      - setup_remote_docker
       - run: *testsunit
       - run: *build
+
+  run:
+    docker: *docker-image
+    working_directory: *workdir
+    steps:
       - run: *run
+
+  tests:
+    docker: *docker-image
+    working_directory: *workdir
+    steps:
       - run: *testsint
 
+  teardown:
+    docker: *docker-image
+    working_directory: *workdir
+    steps:
+      - run: *teardown
 
-#   tests:
-#     docker: *docker-image
-#     working_directory: *workdir
-#     steps:
-#       - run: *tests
-
-# workflows:
-#   version: 2
-#   build-test:
-#     jobs:
-#       - build
-#       - run:
-#           requires:
-#             - build
-#       - tests:
-#           requires:
-#             - run
+workflows:
+  version: 2
+  build-tests:
+    jobs:
+      - setup
+      - build:
+          requires:
+            - setup
+      - run:
+          requires:
+            - build
+      - tests:
+          requires:
+            - run
+      - teardown:
+          requires:
+            - tests
+            - run
