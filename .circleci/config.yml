@@ -17,7 +17,7 @@ variables:
     name: Run
     command: |
       sudo ./kubernetes-kms
-    backgrount: true
+    background: true
   - &testsint
     name: Integration Tests
     command: |
