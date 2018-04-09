@@ -16,7 +16,7 @@ variables:
   - &run
     name: Run
     command: |
-      sudo ./kubernetes-kms
+      sudo ./kubernetes-kms &
     background: true
   - &testsint
     name: Integration Tests
