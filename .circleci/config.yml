@@ -46,6 +46,10 @@ jobs:
     working_directory: *workdir
     steps:
       - run: *create-credentials
+      - persist_to_workspace:
+          root: /etc/kubernetes
+          paths:
+            - azure.json
 
   build:
     docker: *docker-image
@@ -66,6 +70,8 @@ jobs:
     steps:
       - attach_workspace:
           at: *workdir
+      - attach_workspace:
+          at: /etc/kubernetes/azure.json
       - run: *run
 
   tests:
