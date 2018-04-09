@@ -36,6 +36,14 @@ testint:
 	@echo "Running Integration tests..."
 	$Q sudo GOPATH=$(GOPATH) go test -v -count=1 github.com/Azure/kubernetes-kms/tests/client
 
-test: deps
+test:
 	@echo "Running Unit Tests..."
+ifndef CI
+	@echo "Running Unit Tests outside CI..."
+	$Q go env
+	$Q dep ensure
+	go test -v -count=1 `go list ./... | grep -v client`
+else
+	@echo "Running Unit Tests inside CI..."
 	go test -v `go list ./... | grep -v client`
+endif

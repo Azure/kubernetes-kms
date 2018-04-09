@@ -16,17 +16,14 @@ variables:
   - &run
     name: Run
     command: |
-      sudo ln -s /usr/local/go/bin/go /usr/bin/go
-      sudo ./kubernetes-kms &
-      echo Waiting 5 seconds for the server to start
-      sleep 5
-      make testint
+      sudo ./kubernetes-kms
+    backgrount: true
   - &testsint
     name: Integration Tests
     command: |
       sudo ln -s /usr/local/go/bin/go /usr/bin/go
-      echo Waiting 5 seconds for the server to start
-      sleep 5
+      echo Waiting 2 seconds for the server to start
+      sleep 2
       make testint
   - &testsunit
     name: Unit Tests
@@ -41,61 +38,34 @@ variables:
     command:
       sudo cat /etc/kubernetes/azure.json
 jobs:
-  setup:
-    docker: *docker-image
-    working_directory: *workdir
-    steps:
-      - run: *create-credentials
-      - persist_to_workspace:
-          root: /etc/kubernetes
-          paths:
-            - azure.json
-
   build:
     docker: *docker-image
     working_directory: *workdir
     steps:
       - checkout
       - setup_remote_docker
-      - run: *testsunit
       - run: *build
+      - run: *testsunit
       - persist_to_workspace:
           root: *workdir
           paths:
             - ./*
 
-  run:
+  runtests:
     docker: *docker-image
     working_directory: *workdir
     steps:
       - attach_workspace:
           at: *workdir
-      - attach_workspace:
-          at: /etc/kubernetes
+      - run: *create-credentials
       - run: *run
-
-  tests:
-    docker: *docker-image
-    working_directory: *workdir
-    steps:
-      - attach_workspace:
-          at: *workdir
       - run: *testsint
-
-  teardown:
-    docker: *docker-image
-    working_directory: *workdir
-    steps:
-      - run: *teardown
 
 workflows:
   version: 2
   build-tests:
     jobs:
-      - setup
-      - build:
-          requires:
-            - setup
-      - run:
+      - build
+      - runtests:
           requires:
             - build
