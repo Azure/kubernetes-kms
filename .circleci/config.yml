@@ -16,8 +16,11 @@ variables:
   - &run
     name: Run
     command: |
+      sudo ln -s /usr/local/go/bin/go /usr/bin/go
       sudo ./kubernetes-kms &
-    background: true
+      echo Waiting 5 seconds for the server to start
+      sleep 5
+      make testint
   - &testsint
     name: Integration Tests
     command: |
@@ -90,10 +93,6 @@ workflows:
       - run:
           requires:
             - build
-      - tests:
-          requires:
-            - build
       - teardown:
           requires:
             - tests
-            - run
