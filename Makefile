@@ -10,7 +10,7 @@ build: authors deps
 	@echo "Building docker image..."
 	$Q docker build -t $(DOCKER_IMAGE):$(VERSION) .
 
-.PHONY: clean deps
+.PHONY: clean deps test testint
 
 deps: setup
 	@echo "Ensuring Dependencies..."
@@ -31,3 +31,19 @@ authors:
 	$Q mv NEWAUTHORS AUTHORS
 	$Q rm -f NEWAUTHORS
 	$Q rm -f GITAUTHORS
+
+testint:
+	@echo "Running Integration tests..."
+	$Q sudo GOPATH=$(GOPATH) go test -v -count=1 github.com/Azure/kubernetes-kms/tests/client
+
+test:
+	@echo "Running Unit Tests..."
+ifndef CI
+	@echo "Running Unit Tests outside CI..."
+	$Q go env
+	$Q dep ensure
+	go test -v -count=1 `go list ./... | grep -v client`
+else
+	@echo "Running Unit Tests inside CI..."
+	go test -v `go list ./... | grep -v client`
+endif
