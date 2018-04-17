@@ -268,7 +268,7 @@ func (s *KeyManagementServiceServer) Decrypt(ctx context.Context, request *k8spb
 func (s *KeyManagementServiceServer) cleanSockFile() error {
 	err := unix.Unlink(s.pathToUnixSocket)
 	if err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to delete the socket file, error: %v", err)
+		return fmt.Errorf("failed to delete the socket file, error: ", err)
 	}
 	return nil
 }
