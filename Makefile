@@ -1,5 +1,5 @@
 binary := kubernetes-kms
-DOCKER_IMAGE := ritazh/k8s-azure-kms
+DOCKER_IMAGE := microsoft/k8s-azure-kms
 
 VERSION          := latest
 

@@ -5,7 +5,7 @@ metadata:
 spec: 
  containers: 
  - name: azurekms 
-   image: ritazh/k8s-azure-kms:latest
+   image: microsoft/k8s-azure-kms:latest
    imagePullPolicy: Always
    volumeMounts:
    - mountPath: /opt
