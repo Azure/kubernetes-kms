@@ -42,7 +42,7 @@ workflow for doing this is as follows:
 
 We use `make` and `Makefile` to build the binary and the Docker image. To start the build process:
 
-1. Run `make build` to build the binary `/kubernetes-kms` and Docker image `ritazh/k8s-azure-kms:latest`
+1. Run `make build` to build the binary `/kubernetes-kms` and Docker image `microsoft/k8s-azure-kms:latest`
 
 ### Run the Code Locally
 
