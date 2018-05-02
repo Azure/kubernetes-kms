@@ -22,8 +22,8 @@ variables:
     name: Integration Tests
     command: |
       sudo ln -s /usr/local/go/bin/go /usr/bin/go
-      echo Waiting 2 seconds for the server to start
-      sleep 2
+      echo Waiting 5 seconds for the server to start
+      sleep 5
       make testint
   - &testsunit
     name: Unit Tests
