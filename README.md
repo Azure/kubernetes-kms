@@ -8,77 +8,17 @@ Azure KMS plugin for Kubernetes - Enable encryption of secret data at rest in Ku
 
 ### Prerequisites: ### 
 
-Make sure you have a Kubernetes cluster v1.10+, which is the minimum version required that supports KMS provider.
+💡 Make sure you have a Kubernetes cluster v1.10+, minimum version required that supports KMS provider.
 
-> :triangular_flag_on_post: NOTE: Until the end to end has been added to acs-engine, you will need to do the following manually. 
+### 🎁 acs-engine ###
+We have added this feature to acs-engine so that you do not have to worry about any of the manual steps to set this up. Follow this [doc](https://github.com/Azure/acs-engine/blob/master/docs/kubernetes/features.md#azure-key-vault-data-encryption) and this [api model json](https://github.com/Azure/acs-engine/blob/master/examples/kubernetes-config/kubernetes-keyvault-encryption.json) to create your own Kubernetes cluster with Azure Key Vault data encryption. Once the cluster is created, you will see an Azure Key Vault and a key in the same resource group as your cluster. 
 
-### Configurations ###
+### 🔜 Azure Container Service (AKS) ###
+This feature is coming soon to AKS.
 
-From all master nodes:
+### 🛠 Manual Configurations ###
 
-1. Create `/etc/kubernetes/manifests/encryptionconfig.yaml`
-
-```yaml
-kind: EncryptionConfig
-apiVersion: v1
-resources:
-  - resources:
-    - secrets
-    providers:
-    - kms:
-        name: azurekmsprovider
-        endpoint: unix:///opt/azurekms.socket
-        cachesize: 0
-    - identity: {}
-```
-
-2. Modify `/etc/kubernetes/manifests/kube-apiserver.yaml` 
-Add the following flag:
-
-```yaml
---experimental-encryption-provider-config=/etc/kubernetes/manifests/encryptionconfig.yaml
-```  
-Mount `/opt` to access the socket:
-
-```yaml
-...
- volumeMounts:
-        - name: "sock"
-          mountPath: "/opt"
-...
- volumes:
-    - name: "sock"
-      hostPath:
-        path: "/opt"
-
-```
-
-3. Update `/etc/kubernetes/azure.json` to add the following configurations:
-
-```json
-...
-    "providerVaultName": "",
-    "providerKeyName": "",
-    "providerKeyVersion": ""
-
-```
-* `providerVaultName`: name of the key vault you have created in the same resource group as your k8s cluster. If the provided key vault is not found, service will return an error.
-* `providerKeyName`: name of the key created in azure key vault. If the provided key is not found, service will create a key `providerKeyName` in the `providerVaultName` key vault.
-* `providerKeyVersion`: [OPTIONAL] key version of the key created in azure key vault. If the provided key version is not found, service will return an error. If not provided, service will use a key version from key `providerKeyName` in the `providerVaultName` key vault.
-
-4. Drop [`kube-azurekmspod.yaml`](kubernetes/kube-azurekmspod.yaml) under `/etc/kubernetes/manifests`, kubelet will create a static pod that starts the gRPC service. The pod will be named similar to `azurekms-k8s-master-32960228-0`. To verify the gRPC service is running,  you should see the following from the pod logs. You should also see the /opt/azurekms.socket created.
-
-```bash
-$ kubectl logs azurekms-k8s-master-32960228-0 
-/opt/azurekms.socket
-2018/02/26 22:52:26 KeyManagementServiceServer service starting...
-2018/02/26 22:52:26 KeyManagementServiceServer service started successfully.
-
-ls /opt/azu*
-/opt/azurekms.socket
-```
-
-5. Restart apiserver
+To see how to set this up yourself, you can follow the manual steps listed [here](./manual-install.md)
 
 ## Verifying that Data is Encrypted ##
 
