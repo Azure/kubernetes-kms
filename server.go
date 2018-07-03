@@ -6,6 +6,7 @@
 package main
 
 import (
+	"time"
 	"encoding/base64"
 	"flag"
 	"fmt"
@@ -21,6 +22,9 @@ import (
 	"golang.org/x/net/trace"
 	"golang.org/x/sys/unix"
 	"google.golang.org/grpc"
+
+	storagemgmt "github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2017-10-01/storage"
+	storage "github.com/Azure/azure-sdk-for-go/storage"
 	kvmgmt "github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2016-10-01/keyvault"
 	kv "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -30,12 +34,14 @@ import (
 
 const (
 	// Unix Domain Socket
-	netProtocol    = "unix"
-	socketPath	   = "/opt/azurekms.socket"
-	version        = "v1beta1"
-	runtime        = "Microsoft AzureKMS"
-	runtimeVersion = "0.0.1"
-	configFilePath  = "/etc/kubernetes/azure.json"
+	netProtocol		= "unix"
+	socketPath		= "/opt/azurekms.socket"
+	version			= "v1beta1"
+	runtime			= "Microsoft AzureKMS"
+	runtimeVersion		= "0.0.1"
+	configFilePath		= "/etc/kubernetes/azure.json"
+	maxRetryTimeout		= 60
+	retryIncrement		= 5
 )
 
 // KeyManagementServiceServer is a gRPC server.
@@ -43,9 +49,9 @@ type KeyManagementServiceServer struct {
 	*grpc.Server
 	azConfig *AzureAuthConfig
 	pathToUnixSocket string
-    providerVaultName *string
-    providerKeyName *string
-    providerKeyVersion *string
+	providerVaultName *string
+	providerKeyName *string
+	providerKeyVersion *string
 	net.Listener
 }
 
@@ -91,9 +97,32 @@ func getKey(subscriptionID string, providerVaultName string, providerKeyName str
 			return kvClient, "", "", "", fmt.Errorf("failed to verify the provided key version, error: %v", err)
 		}
 		// when we are not able to verify the latest key version for keyName, create key
-		keyVersion, err := createKey(kvClient, *vaultUrl, providerKeyName)
+		keyVersion, err := createKey(kvClient, *vaultUrl, providerKeyName, providerVaultName, subscriptionID)
 		if err != nil {
-			return kvClient, "", "", "", fmt.Errorf("failed to create key, error: %v", err)
+			fmt.Println("Err returned from createKey: ", err.Error())
+
+			if strings.Contains(err.Error(), "LeaseAlreadyPresent") {
+				fmt.Println("createKey failed LeaseAlreadyPresent")
+				
+				t := 0
+				for t < maxRetryTimeout {
+					keybundle, err := kvClient.GetKey(*vaultUrl, providerKeyName, "")
+					if err == nil {
+						keyVersion = keybundle.Key.Kid
+						fmt.Println("found key version: ", *keyVersion)
+						break;
+					} else {
+						t += retryIncrement
+						time.Sleep(retryIncrement * time.Second)
+						fmt.Printf("sleep %d secs, retry t: %d secs. ", retryIncrement, t)
+					}
+				}
+				if t >= maxRetryTimeout {
+					return kvClient, "", "", "", fmt.Errorf("failed to get key within the maxRetryTimeout: %d seconds", maxRetryTimeout)
+				}
+			} else {
+				return kvClient, "", "", "", fmt.Errorf("failed to create key, error: %v", err)
+			}
 		}
 		version := to.String(keyVersion)
 		index := strings.LastIndex(version, "/" )
@@ -125,8 +154,61 @@ func getVault(subscriptionID string, vaultName string) (vaultUrl *string, err er
 	return vault.Properties.VaultURI, nil
 }
 
-func createKey(keyClient kv.ManagementClient, vaultUrl string, keyName string) (*string, error) {
+func createKey(keyClient kv.ManagementClient, vaultUrl string, keyName string, providerVaultName string, subscriptionID string) (*string, error) {
 	fmt.Println("Key not found. Creating a new key...")
+	storageAccountsClient := storagemgmt.NewAccountsClient(subscriptionID)
+	token, _ := GetManagementToken(AuthGrantType(), configFilePath)
+	storageAccountsClient.Authorizer = token
+
+	resourceGroup, err := GetResourceGroup(configFilePath)
+	if err != nil {
+		return nil, err
+	}
+	storageAcctName := strings.Replace(providerVaultName, "-", "", -1)
+	res, err := storageAccountsClient.ListKeys(*resourceGroup, storageAcctName)
+	if err != nil {
+		return nil, err
+	}
+	storageKey := *(((*res.Keys)[0]).Value)
+	// fmt.Println("storage key: ", storageKey)
+
+	storageCli, err := storage.NewBasicClient(storageAcctName, storageKey)
+	blobCli := storageCli.GetBlobService()
+	// Get container
+	cnt := blobCli.GetContainerReference(keyName)
+	ok, err := cnt.Exists()
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		fmt.Println("creating container: ", keyName)
+		// Create container
+		options := storage.CreateContainerOptions{
+			Access: storage.ContainerAccessTypeContainer,
+		}
+		_, err := cnt.CreateIfNotExists(&options)
+		if err != nil {
+			return nil, err
+		}
+	}
+	// Get blob
+	b := cnt.GetBlobReference(keyName)
+	ok, err = b.Exists()
+	if !ok {
+		fmt.Println("creating blob: ", keyName)
+		// Create blob
+		err = b.CreateBlockBlob(nil)
+		if err != nil {
+			return nil, err
+		}
+	}
+	// Acquiring lease on blob, if blob already has a lease, return err
+	_, err = b.AcquireLease(-1, "", nil)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("acquired lease")
+	// Create KV key
 	key, err := keyClient.CreateKey(
 		vaultUrl,
 		keyName,
