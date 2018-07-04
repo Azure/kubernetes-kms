@@ -2,11 +2,28 @@ binary := kubernetes-kms
 DOCKER_IMAGE := microsoft/k8s-azure-kms
 
 VERSION          := latest
+CGO_ENABLED_FLAG := 0
+
+ifeq ($(OS),Windows_NT)
+	GOOS_FLAG = windows
+else
+	UNAME_S := $(shell uname -s)
+	ifeq ($(UNAME_S), Linux)
+		GOOS_FLAG = linux
+	endif
+	ifeq ($(UNAME_S), Darwin)
+		GOOS_FLAG = darwin
+	endif
+endif
 
 .PHONY: build
 build: authors deps
 	@echo "Building..."
-	$Q GOOS=linux CGO_ENABLED=0 go build . 
+	$Q GOOS=${GOOS_FLAG} CGO_ENABLED=${CGO_ENABLED_FLAG} go build .
+
+build-image: authors deps
+	@echo "Building..."
+	$Q GOOS=linux CGO_ENABLED=${CGO_ENABLED_FLAG} go build .
 	@echo "Building docker image..."
 	$Q docker build -t $(DOCKER_IMAGE):$(VERSION) .
 

@@ -42,7 +42,7 @@ workflow for doing this is as follows:
 
 We use `make` and `Makefile` to build the binary and the Docker image. To start the build process:
 
-1. Run `make build` to build the binary `/kubernetes-kms` and Docker image `microsoft/k8s-azure-kms:latest`
+1. Run `make build` to build the binary `/kubernetes-kms` for your OS
 
 ### Run the Code Locally
 
@@ -72,4 +72,8 @@ If you do not have a service principal, please refer to this [doc](https://docs.
     "providerKeyName": "mykey"
 }
 ```
-4. Test with the gRPC client, by running `sudo GOPATH=[YOUR GOPATH] go test test/client/client_test.go`.
+4. Test with the gRPC client, run `sudo GOPATH=[YOUR GOPATH] go test test/client/client_test.go`.
+5. Test racing condition with the gRPC client, run `sudo GOPATH=[YOUR GOPATH] go test test/client/client_test.go & sudo GOPATH=[YOUR GOPATH] go test test/client/client_test.go &`.
+
+### Build image
+1. Run `make build-image` to build the binary `/kubernetes-kms` for linux and Docker image `microsoft/k8s-azure-kms:latest`
