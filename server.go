@@ -164,7 +164,7 @@ func createKey(keyClient kv.ManagementClient, vaultUrl string, keyName string, p
 	if err != nil {
 		return nil, err
 	}
-	storageAcctName := strings.Replace(providerVaultName, "-", "", -1)
+	storageAcctName := providerVaultName
 	res, err := storageAccountsClient.ListKeys(*resourceGroup, storageAcctName)
 	if err != nil {
 		return nil, err
