@@ -1,11 +1,18 @@
 # 🛠 Manual Configurations #
 
-1. Assume you already have a Kubernetes cluster. Create a Key Vault in the same resource group as your Kubernetes cluster. Then update the key vault's access policy with the service principal used to create your Kubernetes cluster:
+1. Assume you already have a Kubernetes cluster. Create a Key Vault and a Storage Account in the same resource group as your Kubernetes cluster. Make sure the name used for Key vault and Storage account is the same. Then update the key vault's access policy with the service principal used to create your Kubernetes cluster:
 
 ```bash
-az keyvault create -n k8skv -g mykubernetesrg
-az keyvault set-policy -n k8skv --key-permissions create decrypt encrypt get list --spn <YOUR SPN CLIENT ID>
+KV_NAME=k8skv
+RG=mykubernetesrg
+LOC=eastus
+
+az group create -n $RG -l $LOC
+az storage account create -n $KV_NAME -g $RG
+az keyvault create -n $KV_NAME -g $RG
+az keyvault set-policy -n $KV_NAME --key-permissions create decrypt encrypt get list --spn <YOUR SPN CLIENT ID>
 ```
+
 If you do not have a service principal, please refer to this [doc](https://docs.microsoft.com/en-us/cli/azure/create-an-azure-service-principal-azure-cli?view=azure-cli-latest).
 
 From all Kubernetes master nodes:
