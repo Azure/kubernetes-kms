@@ -1,7 +1,7 @@
 binary := kubernetes-kms
 DOCKER_IMAGE := microsoft/k8s-azure-kms
 
-VERSION          := latest
+VERSION          := v0.0.2
 CGO_ENABLED_FLAG := 0
 
 ifeq ($(OS),Windows_NT)
