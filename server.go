@@ -38,7 +38,7 @@ const (
 	socketPath		= "/opt/azurekms.socket"
 	version			= "v1beta1"
 	runtime			= "Microsoft AzureKMS"
-	runtimeVersion		= "0.0.1"
+	runtimeVersion		= "0.0.2"
 	configFilePath		= "/etc/kubernetes/azure.json"
 	maxRetryTimeout		= 60
 	retryIncrement		= 5
