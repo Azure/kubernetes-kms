@@ -4,6 +4,8 @@ Azure KMS plugin for Kubernetes - Enable encryption of secret data at rest in Ku
 
 **Project Status**: Alpha
 
+>  ⚠️  NOTE : Currently KMS plugin for Kubernetes does not support KMS key rotation scenarios. This means if you choose to create a new key version in KMS, the cluster will fail to decrypt as it won't match the key used for encryption at the time the cluster was created.
+
 ## How to use ##
 
 ### Prerequisites: ### 
