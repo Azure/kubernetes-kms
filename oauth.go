@@ -12,6 +12,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 	"golang.org/x/crypto/pkcs12"
 	"github.com/golang/glog"
 	"github.com/ghodss/yaml"
@@ -117,6 +118,48 @@ func GetKMSProvider(configFilePath string) (vaultName *string, keyName *string, 
 		return vaultName, keyName, keyVersion, nil
 	}
 	return nil, nil, nil, fmt.Errorf("Cloud provider configuration file is missing")
+}
+
+func UpdateKMSProvider(configFilePath string, keyVersion string) (err error) {
+	var configReader io.Reader
+
+	if configFilePath != "" {
+		var configFile *os.File
+		configFile, err = os.Open(configFilePath)
+		if err != nil {
+			glog.Fatalf("Couldn't open cloud provider configuration %s: %#v",
+				configFilePath, err)
+			return err
+		}
+
+		defer configFile.Close()
+		configReader = configFile
+		configContents, err := ioutil.ReadAll(configReader)
+		if err != nil {
+			return err
+		}
+		isUpdated := false
+		lines := strings.Split(string(configContents), "\n")
+		for i, line := range lines {
+			if strings.Contains(line, "providerKeyVersion") {
+				lines[i] = fmt.Sprintf("    \"providerKeyVersion\": \"%s\"", keyVersion)
+				isUpdated = true
+				break
+			}
+		}
+		if (isUpdated == false) {
+			return fmt.Errorf("providerKeyVersion is missing from config file")
+		}
+		newConfig := strings.Join(lines, "\n")
+
+		err = ioutil.WriteFile(configFilePath, []byte(newConfig), 0644)
+		if err != nil {
+			return err
+		}
+		
+		return nil
+	}
+	return fmt.Errorf("Cloud provider configuration file is missing")
 }
 func GetManagementToken(grantType OAuthGrantType, configFilePath string) (authorizer autorest.Authorizer, err error) {
 	var configReader io.Reader
