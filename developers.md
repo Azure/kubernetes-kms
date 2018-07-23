@@ -48,7 +48,7 @@ We use `make` and `Makefile` to build the binary and the Docker image. To start 
 
 To test your code locally:
 
-1. On a linux machine, you can run `sudo ./kubernetes-kms` to create the gRPC unix domain socket running at `/opt/azurekms.socket`. This will start the gRPC server.
+1. On a linux machine, you can run `sudo ./kubernetes-kms --configFilePath <PATH TO YOUR AZURE.JSON FILE>` to create the gRPC unix domain socket running at `/opt/azurekms.socket`. This will start the gRPC server.
 2. Create an Azure resource group, a Key Vault, and update the key vault's access policy with:
 
 ```bash
@@ -58,7 +58,7 @@ az keyvault set-policy -n k8skv --key-permissions create decrypt encrypt get lis
 ```
 If you do not have a service principal, please refer to this [doc](https://docs.microsoft.com/en-us/cli/azure/create-an-azure-service-principal-azure-cli?view=azure-cli-latest).
 
-3. Populate a `azure.json` file locally and store it under `/etc/kubernetes/` that's where the gRPC server will look for this file:
+3. Populate a `azure.json` file locally. The gRPC server will look for this file in the path provided by `configFilePath`. By default, `configFilePath` is set to `etc/kubernetes/azure.json`. 
 
 ```json
 {
@@ -72,7 +72,7 @@ If you do not have a service principal, please refer to this [doc](https://docs.
     "providerKeyName": "mykey"
 }
 ```
-4. Test with the gRPC client, run `sudo GOPATH=[YOUR GOPATH] go test test/client/client_test.go`.
+4. Test with the gRPC client, run `sudo GOPATH=[YOUR GOPATH] go test tests/client/client_test.go`.
 5. Test racing condition with the gRPC client, run `sudo GOPATH=[YOUR GOPATH] go test test/client/client_test.go & sudo GOPATH=[YOUR GOPATH] go test test/client/client_test.go &`.
 
 ### Build image
