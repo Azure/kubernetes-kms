@@ -41,12 +41,7 @@ func TestCreateInstance(t *testing.T) {
 		t.Error(err)
 	}
 
-	KVTestName, KVTestKeyName, KVTestVersion, err := GetKMSProvider(file.Name())
-	if err != nil {
-		t.Error(err)
-	}
-
-	RGTest, err := GetResourceGroup(file.Name())
+	KVTestName, KVTestKeyName, KVTestVersion, RGTest, err := GetKMSProvider(file.Name())
 	if err != nil {
 		t.Error(err)
 	}
