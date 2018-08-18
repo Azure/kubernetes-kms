@@ -72,54 +72,80 @@ type Config struct {
 	ProviderKeyVersion string `json:"providerKeyVersion"`
 }
 
+// AuthGrantType() 
+// Returns default service principal grant type
 func AuthGrantType() OAuthGrantType {
 	return OAuthGrantTypeServicePrincipal
 }
 
-func GetKMSProvider(configFilePath string) (vaultName *string, keyName *string, keyVersion *string, err error) {
+// GetAzureConfig()
+// Returns configs in the azure.json cloud provider file 
+func GetAzureConfig(configFilePath string) (config *Config, err error) {
 	var configReader io.Reader
-	var config Config
 
 	if configFilePath != "" {
 		var configFile *os.File
 		configFile, err = os.Open(configFilePath)
 		if err != nil {
-			glog.Fatalf("Couldn't open cloud provider configuration %s: %#v",
+			glog.Errorf("Couldn't open cloud provider configuration %s: %#v",
 				configFilePath, err)
-			return nil, nil, nil, err
+			return nil, err
 		}
 
 		defer configFile.Close()
 		configReader = configFile
 		configContents, err := ioutil.ReadAll(configReader)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, err
 		}
 		err = yaml.Unmarshal(configContents, &config)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, err
 		}
-		_, err = ParseAzureEnvironment(config.Cloud)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		
-		if (config.ProviderVaultName != "" ) {
-			vaultName = &config.ProviderVaultName
-		} else {
-			return nil, nil, nil, fmt.Errorf("Unable to find KMS providerVaultName in configs")
-		}
-		if (config.ProviderKeyName != "" ) {
-			keyName = &config.ProviderKeyName
-		} else {
-			return nil, nil, nil, fmt.Errorf("Unable to find KMS providerKeyName in configs")
-		}
-		keyVersion = &config.ProviderKeyVersion
-		return vaultName, keyName, keyVersion, nil
+		return config, nil
 	}
-	return nil, nil, nil, fmt.Errorf("Cloud provider configuration file is missing")
+	return nil, fmt.Errorf("Cloud provider configuration file is missing")
 }
-
+// GetAzureAuthConfig
+// Returns AzureAuthConfig object from azure config file
+func GetAzureAuthConfig(configFilePath string) (azConfig *AzureAuthConfig, err error) {
+	config, err := GetAzureConfig(configFilePath)
+	if err != nil {
+		return nil, err
+	}
+	if ( &config.AzureAuthConfig != nil ) {
+		return &config.AzureAuthConfig, nil
+	}
+	return nil, fmt.Errorf("Cloud provider configuration file is missing AzureAuthConfig")
+}
+// GetKMSProvider()
+// Returns provider specific configs from azure.json
+func GetKMSProvider(configFilePath string) (vaultName *string, keyName *string, keyVersion *string, resourceGroup *string, err error) {
+	config, err := GetAzureConfig(configFilePath)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+	
+	if (config.ProviderVaultName != "" ) {
+		vaultName = &config.ProviderVaultName
+	} else {
+		return nil, nil, nil, nil, fmt.Errorf("Unable to find KMS providerVaultName in configs")
+	}
+	if (config.ProviderKeyName != "" ) {
+		keyName = &config.ProviderKeyName
+	} else {
+		return nil, nil, nil, nil, fmt.Errorf("Unable to find KMS providerKeyName in configs")
+	}
+	if (config.ResourceGroup != "" ) {
+		resourceGroup = &config.ResourceGroup
+	} else {
+		return nil, nil, nil, nil, fmt.Errorf("Unable to find resourceGroup in configs")
+	}
+	keyVersion = &config.ProviderKeyVersion
+	return vaultName, keyName, keyVersion, resourceGroup, nil
+}
+// UpdateKMSProvider()
+// Updates azure.json with key version information
 func UpdateKMSProvider(configFilePath string, keyVersion string) (err error) {
 	var configReader io.Reader
 
@@ -161,157 +187,57 @@ func UpdateKMSProvider(configFilePath string, keyVersion string) (err error) {
 	}
 	return fmt.Errorf("Cloud provider configuration file is missing")
 }
+// GetCloudEnv()
+// Returns azure.Environment object from azure config file
+func GetCloudEnv(configFilePath string) (*azure.Environment, error) {
+	config, err := GetAzureAuthConfig(configFilePath)
+	if err != nil {
+		return nil, err
+	}
+	env, err := ParseAzureEnvironment(config.Cloud)
+	return env, err
+}
+// GetManagementToken()
+// Returns token for Resource Manager Endpoint
 func GetManagementToken(grantType OAuthGrantType, configFilePath string) (authorizer autorest.Authorizer, err error) {
-	var configReader io.Reader
-	var config Config
-	
-	if configFilePath != "" {
-		var configFile *os.File
-		configFile, err = os.Open(configFilePath)
-		if err != nil {
-			glog.Fatalf("Couldn't open cloud provider configuration %s: %#v",
-				configFilePath, err)
-			return nil, err
-		}
-
-		defer configFile.Close()
-		configReader = configFile
-		configContents, err := ioutil.ReadAll(configReader)
-		if err != nil {
-			return nil, err
-		}
-		err = yaml.Unmarshal(configContents, &config)
-		if err != nil {
-			return nil, err
-		}
-		env, err := ParseAzureEnvironment(config.Cloud)
-		if err != nil {
-			return nil, err
-		}
-
-		rmEndPoint := env.ResourceManagerEndpoint
-		servicePrincipalToken, err := GetServicePrincipalToken(&config.AzureAuthConfig, env, rmEndPoint)
-		if err != nil {
-			return nil, err
-		}
-		authorizer = autorest.NewBearerAuthorizer(servicePrincipalToken)
-		return authorizer, nil
-	} 
-	return
+	config, err := GetAzureAuthConfig(configFilePath)
+	if err != nil {
+		return nil, err
+	}
+	env, err := ParseAzureEnvironment(config.Cloud)
+	if err != nil {
+		return nil, err
+	}
+	rmEndPoint := env.ResourceManagerEndpoint
+	servicePrincipalToken, err := GetServicePrincipalToken(config, env, rmEndPoint)
+	if err != nil {
+		return nil, err
+	}
+	authorizer = autorest.NewBearerAuthorizer(servicePrincipalToken)
+	return authorizer, nil
 }
-
+// GetKeyvaultToken()
+// Returns token for Key Vault Endpoint
 func GetKeyvaultToken(grantType OAuthGrantType, configFilePath string) (authorizer autorest.Authorizer, err error) {
-	var configReader io.Reader
-	var config Config
-	
-	if configFilePath != "" {
-		var configFile *os.File
-		configFile, err = os.Open(configFilePath)
-		if err != nil {
-			glog.Fatalf("Couldn't open cloud provider configuration %s: %#v",
-				configFilePath, err)
-			return nil, err
-		}
-
-		defer configFile.Close()
-		configReader = configFile
-		configContents, err := ioutil.ReadAll(configReader)
-		if err != nil {
-			return nil, err
-		}
-		err = yaml.Unmarshal(configContents, &config)
-		if err != nil {
-			return nil, err
-		}
-		env, err := ParseAzureEnvironment(config.Cloud)
-		if err != nil {
-			return nil, err
-		}
-
-		kvEndPoint := env.KeyVaultEndpoint
-		if '/' == kvEndPoint[len(kvEndPoint)-1] {
-			kvEndPoint = kvEndPoint[:len(kvEndPoint)-1]
-		}
-		servicePrincipalToken, err := GetServicePrincipalToken(&config.AzureAuthConfig, env, kvEndPoint)
-		if err != nil {
-			return nil, err
-		}
-		authorizer = autorest.NewBearerAuthorizer(servicePrincipalToken)
-		return authorizer, nil
-	} 
-	return
-}
-func GetAzureAuthConfig(configFilePath string) (azConfig *AzureAuthConfig, err error) {
-	var configReader io.Reader
-	var config Config
-
-	if configFilePath != "" {
-		var configFile *os.File
-		configFile, err = os.Open(configFilePath)
-		if err != nil {
-			glog.Errorf("Couldn't open cloud provider configuration %s: %#v",
-				configFilePath, err)
-			return nil, err
-		}
-
-		defer configFile.Close()
-		configReader = configFile
-		configContents, err := ioutil.ReadAll(configReader)
-		if err != nil {
-			return nil, err
-		}
-		err = yaml.Unmarshal(configContents, &config)
-		if err != nil {
-			return nil, err
-		}
-		_, err = ParseAzureEnvironment(config.Cloud)
-		if err != nil {
-			return nil, err
-		}
-		
-		if ( &config.AzureAuthConfig != nil ) {
-			return &config.AzureAuthConfig, nil
-		}
-		return nil, fmt.Errorf("Cloud provider configuration file is missing AzureAuthConfig")
+	config, err := GetAzureAuthConfig(configFilePath)
+	if err != nil {
+		return nil, err
 	}
-	return nil, fmt.Errorf("Cloud provider configuration file is missing")
-}
-
-func GetResourceGroup(configFilePath string) (resourceGroup *string, err error) {
-	var configReader io.Reader
-	var config Config
-
-	if configFilePath != "" {
-		var configFile *os.File
-		configFile, err = os.Open(configFilePath)
-		if err != nil {
-			glog.Fatalf("Couldn't open cloud provider configuration %s: %#v",
-				configFilePath, err)
-			return nil, err
-		}
-
-		defer configFile.Close()
-		configReader = configFile
-		configContents, err := ioutil.ReadAll(configReader)
-		if err != nil {
-			return nil, err
-		}
-		err = yaml.Unmarshal(configContents, &config)
-		if err != nil {
-			return nil, err
-		}
-		_, err = ParseAzureEnvironment(config.Cloud)
-		if err != nil {
-			return nil, err
-		}
-		
-		if ( config.ResourceGroup != "" ) {
-			resourceGroup = &config.ResourceGroup
-			return resourceGroup, nil
-		}
-		return nil, fmt.Errorf("Cloud provider configuration file is missing resourceGroup")
+	env, err := ParseAzureEnvironment(config.Cloud)
+	if err != nil {
+		return nil, err
 	}
-	return nil, fmt.Errorf("Cloud provider configuration file is missing")
+	kvEndPoint := env.KeyVaultEndpoint
+	if '/' == kvEndPoint[len(kvEndPoint)-1] {
+		kvEndPoint = kvEndPoint[:len(kvEndPoint)-1]
+	}
+	servicePrincipalToken, err := GetServicePrincipalToken(config, env, kvEndPoint)
+	if err != nil {
+		return nil, err
+	}
+	authorizer = autorest.NewBearerAuthorizer(servicePrincipalToken)
+	return authorizer, nil
+
 }
 
 // GetServicePrincipalToken creates a new service principal token based on the configuration
