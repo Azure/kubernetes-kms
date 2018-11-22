@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"strings"
 	"golang.org/x/crypto/pkcs12"
@@ -113,6 +114,10 @@ func GetAzureAuthConfig(configFilePath string) (azConfig *AzureAuthConfig, err e
 	if err != nil {
 		return nil, err
 	}
+	if config == nil {
+		log.Println("GetAzureAuthConfig config is nil while getting updated")
+		return nil, fmt.Errorf("GetAzureAuthConfig config is nil while getting updated")
+	}
 	if ( &config.AzureAuthConfig != nil ) {
 		return &config.AzureAuthConfig, nil
 	}
@@ -125,7 +130,10 @@ func GetKMSProvider(configFilePath string) (vaultName *string, keyName *string, 
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
-	
+	if config == nil {
+		log.Println("GetKMSProvider config is nil while getting updated")
+		return nil, nil, nil, nil, fmt.Errorf("GetKMSProvider config is nil while getting updated")
+	}
 	if (config.ProviderVaultName != "" ) {
 		vaultName = &config.ProviderVaultName
 	} else {
@@ -177,7 +185,6 @@ func UpdateKMSProvider(configFilePath string, keyVersion string) (err error) {
 			return fmt.Errorf("providerKeyVersion is missing from config file")
 		}
 		newConfig := strings.Join(lines, "\n")
-
 		err = ioutil.WriteFile(configFilePath, []byte(newConfig), 0644)
 		if err != nil {
 			return err
