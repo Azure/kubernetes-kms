@@ -8,25 +8,22 @@ package main
 import (
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
+	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/adal"
+	"github.com/Azure/go-autorest/autorest/azure"
+	"github.com/golang/glog"
+	"golang.org/x/crypto/pkcs12"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"strings"
-	"golang.org/x/crypto/pkcs12"
-	"github.com/golang/glog"
-	"github.com/ghodss/yaml"
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/adal"
-	"github.com/Azure/go-autorest/autorest/azure"
-)
-
-const (
 )
 
 var (
-	oauthConfig 			*adal.OAuthConfig
+	oauthConfig *adal.OAuthConfig
 )
 
 // OAuthGrantType specifies which grant type to use.
@@ -42,45 +39,110 @@ const (
 // AzureAuthConfig holds auth related part of cloud config
 type AzureAuthConfig struct {
 	// The cloud environment identifier. Takes values from https://github.com/Azure/go-autorest/blob/ec5f4903f77ed9927ac95b19ab8e44ada64c1356/autorest/azure/environments.go#L13
-	Cloud string `json:"cloud"`
+	Cloud string `json:"cloud" yaml:"cloud"`
 	// The AAD Tenant ID for the Subscription that the cluster is deployed in
-	TenantID string `json:"tenantId"`
+	TenantID string `json:"tenantId" yaml:"tenantId"`
 	// The ClientID for an AAD application with RBAC access to talk to Azure RM APIs
-	AADClientID string `json:"aadClientId"`
+	AADClientID string `json:"aadClientId" yaml:"aadClientId"`
 	// The ClientSecret for an AAD application with RBAC access to talk to Azure RM APIs
-	AADClientSecret string `json:"aadClientSecret"`
+	AADClientSecret string `json:"aadClientSecret" yaml:"aadClientSecret"`
 	// The path of a client certificate for an AAD application with RBAC access to talk to Azure RM APIs
-	AADClientCertPath string `json:"aadClientCertPath"`
+	AADClientCertPath string `json:"aadClientCertPath" yaml:"aadClientCertPath"`
 	// The password of the client certificate for an AAD application with RBAC access to talk to Azure RM APIs
-	AADClientCertPassword string `json:"aadClientCertPassword"`
+	AADClientCertPassword string `json:"aadClientCertPassword" yaml:"aadClientCertPassword"`
 	// Use managed service identity for the virtual machine to access Azure ARM APIs
-	UseManagedIdentityExtension bool `json:"useManagedIdentityExtension"`
+	UseManagedIdentityExtension bool `json:"useManagedIdentityExtension" yaml:"useManagedIdentityExtension"`
+	// UserAssignedIdentityID contains the Client ID of the user assigned MSI which is assigned to the underlying VMs. If empty the user assigned identity is not used.
+	// More details of the user assigned identity can be found at: https://docs.microsoft.com/en-us/azure/active-directory/managed-service-identity/overview
+	// For the user assigned identity specified here to be used, the UseManagedIdentityExtension has to be set to true.
+	UserAssignedIdentityID string `json:"userAssignedIdentityID" yaml:"userAssignedIdentityID"`
 	// The ID of the Azure Subscription that the cluster is deployed in
-	SubscriptionID string `json:"subscriptionId"`
+	SubscriptionID string `json:"subscriptionId" yaml:"subscriptionId"`
 }
 
 // Config holds the configuration parsed from the --cloud-config flag
 // All fields are required unless otherwise specified
 type Config struct {
 	AzureAuthConfig
-	// Resource Group for cluster
-	ResourceGroup string `json:"resourceGroup"`
+
+	// The name of the resource group that the cluster is deployed in
+	ResourceGroup string `json:"resourceGroup" yaml:"resourceGroup"`
+	// The location of the resource group that the cluster is deployed in
+	Location string `json:"location" yaml:"location"`
+	// The name of the VNet that the cluster is deployed in
+	VnetName string `json:"vnetName" yaml:"vnetName"`
+	// The name of the resource group that the Vnet is deployed in
+	VnetResourceGroup string `json:"vnetResourceGroup" yaml:"vnetResourceGroup"`
+	// The name of the subnet that the cluster is deployed in
+	SubnetName string `json:"subnetName" yaml:"subnetName"`
+	// The name of the security group attached to the cluster's subnet
+	SecurityGroupName string `json:"securityGroupName" yaml:"securityGroupName"`
+	// (Optional in 1.6) The name of the route table attached to the subnet that the cluster is deployed in
+	RouteTableName string `json:"routeTableName" yaml:"routeTableName"`
+	// (Optional) The name of the availability set that should be used as the load balancer backend
+	// If this is set, the Azure cloudprovider will only add nodes from that availability set to the load
+	// balancer backend pool. If this is not set, and multiple agent pools (availability sets) are used, then
+	// the cloudprovider will try to add all nodes to a single backend pool which is forbidden.
+	// In other words, if you use multiple agent pools (availability sets), you MUST set this field.
+	PrimaryAvailabilitySetName string `json:"primaryAvailabilitySetName" yaml:"primaryAvailabilitySetName"`
+	// The type of azure nodes. Candidate values are: vmss and standard.
+	// If not set, it will be default to standard.
+	VMType string `json:"vmType" yaml:"vmType"`
+	// The name of the scale set that should be used as the load balancer backend.
+	// If this is set, the Azure cloudprovider will only add nodes from that scale set to the load
+	// balancer backend pool. If this is not set, and multiple agent pools (scale sets) are used, then
+	// the cloudprovider will try to add all nodes to a single backend pool which is forbidden.
+	// In other words, if you use multiple agent pools (scale sets), you MUST set this field.
+	PrimaryScaleSetName string `json:"primaryScaleSetName" yaml:"primaryScaleSetName"`
+	// Enable exponential backoff to manage resource request retries
+	CloudProviderBackoff bool `json:"cloudProviderBackoff" yaml:"cloudProviderBackoff"`
+	// Backoff retry limit
+	CloudProviderBackoffRetries int `json:"cloudProviderBackoffRetries" yaml:"cloudProviderBackoffRetries"`
+	// Backoff exponent
+	CloudProviderBackoffExponent float64 `json:"cloudProviderBackoffExponent" yaml:"cloudProviderBackoffExponent"`
+	// Backoff duration
+	CloudProviderBackoffDuration int `json:"cloudProviderBackoffDuration" yaml:"cloudProviderBackoffDuration"`
+	// Backoff jitter
+	CloudProviderBackoffJitter float64 `json:"cloudProviderBackoffJitter" yaml:"cloudProviderBackoffJitter"`
+	// Enable rate limiting
+	CloudProviderRateLimit bool `json:"cloudProviderRateLimit" yaml:"cloudProviderRateLimit"`
+	// Rate limit QPS (Read)
+	CloudProviderRateLimitQPS float32 `json:"cloudProviderRateLimitQPS" yaml:"cloudProviderRateLimitQPS"`
+	// Rate limit Bucket Size
+	CloudProviderRateLimitBucket int `json:"cloudProviderRateLimitBucket" yaml:"cloudProviderRateLimitBucket"`
+	// Rate limit QPS (Write)
+	CloudProviderRateLimitQPSWrite float32 `json:"cloudProviderRateLimitQPSWrite" yaml:"cloudProviderRateLimitQPSWrite"`
+	// Rate limit Bucket Size
+	CloudProviderRateLimitBucketWrite int `json:"cloudProviderRateLimitBucketWrite" yaml:"cloudProviderRateLimitBucketWrite"`
+
+	// Use instance metadata service where possible
+	UseInstanceMetadata bool `json:"useInstanceMetadata" yaml:"useInstanceMetadata"`
+
+	// Sku of Load Balancer and Public IP. Candidate values are: basic and standard.
+	// If not set, it will be default to basic.
+	LoadBalancerSku string `json:"loadBalancerSku" yaml:"loadBalancerSku"`
+	// ExcludeMasterFromStandardLB excludes master nodes from standard load balancer.
+	// If not set, it will be default to true.
+	ExcludeMasterFromStandardLB *bool `json:"excludeMasterFromStandardLB" yaml:"excludeMasterFromStandardLB"`
+
+	// Maximum allowed LoadBalancer Rule Count is the limit enforced by Azure Load balancer
+	MaximumLoadBalancerRuleCount int `json:"maximumLoadBalancerRuleCount" yaml:"maximumLoadBalancerRuleCount"`
 	// The kms provider vault name
-	ProviderVaultName string `json:"providerVaultName"`
+	ProviderVaultName string `json:"providerVaultName" yaml:"providerVaultName"`
 	// The kms provider key name
-	ProviderKeyName string `json:"providerKeyName"`
+	ProviderKeyName string `json:"providerKeyName" yaml:"providerKeyName"`
 	// The kms provider key version
-	ProviderKeyVersion string `json:"providerKeyVersion"`
+	ProviderKeyVersion string `json:"providerKeyVersion" yaml:"providerKeyVersion"`
 }
 
-// AuthGrantType() 
+// AuthGrantType()
 // Returns default service principal grant type
 func AuthGrantType() OAuthGrantType {
 	return OAuthGrantTypeServicePrincipal
 }
 
 // GetAzureConfig()
-// Returns configs in the azure.json cloud provider file 
+// Returns configs in the azure.json cloud provider file
 func GetAzureConfig(configFilePath string) (config *Config, err error) {
 	var configReader io.Reader
 
@@ -99,7 +161,7 @@ func GetAzureConfig(configFilePath string) (config *Config, err error) {
 		if err != nil {
 			return nil, err
 		}
-		err = yaml.Unmarshal(configContents, &config)
+		err = json.Unmarshal(configContents, &config)
 		if err != nil {
 			return nil, err
 		}
@@ -107,6 +169,7 @@ func GetAzureConfig(configFilePath string) (config *Config, err error) {
 	}
 	return nil, fmt.Errorf("Cloud provider configuration file is missing")
 }
+
 // GetAzureAuthConfig
 // Returns AzureAuthConfig object from azure config file
 func GetAzureAuthConfig(configFilePath string) (azConfig *AzureAuthConfig, err error) {
@@ -118,11 +181,12 @@ func GetAzureAuthConfig(configFilePath string) (azConfig *AzureAuthConfig, err e
 		log.Println("GetAzureAuthConfig config is nil while getting updated")
 		return nil, fmt.Errorf("GetAzureAuthConfig config is nil while getting updated")
 	}
-	if ( &config.AzureAuthConfig != nil ) {
+	if &config.AzureAuthConfig != nil {
 		return &config.AzureAuthConfig, nil
 	}
 	return nil, fmt.Errorf("Cloud provider configuration file is missing AzureAuthConfig")
 }
+
 // GetKMSProvider()
 // Returns provider specific configs from azure.json
 func GetKMSProvider(configFilePath string) (vaultName *string, keyName *string, keyVersion *string, resourceGroup *string, err error) {
@@ -134,17 +198,17 @@ func GetKMSProvider(configFilePath string) (vaultName *string, keyName *string, 
 		log.Println("GetKMSProvider config is nil while getting updated")
 		return nil, nil, nil, nil, fmt.Errorf("GetKMSProvider config is nil while getting updated")
 	}
-	if (config.ProviderVaultName != "" ) {
+	if config.ProviderVaultName != "" {
 		vaultName = &config.ProviderVaultName
 	} else {
 		return nil, nil, nil, nil, fmt.Errorf("Unable to find KMS providerVaultName in configs")
 	}
-	if (config.ProviderKeyName != "" ) {
+	if config.ProviderKeyName != "" {
 		keyName = &config.ProviderKeyName
 	} else {
 		return nil, nil, nil, nil, fmt.Errorf("Unable to find KMS providerKeyName in configs")
 	}
-	if (config.ResourceGroup != "" ) {
+	if config.ResourceGroup != "" {
 		resourceGroup = &config.ResourceGroup
 	} else {
 		return nil, nil, nil, nil, fmt.Errorf("Unable to find resourceGroup in configs")
@@ -152,10 +216,12 @@ func GetKMSProvider(configFilePath string) (vaultName *string, keyName *string, 
 	keyVersion = &config.ProviderKeyVersion
 	return vaultName, keyName, keyVersion, resourceGroup, nil
 }
+
 // UpdateKMSProvider()
 // Updates azure.json with key version information
 func UpdateKMSProvider(configFilePath string, keyVersion string) (err error) {
 	var configReader io.Reader
+	var config map[string]json.RawMessage
 
 	if configFilePath != "" {
 		var configFile *os.File
@@ -172,28 +238,40 @@ func UpdateKMSProvider(configFilePath string, keyVersion string) (err error) {
 		if err != nil {
 			return err
 		}
-		isUpdated := false
-		lines := strings.Split(string(configContents), "\n")
-		for i, line := range lines {
-			if strings.Contains(line, "providerKeyVersion") {
-				lines[i] = fmt.Sprintf("    \"providerKeyVersion\": \"%s\"", keyVersion)
-				isUpdated = true
-				break
-			}
-		}
-		if (isUpdated == false) {
-			return fmt.Errorf("providerKeyVersion is missing from config file")
-		}
-		newConfig := strings.Join(lines, "\n")
-		err = ioutil.WriteFile(configFilePath, []byte(newConfig), 0644)
+		err = json.Unmarshal(configContents, &config)
 		if err != nil {
 			return err
 		}
-		
-		return nil
+		if config == nil {
+			return fmt.Errorf("UpdateKMSProvider config is nil while getting updated")
+		}
+		if providerKeyVersionRaw, ok := config["providerKeyVersion"]; ok {
+			var providerKeyVersion string
+			if err := json.Unmarshal(providerKeyVersionRaw, &providerKeyVersion); err != nil {
+				return err
+			}
+			if !strings.EqualFold(providerKeyVersion, keyVersion) {
+				newProviderKeyVersion, err := json.Marshal(keyVersion)
+				if err != nil {
+					return err
+				}
+				config["providerKeyVersion"] = json.RawMessage(newProviderKeyVersion)
+				newConfig, err := json.MarshalIndent(config, "", "    ")
+				if err != nil {
+					return err
+				}
+				err = ioutil.WriteFile(configFilePath, newConfig, 0644)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+		return fmt.Errorf("providerKeyVersion is missing from configuration file")
 	}
 	return fmt.Errorf("Cloud provider configuration file is missing")
 }
+
 // GetCloudEnv()
 // Returns azure.Environment object from azure config file
 func GetCloudEnv(configFilePath string) (*azure.Environment, error) {
@@ -204,6 +282,7 @@ func GetCloudEnv(configFilePath string) (*azure.Environment, error) {
 	env, err := ParseAzureEnvironment(config.Cloud)
 	return env, err
 }
+
 // GetManagementToken()
 // Returns token for Resource Manager Endpoint
 func GetManagementToken(grantType OAuthGrantType, configFilePath string) (authorizer autorest.Authorizer, err error) {
@@ -223,6 +302,7 @@ func GetManagementToken(grantType OAuthGrantType, configFilePath string) (author
 	authorizer = autorest.NewBearerAuthorizer(servicePrincipalToken)
 	return authorizer, nil
 }
+
 // GetKeyvaultToken()
 // Returns token for Key Vault Endpoint
 func GetKeyvaultToken(grantType OAuthGrantType, configFilePath string) (authorizer autorest.Authorizer, err error) {

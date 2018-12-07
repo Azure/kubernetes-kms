@@ -6,7 +6,6 @@
 package main
 
 import (
-	"time"
 	"encoding/base64"
 	"flag"
 	"fmt"
@@ -17,16 +16,17 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"golang.org/x/net/context"
 	"golang.org/x/net/trace"
 	"golang.org/x/sys/unix"
 	"google.golang.org/grpc"
 
+	kv "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
+	kvmgmt "github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2016-10-01/keyvault"
 	storagemgmt "github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2017-10-01/storage"
 	storage "github.com/Azure/azure-sdk-for-go/storage"
-	kvmgmt "github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2016-10-01/keyvault"
-	kv "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 
@@ -35,33 +35,33 @@ import (
 
 const (
 	// Unix Domain Socket
-	netProtocol         = "unix"
-	socketPath          = "/opt/azurekms.socket"
-	version             = "v1beta1"
-	runtime             = "Microsoft AzureKMS"
-	runtimeVersion		= "0.0.5"
-	maxRetryTimeout		= 60
-	retryIncrement		= 5
-	azurePublicCloud    = "AzurePublicCloud"
+	netProtocol      = "unix"
+	socketPath       = "/opt/azurekms.socket"
+	version          = "v1beta1"
+	runtime          = "Microsoft AzureKMS"
+	runtimeVersion   = "0.0.6"
+	maxRetryTimeout  = 60
+	retryIncrement   = 5
+	azurePublicCloud = "AzurePublicCloud"
 )
 
 type AzureConfig struct {
-    Id    string `json:"id"`
-    Value string `json:"value" binding:"required"`
+	Id    string `json:"id"`
+	Value string `json:"value" binding:"required"`
 }
 
 // KeyManagementServiceServer is a gRPC server.
 type KeyManagementServiceServer struct {
 	*grpc.Server
-	azConfig *AzureAuthConfig
-	pathToUnixSocket string
-	providerVaultName *string
-	providerKeyName *string
+	azConfig           *AzureAuthConfig
+	pathToUnixSocket   string
+	providerVaultName  *string
+	providerKeyName    *string
 	providerKeyVersion *string
 	net.Listener
 	configFilePath string
-	env *azure.Environment
-	resourceGroup *string
+	env            *azure.Environment
+	resourceGroup  *string
 }
 
 // New creates an instance of the KMS Service Server.
@@ -94,7 +94,7 @@ func New(pathToUnixSocketFile string, configFilePath string) (*KeyManagementServ
 	return keyManagementServiceServer, nil
 }
 
-func getKey(subscriptionID string, providerVaultName string, providerKeyName string, providerKeyVersion string, resourceGroup string, configFilePath string, env *azure.Environment) (kv.ManagementClient, string, string, string, error)  {
+func getKey(subscriptionID string, providerVaultName string, providerKeyName string, providerKeyVersion string, resourceGroup string, configFilePath string, env *azure.Environment) (kv.ManagementClient, string, string, string, error) {
 	kvClient := kv.New()
 
 	vaultUrl, err := getVault(subscriptionID, providerVaultName, resourceGroup, configFilePath, env)
@@ -106,7 +106,7 @@ func getKey(subscriptionID string, providerVaultName string, providerKeyName str
 	if err != nil {
 		return kvClient, "", "", "", fmt.Errorf("failed to get token, error: %v", err)
 	}
-	
+
 	kvClient.Authorizer = token
 
 	fmt.Println("Verify key version from key vault ", providerKeyName, providerKeyVersion, *vaultUrl)
@@ -124,13 +124,13 @@ func getKey(subscriptionID string, providerVaultName string, providerKeyName str
 
 			if strings.Contains(err.Error(), "LeaseAlreadyPresent") {
 				fmt.Println("createKey failed LeaseAlreadyPresent")
-				
+
 				t := 0
 				for t < maxRetryTimeout {
 					keybundle, err := kvClient.GetKey(*vaultUrl, providerKeyName, "")
 					if err == nil {
 						kid = keybundle.Key.Kid
-						break;
+						break
 					} else {
 						t += retryIncrement
 						time.Sleep(retryIncrement * time.Second)
@@ -164,7 +164,7 @@ func getKey(subscriptionID string, providerVaultName string, providerKeyName str
 		}
 		return kvClient, *vaultUrl, providerKeyName, version, nil
 	}
-	
+
 	return kvClient, *vaultUrl, providerKeyName, providerKeyVersion, nil
 }
 
@@ -195,7 +195,7 @@ func createKey(keyClient kv.ManagementClient, vaultUrl string, keyName string, p
 		return nil, err
 	}
 	storageKey := *(((*res.Keys)[0]).Value)
-	
+
 	var storageCli storage.Client
 
 	if env.Name == azurePublicCloud {
@@ -249,7 +249,7 @@ func createKey(keyClient kv.ManagementClient, vaultUrl string, keyName string, p
 			KeyAttributes: &kv.KeyAttributes{
 				Enabled: to.BoolPtr(true),
 			},
-			KeySize: to.Int32Ptr(2048), 
+			KeySize: to.Int32Ptr(2048),
 			KeyOps: &[]kv.JSONWebKeyOperation{
 				kv.Encrypt,
 				kv.Decrypt,
@@ -263,13 +263,13 @@ func createKey(keyClient kv.ManagementClient, vaultUrl string, keyName string, p
 	return key.Key.Kid, nil
 }
 
-func getVersionFromKid (kid *string) (version string, err error) {
+func getVersionFromKid(kid *string) (version string, err error) {
 	if kid == nil {
 		return "", fmt.Errorf("Key id is nil")
 	}
 	version = to.String(kid)
-	index := strings.LastIndex(version, "/" )
-	if (index > -1 && index < len(version)-1) {
+	index := strings.LastIndex(version, "/")
+	if index > -1 && index < len(version)-1 {
 		version = version[index+1:]
 	}
 	if version == "" {
@@ -289,11 +289,11 @@ func doEncrypt(ctx context.Context, data []byte, subscriptionID string, provider
 	if providerKeyVersion == "" {
 		s.providerKeyVersion = &keyVersion
 	}
-	parameter := kv.KeyOperationsParameters {
+	parameter := kv.KeyOperationsParameters{
 		Algorithm: kv.RSA15,
-		Value: &value,
+		Value:     &value,
 	}
-	
+
 	result, err := kvClient.Encrypt(vaultBaseUrl, keyName, keyVersion, parameter)
 	if err != nil {
 		fmt.Println("Failed to encrypt, error: ", err)
@@ -312,11 +312,11 @@ func doDecrypt(ctx context.Context, data string, subscriptionID string, provider
 	if providerKeyVersion == "" {
 		s.providerKeyVersion = &keyVersion
 	}
-	parameter := kv.KeyOperationsParameters {
+	parameter := kv.KeyOperationsParameters{
 		Algorithm: kv.RSA15,
-		Value: &data,
+		Value:     &data,
 	}
-	
+
 	result, err := kvClient.Decrypt(vaultBaseUrl, keyName, keyVersion, parameter)
 	if err != nil {
 		fmt.Print("failed to decrypt, error: ", err)
@@ -372,7 +372,7 @@ func main() {
 				fmt.Println("Shutting down gRPC service...")
 				server.GracefulStop()
 				os.Exit(0)
-			} 
+			}
 		}
 	}()
 
@@ -387,7 +387,7 @@ func (s *KeyManagementServiceServer) Version(ctx context.Context, request *k8spb
 func (s *KeyManagementServiceServer) Encrypt(ctx context.Context, request *k8spb.EncryptRequest) (*k8spb.EncryptResponse, error) {
 
 	log.Println("Processing EncryptRequest: ")
-	cipher, err := doEncrypt(ctx, request.Plain, s.azConfig.SubscriptionID, *(s.providerVaultName), *(s.providerKeyName),*(s.providerKeyVersion), *(s.resourceGroup), s.configFilePath, s.env, s)
+	cipher, err := doEncrypt(ctx, request.Plain, s.azConfig.SubscriptionID, *(s.providerVaultName), *(s.providerKeyName), *(s.providerKeyVersion), *(s.resourceGroup), s.configFilePath, s.env, s)
 	if err != nil {
 		fmt.Print("failed to doencrypt, error: ", err)
 		return &k8spb.EncryptResponse{}, err
