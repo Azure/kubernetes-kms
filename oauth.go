@@ -10,23 +10,20 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/adal"
+	"github.com/Azure/go-autorest/autorest/azure"
+	"github.com/golang/glog"
+	"golang.org/x/crypto/pkcs12"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"strings"
-	"golang.org/x/crypto/pkcs12"
-	"github.com/golang/glog"
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/adal"
-	"github.com/Azure/go-autorest/autorest/azure"
-)
-
-const (
 )
 
 var (
-	oauthConfig 			*adal.OAuthConfig
+	oauthConfig *adal.OAuthConfig
 )
 
 // OAuthGrantType specifies which grant type to use.
@@ -138,14 +135,14 @@ type Config struct {
 	ProviderKeyVersion string `json:"providerKeyVersion" yaml:"providerKeyVersion"`
 }
 
-// AuthGrantType() 
+// AuthGrantType()
 // Returns default service principal grant type
 func AuthGrantType() OAuthGrantType {
 	return OAuthGrantTypeServicePrincipal
 }
 
 // GetAzureConfig()
-// Returns configs in the azure.json cloud provider file 
+// Returns configs in the azure.json cloud provider file
 func GetAzureConfig(configFilePath string) (config *Config, err error) {
 	var configReader io.Reader
 
@@ -172,6 +169,7 @@ func GetAzureConfig(configFilePath string) (config *Config, err error) {
 	}
 	return nil, fmt.Errorf("Cloud provider configuration file is missing")
 }
+
 // GetAzureAuthConfig
 // Returns AzureAuthConfig object from azure config file
 func GetAzureAuthConfig(configFilePath string) (azConfig *AzureAuthConfig, err error) {
@@ -183,11 +181,12 @@ func GetAzureAuthConfig(configFilePath string) (azConfig *AzureAuthConfig, err e
 		log.Println("GetAzureAuthConfig config is nil while getting updated")
 		return nil, fmt.Errorf("GetAzureAuthConfig config is nil while getting updated")
 	}
-	if ( &config.AzureAuthConfig != nil ) {
+	if &config.AzureAuthConfig != nil {
 		return &config.AzureAuthConfig, nil
 	}
 	return nil, fmt.Errorf("Cloud provider configuration file is missing AzureAuthConfig")
 }
+
 // GetKMSProvider()
 // Returns provider specific configs from azure.json
 func GetKMSProvider(configFilePath string) (vaultName *string, keyName *string, keyVersion *string, resourceGroup *string, err error) {
@@ -199,17 +198,17 @@ func GetKMSProvider(configFilePath string) (vaultName *string, keyName *string, 
 		log.Println("GetKMSProvider config is nil while getting updated")
 		return nil, nil, nil, nil, fmt.Errorf("GetKMSProvider config is nil while getting updated")
 	}
-	if (config.ProviderVaultName != "" ) {
+	if config.ProviderVaultName != "" {
 		vaultName = &config.ProviderVaultName
 	} else {
 		return nil, nil, nil, nil, fmt.Errorf("Unable to find KMS providerVaultName in configs")
 	}
-	if (config.ProviderKeyName != "" ) {
+	if config.ProviderKeyName != "" {
 		keyName = &config.ProviderKeyName
 	} else {
 		return nil, nil, nil, nil, fmt.Errorf("Unable to find KMS providerKeyName in configs")
 	}
-	if (config.ResourceGroup != "" ) {
+	if config.ResourceGroup != "" {
 		resourceGroup = &config.ResourceGroup
 	} else {
 		return nil, nil, nil, nil, fmt.Errorf("Unable to find resourceGroup in configs")
@@ -217,11 +216,12 @@ func GetKMSProvider(configFilePath string) (vaultName *string, keyName *string, 
 	keyVersion = &config.ProviderKeyVersion
 	return vaultName, keyName, keyVersion, resourceGroup, nil
 }
+
 // UpdateKMSProvider()
 // Updates azure.json with key version information
 func UpdateKMSProvider(configFilePath string, keyVersion string) (err error) {
 	var configReader io.Reader
-	var config *Config
+	var config map[string]json.RawMessage
 
 	if configFilePath != "" {
 		var configFile *os.File
@@ -242,24 +242,36 @@ func UpdateKMSProvider(configFilePath string, keyVersion string) (err error) {
 		if err != nil {
 			return err
 		}
-		if config == nil  {
+		if config == nil {
 			return fmt.Errorf("UpdateKMSProvider config is nil while getting updated")
 		}
-		if !strings.EqualFold(config.ProviderKeyVersion, keyVersion) {
-			config.ProviderKeyVersion = keyVersion
-			newConfig, err := json.MarshalIndent(config, "", "    ")
-			if err != nil {
+		if providerKeyVersionRaw, ok := config["providerKeyVersion"]; ok {
+			var providerKeyVersion string
+			if err := json.Unmarshal(providerKeyVersionRaw, &providerKeyVersion); err != nil {
 				return err
 			}
-			err = ioutil.WriteFile(configFilePath, newConfig, 0644)
-			if err != nil {
-				return err
+			if !strings.EqualFold(providerKeyVersion, keyVersion) {
+				newProviderKeyVersion, err := json.Marshal(keyVersion)
+				if err != nil {
+					return err
+				}
+				config["providerKeyVersion"] = json.RawMessage(newProviderKeyVersion)
+				newConfig, err := json.MarshalIndent(config, "", "    ")
+				if err != nil {
+					return err
+				}
+				err = ioutil.WriteFile(configFilePath, newConfig, 0644)
+				if err != nil {
+					return err
+				}
 			}
+			return nil
 		}
-		return nil
+		return fmt.Errorf("providerKeyVersion is missing from configuration file")
 	}
 	return fmt.Errorf("Cloud provider configuration file is missing")
 }
+
 // GetCloudEnv()
 // Returns azure.Environment object from azure config file
 func GetCloudEnv(configFilePath string) (*azure.Environment, error) {
@@ -270,6 +282,7 @@ func GetCloudEnv(configFilePath string) (*azure.Environment, error) {
 	env, err := ParseAzureEnvironment(config.Cloud)
 	return env, err
 }
+
 // GetManagementToken()
 // Returns token for Resource Manager Endpoint
 func GetManagementToken(grantType OAuthGrantType, configFilePath string) (authorizer autorest.Authorizer, err error) {
@@ -289,6 +302,7 @@ func GetManagementToken(grantType OAuthGrantType, configFilePath string) (author
 	authorizer = autorest.NewBearerAuthorizer(servicePrincipalToken)
 	return authorizer, nil
 }
+
 // GetKeyvaultToken()
 // Returns token for Key Vault Endpoint
 func GetKeyvaultToken(grantType OAuthGrantType, configFilePath string) (authorizer autorest.Authorizer, err error) {
