@@ -1,10 +1,21 @@
 # k8s-azure-kms #
 
-Azure KMS plugin for Kubernetes - Enable encryption of secret data at rest in Kubernetes using Azure Key Vault
+Kubernetes KMS plugin for Azure Key Vault - Enable encryption at rest of Kubernetes data in etcd using Azure Key Vault
 
-**Project Status**: Alpha
+From [Kubernetes doc](https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/#providers)
+[KMS plugin is]
+> The recommended choice for using a third party tool for key management. Simplifies key rotation, with a new data encryption key (DEK) generated for each encryption, and key encryption key (KEK) rotation controlled by the user. 
 
->  ⚠️  NOTE : Currently KMS plugin for Kubernetes does not support KMS key rotation scenarios. This means if you choose to create a new key version in KMS, the cluster will fail to decrypt as it won't match the key used for encryption at the time the cluster was created.
+⚠️ NOTE: Currently KMS plugin for Kubernetes does not support KMS key rotation scenarios. This means if you choose to create a new key version in KMS, the cluster will fail to decrypt as it won't match the key used for encryption at the time the cluster was created.
+
+💡 NOTE: To store and manage access to application secrets outside of Kubernetes, use [Kubernetes Key Vault FlexVolume](https://github.com/Azure/kubernetes-keyvault-flexvol).
+
+## Features and Concepts ##
+* Use a key in Key Vault for etcd encryption
+* Generate a HSM-protected (Hardware Security Modules) key
+* Bring your own keys
+* Secrets/keys/certs are still stored in etcd, managed as part of Kubernetes
+* Restrict access using K8s concepts: RBAC, Service Accounts, namespaces
 
 ## How to use ##
 
@@ -12,15 +23,11 @@ Azure KMS plugin for Kubernetes - Enable encryption of secret data at rest in Ku
 
 💡 Make sure you have a Kubernetes cluster v1.10+, minimum version required that supports KMS provider.
 
-### 🎁 acs-engine ###
-We have added this feature to acs-engine so that you do not have to worry about any of the manual steps to set this up. Follow this [doc](https://github.com/Azure/acs-engine/blob/master/docs/kubernetes/features.md#azure-key-vault-data-encryption) and this [api model json](https://github.com/Azure/acs-engine/blob/master/examples/kubernetes-config/kubernetes-keyvault-encryption.json) to create your own Kubernetes cluster with Azure Key Vault data encryption. Once the cluster is created, you will see an Azure Key Vault and a key in the same resource group as your cluster. 
+### 🎁 aks-engine ###
+We have added this feature to aks-engine so that you do not have to worry about any of the manual steps to set this up. Follow this [doc](https://github.com/Azure/aks-engine/blob/master/docs/kubernetes/features.md#azure-key-vault-data-encryption) and this [api model json](https://github.com/Azure/aks-engine/blob/master/examples/kubernetes-config/kubernetes-keyvault-encryption.json) to create your own Kubernetes cluster with Azure Key Vault data encryption. Once the cluster is created, you will see an Azure Key Vault in the same resource group as your cluster, and a new key in the Azure Key Vault.
 
-### 🔜 Azure Container Service (AKS) ###
-This feature is coming soon to AKS.
-
-### 🛠 Manual Configurations ###
-
-To see how to set this up yourself, you can follow the manual steps listed [here](./manual-install.md)
+### Azure Kubernetes Service (AKS) ###
+AKS does encrypt secrets-at-rest, but it doesn’t use kubernetes-kms to do this and it doesn’t allow users to bring their own keys.  Keys are managed by AKS.
 
 ## Verifying that Data is Encrypted ##
 
