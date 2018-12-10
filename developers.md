@@ -72,7 +72,7 @@ If you do not have a service principal, please refer to this [doc](https://docs.
     "providerKeyName": "mykey"
 }
 ```
-4. Test with the gRPC client, run `sudo GOPATH=[YOUR GOPATH] go test tests/client/client_test.go`.
+4. Test with the gRPC client, run `sudo GOPATH=[YOUR GOPATH] GOCACHE=off go test tests/client/client_test.go`.
 5. Test racing condition with the gRPC client, run `sudo GOPATH=[YOUR GOPATH] go test test/client/client_test.go & sudo GOPATH=[YOUR GOPATH] go test test/client/client_test.go &`.
 
 ### Build image
