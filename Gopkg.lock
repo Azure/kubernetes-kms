@@ -9,9 +9,9 @@
 
 [[projects]]
   name = "github.com/Azure/go-autorest"
-  packages = ["autorest","autorest/adal","autorest/azure","autorest/date","autorest/to","autorest/validation"]
-  revision = "5a06e9ddbe3c22262059b8e061777b9934f982bd"
-  version = "v10.1.0"
+  packages = ["autorest","autorest/adal","autorest/azure","autorest/date","autorest/to","autorest/validation","logger","version"]
+  revision = "9bc4033dd347c7f416fca46b2f42a043dc1fbdf6"
+  version = "v10.15.5"
 
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
@@ -88,6 +88,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5268cef19aac04b43b99732dbf28d831e6aa606db6618f7ba12fac0775e5e185"
+  inputs-digest = "2815178e826248e367ec4b85b6089c8286f0e85910e1efc56129da971e5a1ded"
   solver-name = "gps-cdcl"
   solver-version = 1
