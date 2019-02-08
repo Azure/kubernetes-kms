@@ -39,7 +39,7 @@ const (
 	socketPath       = "/opt/azurekms.socket"
 	version          = "v1beta1"
 	runtime          = "Microsoft AzureKMS"
-	runtimeVersion   = "0.0.8"
+	runtimeVersion   = "0.0.9"
 	maxRetryTimeout  = 60
 	retryIncrement   = 5
 	azurePublicCloud = "AzurePublicCloud"
