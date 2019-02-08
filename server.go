@@ -39,7 +39,7 @@ const (
 	socketPath       = "/opt/azurekms.socket"
 	version          = "v1beta1"
 	runtime          = "Microsoft AzureKMS"
-	runtimeVersion   = "0.0.8"
+	runtimeVersion   = "0.0.9"
 	maxRetryTimeout  = 60
 	retryIncrement   = 5
 	azurePublicCloud = "AzurePublicCloud"
@@ -96,7 +96,7 @@ func New(pathToUnixSocketFile string, configFilePath string) (*KeyManagementServ
 
 func getKey(subscriptionID string, providerVaultName string, providerKeyName string, providerKeyVersion string, resourceGroup string, configFilePath string, env *azure.Environment) (kv.ManagementClient, string, string, string, error) {
 	kvClient := kv.New()
-
+	kvClient.AddToUserAgent("k8s-kms-keyvault")
 	vaultUrl, vaultSku, err := getVault(subscriptionID, providerVaultName, resourceGroup, configFilePath, env)
 	if err != nil {
 		return kvClient, "", "", "", fmt.Errorf("failed to get vault, error: %v", err)

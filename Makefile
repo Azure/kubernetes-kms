@@ -1,7 +1,8 @@
 binary := kubernetes-kms
-DOCKER_IMAGE := microsoft/k8s-azure-kms
-
-VERSION          := v0.0.8
+REGISTRY_NAME ?= upstreamk8sci
+REGISTRY ?= $(REGISTRY_NAME).azurecr.io
+DOCKER_IMAGE := $(REGISTRY)/public/k8s/kms/keyvault
+VERSION          := v0.0.9
 CGO_ENABLED_FLAG := 0
 
 ifeq ($(OS),Windows_NT)
@@ -26,6 +27,9 @@ build-image: authors deps
 	$Q GOOS=linux CGO_ENABLED=${CGO_ENABLED_FLAG} go build .
 	@echo "Building docker image..."
 	$Q docker build -t $(DOCKER_IMAGE):$(VERSION) .
+
+push: build-image
+	$Q docker push $(DOCKER_IMAGE):$(VERSION)
 
 .PHONY: clean deps test testint
 

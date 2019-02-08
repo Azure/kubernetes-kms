@@ -76,4 +76,4 @@ If you do not have a service principal, please refer to this [doc](https://docs.
 5. Test racing condition with the gRPC client, run `sudo GOPATH=[YOUR GOPATH] go test test/client/client_test.go & sudo GOPATH=[YOUR GOPATH] go test test/client/client_test.go &`.
 
 ### Build image
-1. Run `make build-image` to build the binary `/kubernetes-kms` for linux and Docker image `microsoft/k8s-azure-kms:latest`
+1. Run `make build-image` to build the binary `/kubernetes-kms` for linux and Docker image `mcr.microsoft.com/k8s/kms/keyvault:latest`

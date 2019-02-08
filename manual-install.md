@@ -48,7 +48,7 @@ ExecStart=/usr/bin/docker run \
   --volume=/etc/kubernetes:/etc/kubernetes \
   --volume=/etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt \
   --volume=/var/lib/waagent:/var/lib/waagent \
-  microsoft/k8s-azure-kms:latest
+  mcr.microsoft.com/k8s/kms/keyvault:v0.0.9
 
 [Install]
 WantedBy=multi-user.target
@@ -68,7 +68,7 @@ ls /opt/azu*
 View logs from the running docker container:
 ```bash
 $ docker ps | grep k8s-azure-kms
-c562d0a360dc    microsoft/k8s-azure-kms:latest  ".k8s-azure-kms"    1 min ago   Up 1 min    nostalgic_knuth
+c562d0a360dc    mcr.microsoft.com/k8s/kms/keyvault:latest  ".k8s-azure-kms"    1 min ago   Up 1 min    nostalgic_knuth
 
 $ docker logs c562d0a360dc
 /opt/azurekms.socket	
