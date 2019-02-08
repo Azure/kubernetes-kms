@@ -96,7 +96,7 @@ func New(pathToUnixSocketFile string, configFilePath string) (*KeyManagementServ
 
 func getKey(subscriptionID string, providerVaultName string, providerKeyName string, providerKeyVersion string, resourceGroup string, configFilePath string, env *azure.Environment) (kv.ManagementClient, string, string, string, error) {
 	kvClient := kv.New()
-
+	kvClient.AddToUserAgent("k8s-kms-keyvault")
 	vaultUrl, vaultSku, err := getVault(subscriptionID, providerVaultName, resourceGroup, configFilePath, env)
 	if err != nil {
 		return kvClient, "", "", "", fmt.Errorf("failed to get vault, error: %v", err)
