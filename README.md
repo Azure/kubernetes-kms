@@ -15,7 +15,7 @@ From the Kubernetes documentation on [Encrypting Secret Data at Rest]:
 ## Features
 
 * Use a key in Key Vault for etcd encryption
-* Generate key protected by a Hardware Security Module (HSM)
+* Generate keys protected by a Hardware Security Module (HSM)
 * Bring your own keys
 * Store secrets, keys, and certs in etcd, but manage them as part of Kubernetes
 * Restrict access using Kubernetes core concepts: RBAC, Service Accounts, and namespaces
@@ -54,7 +54,7 @@ Now that your cluster has `--experimental-encryption-provider-config` turned on,
     sudo ETCDCTL_API=3 etcdctl --cacert=/etc/kubernetes/certs/ca.crt --cert=/etc/kubernetes/certs/etcdclient.crt --key=/etc/kubernetes/certs/etcdclient.key get /registry/secrets/default/secret1
     ```
 
-3. Verify the stored secret is prefixed with `k8s:enc:kms:v1:azurekmsprovider`. This indicates the Azure KMS provider has encrypted the data.
+3. Check that the stored secret is prefixed with `k8s:enc:kms:v1:azurekmsprovider`. This indicates the Azure KMS provider has encrypted the data.
 
 4. Verify the secret is decrypted correctly when retrieved via the Kubernetes API:
 
