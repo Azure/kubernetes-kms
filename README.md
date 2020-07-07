@@ -26,8 +26,8 @@ From [Kubernetes doc](https://kubernetes.io/docs/tasks/administer-cluster/encryp
 ### 🎁 aks-engine ###
 We have added this feature to aks-engine so that you do not have to worry about any of the manual steps to set this up. Follow this [doc](https://github.com/Azure/aks-engine/blob/master/docs/topics/features.md#azure-key-vault-data-encryption) and this [api model json](https://github.com/Azure/aks-engine/blob/master/examples/kubernetes-config/kubernetes-keyvault-encryption.json) to create your own Kubernetes cluster with Azure Key Vault data encryption. Once the cluster is created, you will see an Azure Key Vault in the same resource group as your cluster, and a new key in the Azure Key Vault.
 
-### Azure Kubernetes Service (AKS) ###
-AKS does encrypt secrets-at-rest, but it doesn’t allow users to bring their own keys.  Keys are managed by AKS.
+### Azure Kubernetes Service (AKS) ###	
+For more information about K8s secrets in AKS follow this [doc](https://docs.microsoft.com/en-us/azure/aks/concepts-security#kubernetes-secrets).
 
 ## Verifying that Data is Encrypted ##
 
