@@ -1,0 +1,15 @@
+trigger: none
+
+pr:
+  branches:
+    include:
+      - master
+  paths:
+    exclude:
+      - docs/*
+
+pool:
+  vmImage: ubuntu-latest
+
+jobs:
+  - template: unit-tests-template.yml
