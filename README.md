@@ -36,6 +36,8 @@ Follow the AKS Engine documentation about [Azure Key Vault Data Encryption] and 
 
 Azure Kubernetes Service ([AKS]) creates managed, supported Kubernetes clusters on Azure.
 
+For more information about K8s secrets in AKS follow this [doc](https://docs.microsoft.com/en-us/azure/aks/concepts-security#kubernetes-secrets).
+
 AKS does encrypt secrets at rest, but keys are managed by the service and users cannot bring their own.
 
 ## Verifying that Data is Encrypted
