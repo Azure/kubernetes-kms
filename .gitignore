@@ -16,3 +16,10 @@ setenv.sh
 kubernetes-kms
 vendor
 azure.json
+*.env
+
+# Vscode files
+.vscode
+
+# OSX trash
+.DS_Store

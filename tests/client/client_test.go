@@ -62,6 +62,9 @@ func TestEncryptDecrypt(t *testing.T) {
 
 			encryptRequest := k8spb.EncryptRequest{Version: version, Plain: tc.want}
 			encryptResponse, err := client.Encrypt(context.Background(), &encryptRequest)
+			if err != nil {
+				t.Fatalf("encrypt request failed with error: %+v", err)
+			}
 
 			decryptRequest := k8spb.DecryptRequest{Version: version, Cipher: encryptResponse.Cipher}
 			decryptResponse, err := client.Decrypt(context.Background(), &decryptRequest)
