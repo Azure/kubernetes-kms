@@ -34,9 +34,9 @@ push: build-image
 
 .PHONY: clean deps unit-test integration-test
 
-deps: setup
-	@echo "Ensuring Dependencies..."
-	$Q go env
+# deps: setup
+# 	@echo "Ensuring Dependencies..."
+# 	$Q go env
 
 clean:
 	@echo "Clean..."
