@@ -16,6 +16,9 @@ jobs:
       - script: make unit-test
         displayName: Run unit tests
       - script: |
+          sudo ./_output/kubernetes-kms --version
+        displayName: Check binary version
+      - script: |
           sudo mkdir /etc/kubernetes
           echo -e '{\n    "tenantId": "'$TENANT_ID'",\n    "subscriptionId": "'$SUBSCRIPTION_ID'",\n    "aadClientId": "'$CLIENT_ID'",\n    "aadClientSecret": "'$CLIENT_SECRET'",\n    "resourceGroup": "'$KV_RESOURCE_GROUP'",\n    "location": "'$AZURE_LOCATION'",\n    "providerVaultName": "'$KV_NAME'",\n    "providerKeyName": "'$KV_KEY'",\n    "providerKeyVersion": "'$KV_KEY_VERSION'"\n}' | sudo tee --append /etc/kubernetes/azure.json  > /dev/null
         displayName: Setup azure.json on host
@@ -23,7 +26,7 @@ jobs:
           CLIENT_ID: $(AZURE_CLIENT_ID)
           CLIENT_SECRET: $(AZURE_CLIENT_SECRET)
       - script: |
-          sudo ./_output/kubernetes-kms > /dev/null &
+          sudo ./_output/kubernetes-kms --keyvault-name $KV_NAME --key-name $KV_KEY --key-version $KV_KEY_VERSION --listen-addr "unix:///opt/azurekms.sock" > /dev/null &
           echo Waiting 2 seconds for the server to start
           sleep 2
           make integration-test
