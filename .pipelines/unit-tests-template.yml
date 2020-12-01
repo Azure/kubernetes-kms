@@ -6,13 +6,11 @@ jobs:
       clean: all
     variables:
       - group: kubernetes-kms
-      - name: GOPATH
-        value: '$(system.defaultWorkingDirectory)/gopath'
 
     steps:
       - task: GoTool@0
         inputs:
-          version: 1.14.2
+          version: 1.15
       - script: V=1 make build
         displayName: Build
       - script: make unit-test

@@ -59,14 +59,7 @@ integration-test:
 
 unit-test:
 	@echo "Running Unit Tests..."
-ifndef CI
-	@echo "Running Unit Tests outside CI..."
-	$Q go env
 	go test -race -v -count=1 `go list ./... | grep -v client`
-else
-	@echo "Running Unit Tests inside CI..."
-	go test -race $(shell go list ./... | grep -v /test/e2e) -v
-endif
 
 .PHONY: mod
 mod:
