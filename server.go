@@ -45,6 +45,11 @@ const (
 	azurePublicCloud = "AzurePublicCloud"
 )
 
+var (
+	kvClient *kv.ManagementClient
+	vaultUrl *string
+)
+
 type AzureConfig struct {
 	Id    string `json:"id"`
 	Value string `json:"value" binding:"required"`
@@ -93,9 +98,6 @@ func New(pathToUnixSocketFile string, configFilePath string) (*KeyManagementServ
 	fmt.Println(keyManagementServiceServer.pathToUnixSocket)
 	return keyManagementServiceServer, nil
 }
-
-var kvClient *kv.ManagementClient = nil
-var vaultUrl *string = nil
 
 func getKey(subscriptionID string, providerVaultName string, providerKeyName string, providerKeyVersion string, resourceGroup string, configFilePath string, env *azure.Environment) (kv.ManagementClient, string, string, string, error) {
 	if kvClient != nil && vaultUrl != nil {
