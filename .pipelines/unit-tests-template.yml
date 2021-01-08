@@ -1,6 +1,6 @@
 jobs:
   - job: unit_tests
-    timeoutInMinutes: 20
+    timeoutInMinutes: 10
     cancelTimeoutInMinutes: 5
     workspace:
       clean: all
@@ -23,8 +23,9 @@ jobs:
           CLIENT_ID: $(AZURE_CLIENT_ID)
           CLIENT_SECRET: $(AZURE_CLIENT_SECRET)
       - script: |
-          sudo ./kubernetes-kms > /dev/null &
+          sudo ./_output/kubernetes-kms > /dev/null &
           echo Waiting 2 seconds for the server to start
           sleep 2
           make integration-test
-        displayName: Run intergration tests
+        displayName: Run integration tests
+      - template: scan-images.yml

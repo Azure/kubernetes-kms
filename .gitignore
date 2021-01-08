@@ -25,3 +25,5 @@ azure.json
 .DS_Store
 
 .idea/
+
+_output/
