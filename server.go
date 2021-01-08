@@ -45,6 +45,11 @@ const (
 	azurePublicCloud = "AzurePublicCloud"
 )
 
+var (
+	kvClient *kv.ManagementClient
+	vaultUrl *string
+)
+
 type AzureConfig struct {
 	Id    string `json:"id"`
 	Value string `json:"value" binding:"required"`
@@ -95,15 +100,24 @@ func New(pathToUnixSocketFile string, configFilePath string) (*KeyManagementServ
 }
 
 func getKey(subscriptionID string, providerVaultName string, providerKeyName string, providerKeyVersion string, resourceGroup string, configFilePath string, env *azure.Environment) (kv.ManagementClient, string, string, string, error) {
-	kvClient := kv.New()
+	if kvClient != nil && vaultUrl != nil {
+		return *kvClient, *vaultUrl, providerKeyName, providerKeyVersion, nil
+	}
+
+	var err error
+	var vaultSku kvmgmt.SkuName
+
+	newKvClient := kv.New()
+	kvClient = &newKvClient
+
 	kvClient.AddToUserAgent("k8s-kms-keyvault")
-	vaultUrl, vaultSku, err := getVault(subscriptionID, providerVaultName, resourceGroup, configFilePath, env)
+	vaultUrl, vaultSku, err = getVault(subscriptionID, providerVaultName, resourceGroup, configFilePath, env)
 	if err != nil {
-		return kvClient, "", "", "", fmt.Errorf("failed to get vault, error: %v", err)
+		return *kvClient, "", "", "", fmt.Errorf("failed to get vault, error: %v", err)
 	}
 	token, err := GetKeyvaultToken(AuthGrantType(), configFilePath)
 	if err != nil {
-		return kvClient, "", "", "", fmt.Errorf("failed to get token, error: %v", err)
+		return *kvClient, "", "", "", fmt.Errorf("failed to get token, error: %v", err)
 	}
 
 	kvClient.Authorizer = token
@@ -114,10 +128,10 @@ func getKey(subscriptionID string, providerVaultName string, providerKeyName str
 	keyBundle, err := kvClient.GetKey(*vaultUrl, providerKeyName, providerKeyVersion)
 	if err != nil {
 		if providerKeyVersion != "" {
-			return kvClient, "", "", "", fmt.Errorf("failed to verify the provided key version, error: %v", err)
+			return *kvClient, "", "", "", fmt.Errorf("failed to verify the provided key version, error: %v", err)
 		}
 		// when we are not able to verify the latest key version for keyName, create key
-		kid, err = createKey(kvClient, *vaultUrl, vaultSku, providerKeyName, providerVaultName, resourceGroup, subscriptionID, configFilePath, env)
+		kid, err = createKey(*kvClient, *vaultUrl, vaultSku, providerKeyName, providerVaultName, resourceGroup, subscriptionID, configFilePath, env)
 		if err != nil {
 			fmt.Println("Err returned from createKey: ", err.Error())
 
@@ -137,10 +151,10 @@ func getKey(subscriptionID string, providerVaultName string, providerKeyName str
 					}
 				}
 				if t >= maxRetryTimeout {
-					return kvClient, "", "", "", fmt.Errorf("failed to get key within the maxRetryTimeout: %d seconds", maxRetryTimeout)
+					return *kvClient, "", "", "", fmt.Errorf("failed to get key within the maxRetryTimeout: %d seconds", maxRetryTimeout)
 				}
 			} else {
-				return kvClient, "", "", "", fmt.Errorf("failed to create key, error: %v", err)
+				return *kvClient, "", "", "", fmt.Errorf("failed to create key, error: %v", err)
 			}
 		}
 	} else {
@@ -153,18 +167,18 @@ func getKey(subscriptionID string, providerVaultName string, providerKeyName str
 	if kid != nil {
 		version, err := getVersionFromKid(kid)
 		if err != nil {
-			return kvClient, "", "", "", err
+			return *kvClient, "", "", "", err
 		}
 		fmt.Println("found key version: ", version)
 		// save keyversion to azure.json
 		err = UpdateKMSProvider(configFilePath, version)
 		if err != nil {
-			return kvClient, "", "", "", err
+			return *kvClient, "", "", "", err
 		}
-		return kvClient, *vaultUrl, providerKeyName, version, nil
+		return *kvClient, *vaultUrl, providerKeyName, version, nil
 	}
 
-	return kvClient, *vaultUrl, providerKeyName, providerKeyVersion, nil
+	return *kvClient, *vaultUrl, providerKeyName, providerKeyVersion, nil
 }
 
 func getVaultsClient(subscriptionID string, configFilePath string, env *azure.Environment) kvmgmt.VaultsClient {
