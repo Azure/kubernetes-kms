@@ -3,7 +3,7 @@ REGISTRY_NAME ?= upstreamk8sci
 REGISTRY ?= $(REGISTRY_NAME).azurecr.io
 REPO_PREFIX ?= k8s/kms
 DOCKER_IMAGE := $(REGISTRY)/$(REPO_PREFIX)/keyvault
-VERSION ?= v0.0.9
+VERSION ?= v0.0.10
 CGO_ENABLED_FLAG := 0
 
 ifeq ($(OS),Windows_NT)
