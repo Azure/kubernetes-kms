@@ -48,7 +48,7 @@ ExecStart=/usr/bin/docker run \
   --volume=/etc/kubernetes:/etc/kubernetes \
   --volume=/etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt \
   --volume=/var/lib/waagent:/var/lib/waagent \
-  mcr.microsoft.com/k8s/kms/keyvault:v0.0.9
+  mcr.microsoft.com/k8s/kms/keyvault:v0.0.10
 
 [Install]
 WantedBy=multi-user.target
