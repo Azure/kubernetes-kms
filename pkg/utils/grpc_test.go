@@ -23,13 +23,6 @@ func TestParseEndpoint(t *testing.T) {
 			expectedErr:   true,
 		},
 		{
-			desc:          "valid tcp endpoint",
-			endpoint:      "tcp://:7777",
-			expectedProto: "tcp",
-			expectedAddr:  ":7777",
-			expectedErr:   false,
-		},
-		{
 			desc:          "valid unix endpoint",
 			endpoint:      "unix:///provider/azure.sock",
 			expectedProto: "unix",

@@ -21,16 +21,12 @@ type KeyManagementServiceServer struct {
 }
 
 // New creates an instance of the KMS Service Server.
-func New(ctx context.Context, configFilePath, vaultName, keyName, keyVersion, vaultSKU string) (*KeyManagementServiceServer, error) {
+func New(ctx context.Context, configFilePath, vaultName, keyName, keyVersion string) (*KeyManagementServiceServer, error) {
 	cfg, err := config.GetAzureConfig(configFilePath)
 	if err != nil {
 		return nil, err
 	}
-	kvClient, err := newKeyVaultClient(cfg, vaultName, keyName, keyVersion, vaultSKU)
-	if err != nil {
-		return nil, err
-	}
-	err = kvClient.CheckIfKeyExists(ctx)
+	kvClient, err := newKeyVaultClient(cfg, vaultName, keyName, keyVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -48,21 +44,23 @@ func (s *KeyManagementServiceServer) Version(ctx context.Context, request *k8spb
 }
 
 func (s *KeyManagementServiceServer) Encrypt(ctx context.Context, request *k8spb.EncryptRequest) (*k8spb.EncryptResponse, error) {
+	klog.V(2).Infof("encrypt request started")
 	cipher, err := s.kvClient.Encrypt(ctx, request.Plain)
 	if err != nil {
 		klog.ErrorS(err, "failed to encrypt")
 		return &k8spb.EncryptResponse{}, err
 	}
-	klog.Infof("encrypt request complete")
+	klog.V(2).Infof("encrypt request complete")
 	return &k8spb.EncryptResponse{Cipher: cipher}, nil
 }
 
 func (s *KeyManagementServiceServer) Decrypt(ctx context.Context, request *k8spb.DecryptRequest) (*k8spb.DecryptResponse, error) {
+	klog.V(2).Infof("decrypt request started")
 	plain, err := s.kvClient.Decrypt(ctx, request.Cipher)
 	if err != nil {
 		klog.ErrorS(err, "failed to decrypt")
 		return &k8spb.DecryptResponse{}, err
 	}
-	klog.Infof("decrypt request complete")
+	klog.V(2).Infof("decrypt request complete")
 	return &k8spb.DecryptResponse{Plain: plain}, nil
 }

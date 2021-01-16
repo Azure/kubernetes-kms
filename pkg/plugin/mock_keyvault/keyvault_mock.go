@@ -31,10 +31,6 @@ func (kvc *KeyVaultClient) Decrypt(ctx context.Context, plain []byte) ([]byte, e
 	return kvc.decryptOut, kvc.decryptErr
 }
 
-func (kvc *KeyVaultClient) CheckIfKeyExists(ctx context.Context) error {
-	return nil
-}
-
 func (kvc *KeyVaultClient) SetEncryptResponse(encryptOut []byte, err error) {
 	kvc.mutex.Lock()
 	defer kvc.mutex.Unlock()

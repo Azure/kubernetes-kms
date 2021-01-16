@@ -10,7 +10,7 @@ import (
 )
 
 func ParseEndpoint(ep string) (string, string, error) {
-	if strings.HasPrefix(strings.ToLower(ep), "unix://") || strings.HasPrefix(strings.ToLower(ep), "tcp://") {
+	if strings.HasPrefix(strings.ToLower(ep), "unix://") {
 		s := strings.SplitN(ep, "://", 2)
 		if s[1] != "" {
 			return s[0], s[1], nil
@@ -20,13 +20,10 @@ func ParseEndpoint(ep string) (string, string, error) {
 }
 
 func LogGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	klog.V(2).Infof("GRPC call: %s", info.FullMethod)
-	klog.V(2).Infof("GRPC request: %v", req)
+	klog.V(5).Infof("GRPC call: %s", info.FullMethod)
 	resp, err := handler(ctx, req)
 	if err != nil {
-		klog.ErrorS(err, "GRPC error")
-	} else {
-		klog.V(2).Infof("GRPC response: %v", resp)
+		klog.ErrorS(err, "GRPC request error")
 	}
 	return resp, err
 }

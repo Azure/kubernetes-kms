@@ -35,10 +35,18 @@ func TestNewKeyVaultClient(t *testing.T) {
 			expectedErr: true,
 		},
 		{
+			desc:        "key version not provided",
+			config:      &config.AzureConfig{},
+			vaultName:   "testkv",
+			keyName:     "k8s",
+			expectedErr: true,
+		},
+		{
 			desc:        "no credentials in config",
 			config:      &config.AzureConfig{},
 			vaultName:   "testkv",
 			keyName:     "key1",
+			keyVersion:  "262067a9e8ba401aa8a746c5f1a7e147",
 			expectedErr: true,
 		},
 		{
@@ -46,13 +54,14 @@ func TestNewKeyVaultClient(t *testing.T) {
 			config:      &config.AzureConfig{ClientID: "clientid", ClientSecret: "clientsecret"},
 			vaultName:   "testkv",
 			keyName:     "key1",
+			keyVersion:  "262067a9e8ba401aa8a746c5f1a7e147",
 			expectedErr: false,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			kvClient, err := newKeyVaultClient(test.config, test.vaultName, test.keyName, test.keyVersion, test.vaultSKU)
+			kvClient, err := newKeyVaultClient(test.config, test.vaultName, test.keyName, test.keyVersion)
 			if test.expectedErr && err == nil || !test.expectedErr && err != nil {
 				t.Fatalf("expected error: %v, got error: %v", test.expectedErr, err)
 			}

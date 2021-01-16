@@ -10,6 +10,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
+	"regexp"
 
 	"github.com/Azure/kubernetes-kms/pkg/config"
 
@@ -20,8 +21,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// GetKeyvaultToken()
-// Returns token for Key Vault Endpoint
+// GetKeyvaultToken() returns token for Keyvault endpoint
 func GetKeyvaultToken(config *config.AzureConfig, env *azure.Environment) (authorizer autorest.Authorizer, err error) {
 	kvEndPoint := env.KeyVaultEndpoint
 	if '/' == kvEndPoint[len(kvEndPoint)-1] {
@@ -35,38 +35,37 @@ func GetKeyvaultToken(config *config.AzureConfig, env *azure.Environment) (autho
 	return authorizer, nil
 }
 
-// GetManagementToken()
-// Returns token for resource manager Endpoint
-func GetManagementToken(config *config.AzureConfig, env *azure.Environment) (authorizer autorest.Authorizer, err error) {
-	rmEndPoint := env.ResourceManagerEndpoint
-	servicePrincipalToken, err := GetServicePrincipalToken(config, env, rmEndPoint)
-	if err != nil {
-		return nil, err
-	}
-	authorizer = autorest.NewBearerAuthorizer(servicePrincipalToken)
-	return authorizer, nil
-}
-
 // GetServicePrincipalToken creates a new service principal token based on the configuration
 func GetServicePrincipalToken(config *config.AzureConfig, env *azure.Environment, resource string) (*adal.ServicePrincipalToken, error) {
 	oauthConfig, err := adal.NewOAuthConfig(env.ActiveDirectoryEndpoint, config.TenantID)
 	if err != nil {
-		return nil, fmt.Errorf("creating the OAuth config: %v", err)
+		return nil, fmt.Errorf("failed to create OAuth config, error: %v", err)
 	}
 
 	if config.UseManagedIdentityExtension {
-		klog.V(2).Infof("azure: using managed identity extension to retrieve access token")
+		klog.V(2).Infof("using managed identity extension to retrieve access token")
 		msiEndpoint, err := adal.GetMSIVMEndpoint()
 		if err != nil {
-			return nil, fmt.Errorf("Getting the managed service identity endpoint: %v", err)
+			return nil, fmt.Errorf("failed to get managed service identity endpoint, error: %v", err)
 		}
+		// using user-assigned managed identity to access keyvault
+		if len(config.UserAssignedIdentityID) > 0 {
+			klog.V(2).InfoS("using User-assigned managed identity to retrieve access token", "clientID", redactClientCredentials(config.UserAssignedIdentityID))
+			return adal.NewServicePrincipalTokenFromMSIWithUserAssignedID(msiEndpoint,
+				env.ServiceManagementEndpoint,
+				config.UserAssignedIdentityID)
+		}
+		klog.V(2).InfoS("using system-assigned managed identity to retrieve access token")
+		// using system-assigned managed identity to access keyvault
 		return adal.NewServicePrincipalTokenFromMSI(
 			msiEndpoint,
 			resource)
 	}
 
-	if len(config.ClientSecret) > 0 {
-		klog.V(2).Infof("azure: using client_id+client_secret to retrieve access token")
+	if len(config.ClientSecret) > 0 && len(config.ClientID) > 0 {
+		klog.V(2).InfoS("azure: using client_id+client_secret to retrieve access token",
+			"clientID", redactClientCredentials(config.ClientID), "clientSecret", redactClientCredentials(config.ClientSecret))
+
 		return adal.NewServicePrincipalToken(
 			*oauthConfig,
 			config.ClientID,
@@ -75,14 +74,14 @@ func GetServicePrincipalToken(config *config.AzureConfig, env *azure.Environment
 	}
 
 	if len(config.AADClientCertPath) > 0 && len(config.AADClientCertPassword) > 0 {
-		klog.V(2).Infof("azure: using jwt client_assertion (client_cert+client_private_key) to retrieve access token")
+		klog.V(2).Infof("using jwt client_assertion (client_cert+client_private_key) to retrieve access token")
 		certData, err := ioutil.ReadFile(config.AADClientCertPath)
 		if err != nil {
-			return nil, fmt.Errorf("reading the client certificate from file %s: %v", config.AADClientCertPath, err)
+			return nil, fmt.Errorf("failed to read client certificate from file %s, error: %v", config.AADClientCertPath, err)
 		}
 		certificate, privateKey, err := decodePkcs12(certData, config.AADClientCertPassword)
 		if err != nil {
-			return nil, fmt.Errorf("decoding the client certificate: %v", err)
+			return nil, fmt.Errorf("failed to decode the client certificate, error: %v", err)
 		}
 		return adal.NewServicePrincipalTokenFromCertificate(
 			*oauthConfig,
@@ -92,7 +91,7 @@ func GetServicePrincipalToken(config *config.AzureConfig, env *azure.Environment
 			env.ServiceManagementEndpoint)
 	}
 
-	return nil, fmt.Errorf("no credentials provided for AAD application %s", config.ClientID)
+	return nil, fmt.Errorf("no credentials provided for accessing keyvault")
 }
 
 // ParseAzureEnvironment returns azure environment by name
@@ -120,4 +119,10 @@ func decodePkcs12(pkcs []byte, password string) (*x509.Certificate, *rsa.Private
 	}
 
 	return certificate, rsaPrivateKey, nil
+}
+
+// redactClientCredentials applies regex to a sensitive string and return the redacted value
+func redactClientCredentials(sensitiveString string) string {
+	r, _ := regexp.Compile(`^(\S{4})(\S|\s)*(\S{4})$`)
+	return r.ReplaceAllString(sensitiveString, "$1##### REDACTED #####$3")
 }

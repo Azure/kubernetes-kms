@@ -3,6 +3,7 @@ package version
 import (
 	"encoding/json"
 	"fmt"
+	"runtime"
 )
 
 var (
@@ -35,4 +36,9 @@ func PrintVersion() (err error) {
 
 	fmt.Printf(string(res) + "\n")
 	return
+}
+
+// GetUserAgent returns UserAgent string to append to the agent identifier.
+func GetUserAgent() string {
+	return fmt.Sprintf("k8s-kms-keyvault/%s (%s/%s) %s/%s", BuildVersion, runtime.GOOS, runtime.GOARCH, GitCommit, BuildDate)
 }
