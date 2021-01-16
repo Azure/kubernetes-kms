@@ -1,10 +1,14 @@
-binary := kubernetes-kms
 REGISTRY_NAME ?= upstreamk8sci
-REGISTRY ?= $(REGISTRY_NAME).azurecr.io
-REPO_PREFIX ?= k8s/kms
-DOCKER_IMAGE := $(REGISTRY)/$(REPO_PREFIX)/keyvault
-VERSION ?= v0.0.10
+REPO_PREFIX ?= oss/azure/kms
+REGISTRY ?= $(REGISTRY_NAME).azurecr.io/$(REPO_PREFIX)
+IMAGE_NAME ?= keyvault
+IMAGE_VERSION ?= v0.0.10
+IMAGE_TAG ?= $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_VERSION)
 CGO_ENABLED_FLAG := 0
+
+# docker env var
+DOCKER_BUILDKIT = 1
+export DOCKER_BUILDKIT
 
 ifeq ($(OS),Windows_NT)
 	GOOS_FLAG = windows
@@ -21,26 +25,20 @@ endif
 .PHONY: build
 build: authors
 	@echo "Building..."
-	$Q GOOS=${GOOS_FLAG} CGO_ENABLED=${CGO_ENABLED_FLAG} go build .
+	$Q GOOS=$(GOOS_FLAG) CGO_ENABLED=$(CGO_ENABLED_FLAG) go build -o _output/kubernetes-kms .
 
-build-image: authors deps
-	@echo "Building..."
-	$Q GOOS=linux CGO_ENABLED=${CGO_ENABLED_FLAG} go build .
+build-image: authors clean build
 	@echo "Building docker image..."
-	$Q docker build -t $(DOCKER_IMAGE):$(VERSION) .
+	$Q docker build -t $(IMAGE_TAG) .
 
-push: build-image
-	$Q docker push $(DOCKER_IMAGE):$(VERSION)
+push-image: build-image
+	$Q docker push $(IMAGE_TAG)
 
-.PHONY: clean deps unit-test integration-test
+.PHONY: clean unit-test integration-test
 
 clean:
 	@echo "Clean..."
-	$Q rm -rf $(binary)
-
-setup: clean
-	@echo "Setup..."
-	go get -u github.com/golang/dep/cmd/dep
+	$Q rm -rf _output/
 
 authors:
 	$Q git log --all --format='%aN <%cE>' | sort -u  | sed -n '/github/!p' > GITAUTHORS
