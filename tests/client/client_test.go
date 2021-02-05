@@ -1,25 +1,18 @@
 package test
 
 import (
-	// "log"
-	// "testing"
-
-	"testing"
-
-	k8spb "github.com/Azure/kubernetes-kms/v1beta1"
-
 	"fmt"
 	"net"
-	"time"
+	"testing"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	k8spb "k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1"
 )
 
 const (
 	netProtocol      = "unix"
-	pathToUnixSocket = "/opt/azurekms.socket"
-	timeout          = 30 * time.Second
+	pathToUnixSocket = "/opt/azurekms.sock"
 	version          = "v1beta1"
 )
 
@@ -106,13 +99,12 @@ func TestVersion(t *testing.T) {
 
 func newUnixSocketConnection(path string) (*grpc.ClientConn, error) {
 	addr := path
-	dialer := func(addr string, timeout time.Duration) (net.Conn, error) {
-		return net.DialTimeout(netProtocol, addr, timeout)
+	dialer := func(ctx context.Context, addr string) (net.Conn, error) {
+		return (&net.Dialer{}).DialContext(ctx, netProtocol, addr)
 	}
-	connection, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithDialer(dialer))
+	connection, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithContextDialer(dialer))
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Connection Created")
 	return connection, nil
 }

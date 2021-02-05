@@ -8,11 +8,12 @@ import (
 	"fmt"
 	"testing"
 
-	kmscmock "github.com/Azure/kubernetes-kms/tests/grpc/mock_v1beta1"
-	k8spb "github.com/Azure/kubernetes-kms/v1beta1"
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
+	k8spb "k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1"
+
+	kmscmock "github.com/Azure/kubernetes-kms/tests/grpc/mock_v1beta1"
 )
 
 var (

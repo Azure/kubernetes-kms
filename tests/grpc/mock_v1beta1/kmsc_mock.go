@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	v1beta1 "github.com/Azure/kubernetes-kms/v1beta1"
+	v1beta1 "k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 )
