@@ -1,0 +1,30 @@
+#!/usr/bin/env bats
+
+load helpers
+
+WAIT_TIME=120
+SLEEP_TIME=1
+ETCD_CA_CERT=/etc/kubernetes/pki/etcd/ca.crt
+ETCD_CERT=/etc/kubernetes/pki/etcd/server.crt
+ETCD_KEY=/etc/kubernetes/pki/etcd/server.key
+
+@test "azure keyvault kms plugin is running" {
+    wait_for_process ${WAIT_TIME} ${SLEEP_TIME} "kubectl -n kube-system wait --for=condition=Ready --timeout=60s pod -l component=azure-kms-provider"
+}
+
+@test "creating secret resource" {
+    run kubectl create secret generic secret1 -n default --from-literal=foo=bar
+    assert_success
+}
+
+@test "read the secret resource test" {
+    result=$(kubectl get secret secret1 -o jsonpath='{.data.foo}' | base64 -d)
+    [[ "${result//$'\r'}" == "bar" ]]
+}
+
+@test "check if secret is encrypted in etcd" {
+    local pod_name=$(kubectl get pod -n kube-system -l component=etcd -o jsonpath="{.items[0].metadata.name}")
+    run kubectl exec ${pod_name} -n kube-system -- etcdctl --cacert=${ETCD_CA_CERT} --cert=${ETCD_CERT} --key=${ETCD_KEY} get /registry/secrets/default/secret1
+    assert_match "k8s:enc:kms:v1:azurekmsprovider" "${output}"
+    assert_success
+}

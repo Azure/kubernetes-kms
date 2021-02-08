@@ -15,7 +15,6 @@
 setenv.sh
 kubernetes-kms
 vendor
-azure.json
 *.env
 
 # Vscode files
@@ -26,3 +25,6 @@ azure.json
 
 .idea/
 _output/
+
+# e2e output
+tests/e2e/generated_manifests/*

@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: azure-kms-provider
+  namespace: kube-system
+  labels:
+    tier: control-plane
+    component: azure-kms-provider
+spec:
+  priorityClassName: system-node-critical
+  hostNetwork: true
+  containers:
+    - name: azure-kms-provider
+      image: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_VERSION}
+      imagePullPolicy: IfNotPresent
+      args:
+        - --keyvault-name=${KEYVAULT_NAME}
+        - --key-name=${KEY_NAME}
+        - --key-version=${KEY_VERSION}
+        - -v=2
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 4
+          memory: 2Gi
+      volumeMounts:
+        - name: etc-kubernetes
+          mountPath: /etc/kubernetes
+        - name: etc-ssl
+          mountPath: /etc/ssl
+          readOnly: true
+        - name: sock
+          mountPath: /opt
+  volumes:
+    - name: etc-kubernetes
+      hostPath:
+        path: /etc/kubernetes
+    - name: etc-ssl
+      hostPath:
+        path: /etc/ssl
+    - name: sock
+      hostPath:
+        path: /opt

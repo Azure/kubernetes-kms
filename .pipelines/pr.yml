@@ -16,3 +16,4 @@ pool:
 
 jobs:
   - template: unit-tests-template.yml
+  - template: e2e-kind-template.yml

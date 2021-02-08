@@ -98,6 +98,7 @@ func (kvc *keyVaultClient) Decrypt(ctx context.Context, plain []byte) ([]byte, e
 		Algorithm: kv.RSA15,
 		Value:     &value,
 	}
+
 	result, err := kvc.baseClient.Decrypt(ctx, kvc.vaultURL, kvc.keyName, kvc.keyVersion, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt, error: %+v", err)
