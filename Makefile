@@ -21,27 +21,22 @@ GIT_HASH := $$(git rev-parse --short HEAD)
 DOCKER_BUILDKIT = 1
 export DOCKER_BUILDKIT
 
-ifeq ($(OS),Windows_NT)
-	GOOS_FLAG = windows
-else
-	UNAME_S := $(shell uname -s)
-	ifeq ($(UNAME_S), Linux)
-		GOOS_FLAG = linux
-	endif
-	ifeq ($(UNAME_S), Darwin)
-		GOOS_FLAG = darwin
-	endif
-endif
+# Testing var
+KIND_VERSION ?= 0.8.1
+KUBERNETES_VERSION ?= v1.19.0
+BATS_VERSION ?= 1.2.1
 
 GO_BUILD_OPTIONS := --tags "netgo osusergo"  -ldflags "-s -X $(BUILD_VERSION_VAR)=$(IMAGE_VERSION) -X $(GIT_VAR)=$(GIT_HASH) -X $(BUILD_DATE_VAR)=$(BUILD_DATE) -extldflags '-static'"
 
 .PHONY: build
-build: authors
-	@echo "Building..."
-	$Q GOOS=${GOOS_FLAG} CGO_ENABLED=${CGO_ENABLED_FLAG} go build $(GO_BUILD_OPTIONS) -o _output/kubernetes-kms ./cmd/server/
+build:
+	$Q GOOS=linux CGO_ENABLED=0 go build $(GO_BUILD_OPTIONS) -o _output/kubernetes-kms ./cmd/server/
 
-build-image: authors clean build
-	@echo "Building docker image..."
+.PHONY: build-darwin
+build-darwin:
+	$Q GOOS=darwin CGO_ENABLED=0 go build $(GO_BUILD_OPTIONS) -o _output/kubernetes-kms ./cmd/server/
+
+build-image: clean build
 	$Q docker build -t $(IMAGE_TAG) .
 
 push-image: build-image
@@ -50,7 +45,6 @@ push-image: build-image
 .PHONY: clean unit-test integration-test
 
 clean:
-	@echo "Clean..."
 	$Q rm -rf _output/
 
 authors:
@@ -61,13 +55,38 @@ authors:
 	$Q rm -f GITAUTHORS
 
 integration-test:
-	@echo "Running Integration tests..."
 	$Q sudo GOPATH=$(GOPATH) go test -v -count=1 github.com/Azure/kubernetes-kms/tests/client
 
 unit-test:
-	@echo "Running Unit Tests..."
 	go test -race -v -count=1 `go list ./... | grep -v client`
 
 .PHONY: mod
 mod:
 	@go mod tidy
+
+## --------------------------------------
+## E2E Testing
+## --------------------------------------
+e2e-install-prerequisites:
+	# Download and install kind
+	curl -L https://github.com/kubernetes-sigs/kind/releases/download/v${KIND_VERSION}/kind-linux-amd64 --output kind && chmod +x kind && sudo mv kind /usr/local/bin/
+	# Download and install kubectl
+	curl -LO https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl && chmod +x ./kubectl && sudo mv kubectl /usr/local/bin/
+	# Download and install bats
+	curl -sSLO https://github.com/bats-core/bats-core/archive/v${BATS_VERSION}.tar.gz && tar -zxvf v${BATS_VERSION}.tar.gz && sudo bash bats-core-${BATS_VERSION}/install.sh /usr/local
+
+e2e-setup-kind:
+	./scripts/ci-e2e-kind.sh
+
+e2e-generate-manifests:
+	@mkdir -p tests/e2e/generated_manifests
+	envsubst < tests/e2e/azure.json > tests/e2e/generated_manifests/azure.json
+	envsubst < tests/e2e/kms.yaml > tests/e2e/generated_manifests/kms.yaml
+
+e2e-delete-kind:
+	# delete kind e2e cluster created for tests
+	kind delete cluster --name kms
+
+e2e-test:
+	# Run test suite with kind cluster
+	bats -t tests/e2e/test.bats

@@ -11,7 +11,7 @@ jobs:
       - task: GoTool@0
         inputs:
           version: 1.15
-      - script: V=1 make build
+      - script: make build
         displayName: Build
       - script: make unit-test
         displayName: Run unit tests
@@ -20,7 +20,7 @@ jobs:
         displayName: Check binary version
       - script: |
           sudo mkdir /etc/kubernetes
-          echo -e '{\n    "tenantId": "'$TENANT_ID'",\n    "subscriptionId": "'$SUBSCRIPTION_ID'",\n    "aadClientId": "'$CLIENT_ID'",\n    "aadClientSecret": "'$CLIENT_SECRET'",\n    "resourceGroup": "'$KV_RESOURCE_GROUP'",\n    "location": "'$AZURE_LOCATION'",\n    "providerVaultName": "'$KV_NAME'",\n    "providerKeyName": "'$KV_KEY'",\n    "providerKeyVersion": "'$KV_KEY_VERSION'"\n}' | sudo tee --append /etc/kubernetes/azure.json  > /dev/null
+          echo -e '{\n    "tenantId": "'$TENANT_ID'",\n    "subscriptionId": "'$SUBSCRIPTION_ID'",\n    "aadClientId": "'$CLIENT_ID'",\n    "aadClientSecret": "'$CLIENT_SECRET'",\n}' | sudo tee --append /etc/kubernetes/azure.json  > /dev/null
         displayName: Setup azure.json on host
         env:
           CLIENT_ID: $(AZURE_CLIENT_ID)
