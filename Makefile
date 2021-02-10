@@ -17,6 +17,10 @@ BUILD_DATE := $$(date +%Y-%m-%d-%H:%M)
 GIT_VAR := $(REPO_PATH)/pkg/version.GitCommit
 GIT_HASH := $$(git rev-parse --short HEAD)
 
+GO_FILES=$(shell go list ./... | grep -v /test/e2e)
+TOOLS_MOD_DIR := ./tools
+TOOLS_DIR := $(abspath ./.tools)
+
 # docker env var
 DOCKER_BUILDKIT = 1
 export DOCKER_BUILDKIT
@@ -27,6 +31,14 @@ KUBERNETES_VERSION ?= v1.19.0
 BATS_VERSION ?= 1.2.1
 
 GO_BUILD_OPTIONS := --tags "netgo osusergo"  -ldflags "-s -X $(BUILD_VERSION_VAR)=$(IMAGE_VERSION) -X $(GIT_VAR)=$(GIT_HASH) -X $(BUILD_DATE_VAR)=$(BUILD_DATE) -extldflags '-static'"
+
+$(TOOLS_DIR)/golangci-lint: $(TOOLS_MOD_DIR)/go.mod $(TOOLS_MOD_DIR)/go.sum $(TOOLS_MOD_DIR)/tools.go
+	cd $(TOOLS_MOD_DIR) && \
+	go build -o $(TOOLS_DIR)/golangci-lint github.com/golangci/golangci-lint/cmd/golangci-lint
+
+.PHONY: lint
+lint: $(TOOLS_DIR)/golangci-lint
+	$(TOOLS_DIR)/golangci-lint run --timeout=5m -v
 
 .PHONY: build
 build:
