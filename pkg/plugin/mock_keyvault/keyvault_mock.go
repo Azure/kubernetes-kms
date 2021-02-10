@@ -3,7 +3,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-package mock_keyvault
+package mockkeyvault
 
 import (
 	"context"
@@ -36,7 +36,6 @@ func (kvc *KeyVaultClient) SetEncryptResponse(encryptOut []byte, err error) {
 	defer kvc.mutex.Unlock()
 	kvc.encryptOut = encryptOut
 	kvc.encryptErr = err
-	return
 }
 
 func (kvc *KeyVaultClient) SetDecryptResponse(decryptOut []byte, err error) {
@@ -44,5 +43,4 @@ func (kvc *KeyVaultClient) SetDecryptResponse(decryptOut []byte, err error) {
 	defer kvc.mutex.Unlock()
 	kvc.decryptOut = decryptOut
 	kvc.decryptErr = err
-	return
 }

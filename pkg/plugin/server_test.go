@@ -12,7 +12,7 @@ import (
 
 	k8spb "k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1"
 
-	"github.com/Azure/kubernetes-kms/pkg/plugin/mock_keyvault"
+	mockkeyvault "github.com/Azure/kubernetes-kms/pkg/plugin/mock_keyvault"
 	"github.com/Azure/kubernetes-kms/pkg/version"
 )
 
@@ -39,7 +39,7 @@ func TestEncrypt(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			kvClient := &mock_keyvault.KeyVaultClient{}
+			kvClient := &mockkeyvault.KeyVaultClient{}
 			kvClient.SetEncryptResponse(test.output, test.err)
 
 			kmsServer := KeyManagementServiceServer{
@@ -82,7 +82,7 @@ func TestDecrypt(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			kvClient := &mock_keyvault.KeyVaultClient{}
+			kvClient := &mockkeyvault.KeyVaultClient{}
 			kvClient.SetDecryptResponse(test.output, test.err)
 
 			kmsServer := KeyManagementServiceServer{

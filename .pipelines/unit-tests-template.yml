@@ -11,10 +11,12 @@ jobs:
       - task: GoTool@0
         inputs:
           version: 1.15
-      - script: make build
-        displayName: Build
+      - script: make lint
+        displayName: Run lint
       - script: make unit-test
         displayName: Run unit tests
+      - script: make build
+        displayName: Build
       - script: |
           sudo ./_output/kubernetes-kms --version
         displayName: Check binary version

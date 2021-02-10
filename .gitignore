@@ -28,3 +28,6 @@ _output/
 
 # e2e output
 tests/e2e/generated_manifests/*
+
+# Go tools
+.tools/
