@@ -17,7 +17,16 @@ spec:
         - --keyvault-name=${KEYVAULT_NAME}
         - --key-name=${KEY_NAME}
         - --key-version=${KEY_VERSION}
-        - -v=2
+        - -v=5
+      ports:
+        - containerPort: 8787
+          protocol: TCP
+      livenessProbe:
+        httpGet:
+          path: /healthz
+          port: 8787
+        failureThreshold: 2
+        periodSeconds: 10
       resources:
         requests:
           cpu: 100m
