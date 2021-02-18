@@ -9,9 +9,12 @@ import (
 	"context"
 	"flag"
 	"net"
+	"net/url"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/Azure/kubernetes-kms/pkg/plugin"
 	"github.com/Azure/kubernetes-kms/pkg/utils"
@@ -32,6 +35,10 @@ var (
 	// TODO change this to follow the hyphen format. DEPRECATE this flag and introduce the new flag
 	configFilePath = flag.String("configFilePath", "/etc/kubernetes/azure.json", "Path for Azure Cloud Provider config file")
 	versionInfo    = flag.Bool("version", false, "Prints the version information")
+
+	healthzPort    = flag.Int("healthz-port", 8787, "port for health check")
+	healthzPath    = flag.String("healthz-path", "/healthz", "path for health check")
+	healthzTimeout = flag.Duration("healthz-timeout", 20*time.Second, "RPC timeout for health check")
 )
 
 func main() {
@@ -78,6 +85,17 @@ func main() {
 
 	klog.Infof("Listening for connections on address: %v", listener.Addr())
 	go s.Serve(listener)
+
+	healthz := &plugin.HealthZ{
+		KMSServer: kmsServer,
+		HealthCheckURL: &url.URL{
+			Host: net.JoinHostPort("", strconv.FormatUint(uint64(*healthzPort), 10)),
+			Path: *healthzPath,
+		},
+		UnixSocketPath: listener.Addr().String(),
+		RPCTimeout:     *healthzTimeout,
+	}
+	go healthz.Serve()
 
 	<-ctx.Done()
 	// gracefully stop the grpc server
