@@ -8,7 +8,7 @@ package plugin
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -124,7 +124,7 @@ func TestCheckRPC(t *testing.T) {
 }
 
 func getTempTestDir(t *testing.T) string {
-	tmpDir, err := ioutil.TempDir("", "ut")
+	tmpDir, err := os.MkdirTemp("", "ut")
 	if err != nil {
 		t.Fatalf("expected err to be nil, got: %+v", err)
 	}
@@ -155,7 +155,7 @@ func doHealthCheck(t *testing.T, url string) (int, []byte) {
 		t.Fatalf("failed to invoke http request, err: %+v", err)
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatalf("failed to read response body, err: %+v", err)
 	}

@@ -9,7 +9,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"regexp"
 
 	"github.com/Azure/kubernetes-kms/pkg/config"
@@ -75,7 +75,7 @@ func GetServicePrincipalToken(config *config.AzureConfig, env *azure.Environment
 
 	if len(config.AADClientCertPath) > 0 && len(config.AADClientCertPassword) > 0 {
 		klog.V(2).Infof("using jwt client_assertion (client_cert+client_private_key) to retrieve access token")
-		certData, err := ioutil.ReadFile(config.AADClientCertPath)
+		certData, err := os.ReadFile(config.AADClientCertPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read client certificate from file %s, error: %v", config.AADClientCertPath, err)
 		}
