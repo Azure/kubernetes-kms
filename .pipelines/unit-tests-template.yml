@@ -10,7 +10,7 @@ jobs:
     steps:
       - task: GoTool@0
         inputs:
-          version: 1.15
+          version: 1.16
       - script: make lint
         displayName: Run lint
       - script: make unit-test

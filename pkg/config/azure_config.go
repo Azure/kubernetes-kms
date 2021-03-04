@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"gopkg.in/yaml.v2"
 	"k8s.io/klog/v2"
@@ -25,7 +25,7 @@ func GetAzureConfig(configFile string) (config *AzureConfig, err error) {
 	cfg := AzureConfig{}
 
 	klog.V(5).Infof("populating AzureConfig from %s", configFile)
-	bytes, err := ioutil.ReadFile(configFile)
+	bytes, err := os.ReadFile(configFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config file %s, error: %+v", configFile, err)
 	}
