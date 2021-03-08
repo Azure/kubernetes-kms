@@ -18,6 +18,13 @@ spec:
         - --key-name=${KEY_NAME}
         - --key-version=${KEY_VERSION}
         - -v=5
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        readOnlyRootFilesystem: true
+        runAsUser: 0
       ports:
         - containerPort: 8787
           protocol: TCP
@@ -32,7 +39,7 @@ spec:
           cpu: 100m
           memory: 128Mi
         limits:
-          cpu: 4
+          cpu: "4"
           memory: 2Gi
       volumeMounts:
         - name: etc-kubernetes
@@ -52,3 +59,5 @@ spec:
     - name: sock
       hostPath:
         path: /opt
+  nodeSelector:
+    kubernetes.io/os: linux
