@@ -23,6 +23,7 @@ jobs:
       - script: |
           sudo mkdir /etc/kubernetes
           echo -e '{\n    "tenantId": "'$TENANT_ID'",\n    "subscriptionId": "'$SUBSCRIPTION_ID'",\n    "aadClientId": "'$CLIENT_ID'",\n    "aadClientSecret": "'$CLIENT_SECRET'",\n}' | sudo tee --append /etc/kubernetes/azure.json  > /dev/null
+          sudo chown root:root /etc/kubernetes/azure.json && sudo chmod 600 /etc/kubernetes/azure.json
         displayName: Setup azure.json on host
         env:
           CLIENT_ID: $(AZURE_CLIENT_ID)

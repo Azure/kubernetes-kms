@@ -1,6 +1,6 @@
-FROM us.gcr.io/k8s-artifacts-prod/build-image/debian-base-amd64:buster-v1.4.0
-# upgrading libzstd1 due to CVE-2021-24032
-RUN clean-install libzstd1
+ARG BASEIMAGE="gcr.io/distroless/static:nonroot-amd64"
+FROM $BASEIMAGE
+
 COPY ./_output/kubernetes-kms /bin/
 
 ENTRYPOINT [ "/bin/kubernetes-kms" ]
