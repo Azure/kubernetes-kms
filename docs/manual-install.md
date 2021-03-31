@@ -78,7 +78,7 @@ This guide demonstrates steps required to enable the KMS Plugin for Key Vault in
           - --key-version=${KEY_VERSION}                          # [REQUIRED] Version of the key to use
           - --log-format-json=false                               # [OPTIONAL] Set log formatter to json. Default is false.
           - --healthz-port=8787                                   # [OPTIONAL] port for health check. Default is 8787
-          - --healthz-path=8787                                   # [OPTIONAL] path for health check. Default is /healthz
+          - --healthz-path=/healthz                               # [OPTIONAL] path for health check. Default is /healthz
           - --healthz-timeout=20s                                 # [OPTIONAL] RPC timeout for health check. Default is 20s
           - -v=1
         ports:

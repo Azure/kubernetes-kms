@@ -71,6 +71,10 @@ Now that Azure KMS provider is running in your cluster and the encryption config
 
     The output should match `mykey: bXlkYXRh`, which is the encoded data of `mydata`.
 
+## Rotation
+
+Refer to [doc](docs/rotation.md) for steps to rotate the KMS Key on an existing cluster.
+
 ## Contributing
 
 The KMS Plugin for Key Vault project welcomes contributions and suggestions. Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
