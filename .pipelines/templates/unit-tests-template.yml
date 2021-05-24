@@ -34,4 +34,4 @@ jobs:
           sleep 2
           make integration-test
         displayName: Run integration tests
-      - template: scan-images.yml
+      - template: templates/scan-images-template.yml

@@ -12,5 +12,5 @@ pool:
   vmImage: ubuntu-latest
 
 jobs:
-  - template: unit-tests-template.yml
-  - template: e2e-kind-template.yml
+  - template: templates/unit-tests-template.yml
+  - template: templates/e2e-upgrade-template.yml

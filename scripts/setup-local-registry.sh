@@ -21,3 +21,6 @@ export IMAGE_VERSION=e2e-$(git rev-parse --short HEAD)
 # push build image to local registry
 echo "Pushing image to local registry"
 make push-image
+
+# generate manifest for local
+make e2e-generate-manifests
