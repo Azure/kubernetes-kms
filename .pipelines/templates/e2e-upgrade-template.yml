@@ -56,7 +56,7 @@ jobs:
       
       - template: manifest-template.yml
         parameters:
-          registry: REGISTRY=localhost:${REGISTRY_PORT}
+          registry: localhost:${REGISTRY_PORT}
           imageName: keyvault
           imageVersion: e2e-$(LOCAL_IMAGE_VERSION)
 
