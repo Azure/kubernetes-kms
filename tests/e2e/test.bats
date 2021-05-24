@@ -27,10 +27,13 @@ ETCD_KEY=/etc/kubernetes/pki/etcd/server.key
     run kubectl exec ${pod_name} -n kube-system -- etcdctl --cacert=${ETCD_CA_CERT} --cert=${ETCD_CERT} --key=${ETCD_KEY} get /registry/secrets/default/secret1
     assert_match "k8s:enc:kms:v1:azurekmsprovider" "${output}"
     assert_success
+
+    #cleanup
+    run kubectl delete secret secret1 -n default
 }
 
 @test "check healthz for kms plugin" {
-    deploy_curl
+    kubectl run curl --image=curlimages/curl:7.75.0 -- tail -f /dev/null
     kubectl wait --for=condition=Ready --timeout=60s pod curl
 
     local pod_ip=$(kubectl get pod -n kube-system -l component=azure-kms-provider -o jsonpath="{.items[0].status.podIP}")
@@ -39,4 +42,7 @@ ETCD_KEY=/etc/kubernetes/pki/etcd/server.key
 
     result=$(kubectl exec curl -- curl http://${pod_ip}:8787/healthz -o /dev/null -w '%{http_code}\n' -s)
     [[ "${result//$'\r'}" == "200" ]]
+
+    #cleanup
+    run kubectl delete pod curl --force
 }
