@@ -5,6 +5,16 @@ jobs:
     workspace:
       clean: all
     variables:
+      - name: REGISTRY_NAME
+        value: kind-registry
+      - name: REGISTRY_PORT
+        value: 5000
+      - name: KUBERNETES_VERSION
+        value: v1.21.1
+      - name: KIND_CLUSTER_NAME
+        value: kms
+      - name: KIND_NETWORK
+        value: kind
       - group: kubernetes-kms
 
     steps:
@@ -19,8 +29,8 @@ jobs:
           . scripts/setup-local-registry.sh
         displayName: "Setup local registry"
         env:
-          REGISTRY_NAME: kind-registry
-          REGISTRY_PORT: 5000
+          REGISTRY_NAME: $(REGISTRY_NAME)
+          REGISTRY_PORT: $(REGISTRY_PORT)
 
       - script: |
           version=$(git tag -l --sort=v:refname | tail -n 1)
@@ -39,11 +49,11 @@ jobs:
           wait
         displayName: "Setup kind cluster with azure kms plugin"
         env:
-          REGISTRY_NAME: kind-registry
-          REGISTRY_PORT: 5000
-          KUBERNETES_VERSION: v1.21.1
-          KIND_CLUSTER_NAME: kms
-          KIND_NETWORK: kind
+          REGISTRY_NAME: $(REGISTRY_NAME)
+          REGISTRY_PORT: $(REGISTRY_PORT)
+          KUBERNETES_VERSION: $(KUBERNETES_VERSION)
+          KIND_CLUSTER_NAME: $(KIND_CLUSTER_NAME)
+          KIND_NETWORK: $(KIND_NETWORK)
 
       - template: cluster-health-template.yml
 
@@ -56,7 +66,7 @@ jobs:
       
       - template: manifest-template.yml
         parameters:
-          registry: localhost:${REGISTRY_PORT}
+          registry: localhost:$(REGISTRY_PORT)
           imageName: keyvault
           imageVersion: e2e-$(LOCAL_IMAGE_VERSION)
 
