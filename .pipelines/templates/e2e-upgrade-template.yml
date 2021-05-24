@@ -1,5 +1,5 @@
 jobs:
-  - job: e2e_tests
+  - job: e2e_upgrade_tests
     timeoutInMinutes: 10
     cancelTimeoutInMinutes: 5
     workspace:
