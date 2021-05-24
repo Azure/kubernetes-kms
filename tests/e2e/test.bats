@@ -30,9 +30,7 @@ ETCD_KEY=/etc/kubernetes/pki/etcd/server.key
 }
 
 @test "check healthz for kms plugin" {
-    if ! is_curl_running() {
-        kubectl run curl --image=curlimages/curl:7.75.0 -- tail -f /dev/null
-    }
+    deploy_curl
     kubectl wait --for=condition=Ready --timeout=60s pod curl
 
     local pod_ip=$(kubectl get pod -n kube-system -l component=azure-kms-provider -o jsonpath="{.items[0].status.podIP}")

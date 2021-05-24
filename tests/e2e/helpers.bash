@@ -40,10 +40,9 @@ wait_for_process() {
   return 1
 }
 
-is_curl_running(){
+deploy_curl(){
   podName=$(kubectl get pods -o jsonpath='{.items[?(@.metadata.name=="curl")].metadata.name}')
-  if [ $podName == "curl" ]; then 
-    return 0
+  if [ $podName == "" ]; then 
+    kubectl run curl --image=curlimages/curl:7.75.0 -- tail -f /dev/null
   fi
-  return 1
 }
