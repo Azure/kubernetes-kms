@@ -1,0 +1,8 @@
+steps:
+  - script: |
+      kubectl logs -l component=azure-kms-provider -n kube-system --tail -1
+      kubectl get pods -o wide -A
+    displayName: "Get logs"
+    
+  - script: make e2e-delete-kind
+    displayName: "Delete cluster"

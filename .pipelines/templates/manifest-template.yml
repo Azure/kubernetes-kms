@@ -1,0 +1,19 @@
+parameters:
+  - name: registry
+    type: string
+  - name: imageName
+    type: string
+  - name: imageVersion
+    type: string
+
+steps:
+  - script: |
+      export REGISTRY=${{ parameters.registry }}
+      export IMAGE_NAME=${{ parameters.imageName }}
+      export IMAGE_VERSION=${{ parameters.imageVersion }}
+
+      make e2e-generate-manifests
+    displayName: "Generate Manifests"
+    env:
+      CLIENT_ID: $(AZURE_CLIENT_ID)
+      CLIENT_SECRET: $(AZURE_CLIENT_SECRET)

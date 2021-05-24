@@ -1,0 +1,66 @@
+jobs:
+  - job: e2e_tests
+    timeoutInMinutes: 10
+    cancelTimeoutInMinutes: 5
+    workspace:
+      clean: all
+    variables:
+      - group: kubernetes-kms
+
+    steps:
+      - task: GoTool@0
+        inputs:
+          version: 1.16
+
+      - script: make e2e-install-prerequisites
+        displayName: "Install e2e test prerequisites"
+
+      - script: |
+          . scripts/setup-local-registry.sh
+        displayName: "Setup local registry"
+        env:
+          REGISTRY_NAME: kind-registry
+          REGISTRY_PORT: 5000
+
+      - script: |
+          version=$(git tag -l --sort=v:refname | tail -n 1)
+          echo "##vso[task.setvariable variable=LATEST_KMS_VERSION]$version"
+        displayName: "Get latest released version"
+      
+      - template: manifest-template.yml
+        parameters:
+          registry: mcr.microsoft.com/oss/azure/kms
+          imageName: keyvault
+          imageVersion: $(LATEST_KMS_VERSION)
+
+      - script: |
+          . scripts/setup-kind-cluster.sh &
+          . scripts/connect-registry.sh &
+          wait
+        displayName: "Setup kind cluster with azure kms plugin"
+        env:
+          REGISTRY_NAME: kind-registry
+          REGISTRY_PORT: 5000
+          KUBERNETES_VERSION: v1.21.1
+          KIND_CLUSTER_NAME: kms
+          KIND_NETWORK: kind
+
+      - template: cluster-health-template.yml
+
+      - script: make e2e-test
+        displayName: "Run e2e tests"
+
+      - script: |
+          echo "##vso[task.setvariable variable=LOCAL_IMAGE_VERSION]$(git rev-parse --short HEAD)"
+        displayName: "Update Image version"
+      
+      - template: manifest-template.yml
+        parameters:
+          registry: REGISTRY=localhost:${REGISTRY_PORT}
+          imageName: keyvault
+          imageVersion: $(LOCAL_IMAGE_VERSION)
+
+      - script: make e2e-test
+        displayName: "Run e2e tests"
+
+      - template: cleanup-template.yml
