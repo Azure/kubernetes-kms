@@ -31,6 +31,8 @@ jobs:
         env:
           REGISTRY_NAME: $(REGISTRY_NAME)
           REGISTRY_PORT: $(REGISTRY_PORT)
+          CLIENT_ID: $(AZURE_CLIENT_ID)
+          CLIENT_SECRET: $(AZURE_CLIENT_SECRET)
 
       - script: |
           . scripts/setup-kind-cluster.sh &

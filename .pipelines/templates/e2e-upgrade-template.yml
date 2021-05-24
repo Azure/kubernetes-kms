@@ -35,6 +35,8 @@ jobs:
       - script: |
           version=$(git tag -l --sort=v:refname | tail -n 1)
           echo "##vso[task.setvariable variable=LATEST_KMS_VERSION]$version"
+
+          echo "Latest released kms version - $version"
         displayName: "Get latest released version"
       
       - template: manifest-template.yml
@@ -72,6 +74,7 @@ jobs:
 
       - script: |
           # wait for the kind network to exist
+          echo "waiting for upgraded kms pod to be Running"
           for i in $(seq 1 25); do
             image=$(kubectl get pods -n kube-system azure-kms-provider-kms-control-plane -o jsonpath="{.spec.containers[*].image}")
             phase=$(kubectl get pods -n kube-system azure-kms-provider-kms-control-plane -o jsonpath="{.status.phase}")
