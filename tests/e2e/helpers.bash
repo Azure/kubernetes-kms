@@ -39,3 +39,11 @@ wait_for_process() {
   done
   return 1
 }
+
+is_curl_running(){
+  podName=$(kubectl get pods -o jsonpath='{.items[?(@.metadata.name=="curl")].metadata.name}')
+  if [ $podName == "curl" ]; then 
+    return 0
+  fi
+  return 1
+}
