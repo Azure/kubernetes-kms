@@ -5,6 +5,8 @@ REPO_PATH="$(ORG_PATH)/$(PROJECT_NAME)"
 REGISTRY_NAME ?= upstreamk8sci
 REPO_PREFIX ?= oss/azure/kms
 REGISTRY ?= $(REGISTRY_NAME).azurecr.io/$(REPO_PREFIX)
+LOCAL_REGISTRY_NAME ?= kind-registry
+LOCAL_REGISTRY_PORT ?= 5000
 IMAGE_NAME ?= keyvault
 IMAGE_VERSION ?= v0.0.11
 IMAGE_TAG ?= $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_VERSION)
@@ -87,8 +89,16 @@ e2e-install-prerequisites:
 	# Download and install bats
 	curl -sSLO https://github.com/bats-core/bats-core/archive/v${BATS_VERSION}.tar.gz && tar -zxvf v${BATS_VERSION}.tar.gz && sudo bash bats-core-${BATS_VERSION}/install.sh /usr/local
 
-e2e-setup-kind:
-	./scripts/ci-e2e-kind.sh
+e2e-setup-kind: setup-local-registry
+	. scripts/setup-kind-cluster.sh &
+	. scripts/connect-registry.sh &
+	wait
+
+.PHONY: setup-local-registry
+setup-local-registry:
+	export REGISTRY_NAME=$(LOCAL_REGISTRY_NAME)
+	export REGISTRY_PORT=$(LOCAL_REGISTRY_PORT)
+	. scripts/setup-local-registry.sh
 
 e2e-generate-manifests:
 	@mkdir -p tests/e2e/generated_manifests
