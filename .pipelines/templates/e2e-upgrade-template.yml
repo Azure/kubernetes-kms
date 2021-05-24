@@ -58,7 +58,7 @@ jobs:
         parameters:
           registry: REGISTRY=localhost:${REGISTRY_PORT}
           imageName: keyvault
-          imageVersion: $(LOCAL_IMAGE_VERSION)
+          imageVersion: e2e-$(LOCAL_IMAGE_VERSION)
 
       - script: |
           # wait for the kind network to exist
@@ -66,10 +66,10 @@ jobs:
             image=$(kubectl get pods -n kube-system azure-kms-provider-kms-control-plane -o jsonpath="{.spec.containers[*].image}")
             phase=$(kubectl get pods -n kube-system azure-kms-provider-kms-control-plane -o jsonpath="{.status.phase}")
             echo "image - $image phase - $phase"
-            if [ "${image}" == "${REGISTRY}/${IMAGE_NAME}:${LOCAL_IMAGE_VERSION}" ] && [ "${phase}" == "Running" ]; then
+            if [ "${image}" == "${REGISTRY}/${IMAGE_NAME}:e2e-${LOCAL_IMAGE_VERSION}" ] && [ "${phase}" == "Running" ]; then
               break
             else
-              sleep 1
+              sleep 5
             fi
           done
         displayName: "Wait for kms upgrade"
