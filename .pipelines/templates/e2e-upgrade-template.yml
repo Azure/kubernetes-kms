@@ -60,6 +60,20 @@ jobs:
           imageName: keyvault
           imageVersion: $(LOCAL_IMAGE_VERSION)
 
+      - script: |
+          # wait for the kind network to exist
+          for i in $(seq 1 25); do
+            image=$(kubectl get pods -n kube-system azure-kms-provider-kms-control-plane -o jsonpath="{.spec.containers[*].image}")
+            phase=$(kubectl get pods -n kube-system azure-kms-provider-kms-control-plane -o jsonpath="{.status.phase}")
+            echo "image - $image phase - $phase"
+            if [ "${image}" == "${REGISTRY}/${IMAGE_NAME}:${LOCAL_IMAGE_VERSION}" ] && [ "${phase}" == "Running" ]; then
+              break
+            else
+              sleep 1
+            fi
+          done
+        displayName: "Wait for kms upgrade"
+
       - script: make e2e-test
         displayName: "Run e2e tests"
 
