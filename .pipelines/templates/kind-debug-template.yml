@@ -1,0 +1,10 @@
+steps:
+  - script: |
+      docker exec kms-control-plane bash -c "cat /etc/kubernetes/manifests/kubernetes-kms.yaml"
+      docker exec kms-control-plane bash -c "cat /etc/kubernetes/manifests/kube-apiserver.yaml"
+      docker exec kms-control-plane bash -c "cat /etc/kubernetes/encryption-config.yaml"
+      docker exec kms-control-plane bash -c "journalctl -u kubelet > kubelet.log && cat kubelet.log"
+      docker exec kms-control-plane bash -c "cd /var/log/containers ; cat *"
+      docker network ls
+    displayName: "Debug logs"
+    condition: failed()

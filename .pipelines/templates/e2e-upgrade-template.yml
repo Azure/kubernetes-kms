@@ -58,6 +58,7 @@ jobs:
           KIND_NETWORK: $(KIND_NETWORK)
 
       - template: cluster-health-template.yml
+      - template: kind-debug-template.yml
 
       - script: make e2e-test
         displayName: "Run e2e tests"
