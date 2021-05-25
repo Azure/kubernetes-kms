@@ -1,0 +1,36 @@
+jobs:
+  - job: soak-test-aks-engine
+    timeoutInMinutes: 10
+    cancelTimeoutInMinutes: 5
+
+    workspace:
+      clean: all
+
+    variables:
+      - group: kubernetes-kms-soak-aks-engine
+
+    steps:
+      - script: |
+          # Download kubectl
+          echo "Installing kubectl..."
+          curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+        displayName: "Install kubectl"
+
+      - script: |
+          kubectl config set-cluster kms-aks-engine --server=$(API_SERVER_ENDPOINT)
+          kubectl config set clusters.kms-aks-engine.certificate-authority-data $(CA_DATA)
+          kubectl config set-credentials cluster-admin
+          kubectl config set users.cluster-admin.client-certificate-data $(CLIENT_CERTIFICATE_DATA)
+          kubectl config set users.cluster-admin.client-key-data $(echo "$(CLIENT_KEY)" | base64 -i -)
+          kubectl config set-context kms --user=cluster-admin --cluster=kms-aks-engine
+          kubectl config use-context kms
+
+          cat ~/.kube/config
+        displayName: "Set KUBECONFIG"
+
+      - template: cluster-health-template.yml
+
+      - script: make e2e-test
+        displayName: "Run e2e tests"

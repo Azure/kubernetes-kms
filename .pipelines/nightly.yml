@@ -12,4 +12,5 @@ pool:
   vmImage: ubuntu-latest
 
 jobs:
+  - template: templates/soak-test-template.yml
   - template: templates/e2e-upgrade-template.yml
