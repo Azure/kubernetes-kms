@@ -24,8 +24,13 @@ jobs:
           kubectl config set-credentials cluster-admin
           kubectl config set users.cluster-admin.client-certificate-data $(CLIENT_CERTIFICATE_DATA)
 
-          key="$(CLIENT_KEY)"
-          echo $key
+          key=$(cat <<-END
+          -----BEGIN RSA PRIVATE KEY-----
+          $(CLIENT_KEY))
+          -----END RSA PRIVATE KEY-----
+          END
+          )
+          
           kubectl config set users.cluster-admin.client-key-data $(echo "$key" | base64 -i -)
           # kubectl config set-credentials cluster-admin --client-key=$(pwd)/client.key
 
