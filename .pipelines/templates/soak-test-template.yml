@@ -24,14 +24,14 @@ jobs:
           kubectl config set-credentials cluster-admin
           kubectl config set users.cluster-admin.client-certificate-data $(CLIENT_CERTIFICATE_DATA)
 
-          # key=$(cat <<-END
-          # -----BEGIN RSA PRIVATE KEY-----
-          # $(CLIENT_KEY))
-          # -----END RSA PRIVATE KEY-----
-          # END
-          # )
+          key=$(cat <<-END
+          -----BEGIN RSA PRIVATE KEY-----
+          $(CLIENT_KEY)
+          -----END RSA PRIVATE KEY-----
+          END
+          )
 
-          kubectl config set users.cluster-admin.client-key-data "$(echo "$(CLIENT_KEY)" | base64 -i -)"
+          kubectl config set users.cluster-admin.client-key-data "$(echo "$key" | base64 -i -)"
           kubectl config set-context kms --user=cluster-admin --cluster=kms-aks-engine
           kubectl config use-context kms
 
