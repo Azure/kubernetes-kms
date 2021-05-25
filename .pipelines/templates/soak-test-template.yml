@@ -31,7 +31,7 @@ jobs:
           END
           )
 
-          kubectl config set users.cluster-admin.client-key-data $(echo "$key" | base64 -i -)
+          kubectl config set users.cluster-admin.client-key-data "$(echo "$key" | base64 -i -)"
 
           kubectl config set-context kms --user=cluster-admin --cluster=kms-aks-engine
           kubectl config use-context kms
