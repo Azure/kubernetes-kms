@@ -1,5 +1,5 @@
 jobs:
-  - job: soak-test-aks-engine
+  - job: soak_test_aks_engine
     timeoutInMinutes: 10
     cancelTimeoutInMinutes: 5
 
