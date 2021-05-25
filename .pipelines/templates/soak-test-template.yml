@@ -21,6 +21,7 @@ jobs:
       - script: |
           echo $(pwd)
           echo $(CLIENT_KEY) > $(pwd)/client.key
+          ls -latr $(pwd)
           cat $(pwd)/client.key
 
           kubectl config set-cluster kms-aks-engine --server=$(API_SERVER_ENDPOINT)
