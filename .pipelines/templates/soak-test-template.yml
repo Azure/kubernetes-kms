@@ -35,8 +35,6 @@ jobs:
           kubectl config set-context kms --user=cluster-admin --cluster=kms-aks-engine
           kubectl config use-context kms
 
-          rm -rf $(pwd)/client.key
-
           cat ~/.kube/config
         displayName: "Set KUBECONFIG"
 
