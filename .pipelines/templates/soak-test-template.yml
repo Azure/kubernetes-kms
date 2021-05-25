@@ -19,18 +19,14 @@ jobs:
         displayName: "Install kubectl"
 
       - script: |
-          echo $(pwd)
-          echo $(CLIENT_KEY) > $(pwd)/client.key
-          ls -latr $(pwd)
-          cat $(pwd)/client.key
-
           kubectl config set-cluster kms-aks-engine --server=$(API_SERVER_ENDPOINT)
           kubectl config set clusters.kms-aks-engine.certificate-authority-data $(CA_DATA)
           kubectl config set-credentials cluster-admin
           kubectl config set users.cluster-admin.client-certificate-data $(CLIENT_CERTIFICATE_DATA)
 
-          # kubectl config set users.cluster-admin.client-key-data $(echo "$(CLIENT_KEY)" | base64 -i -)
-          kubectl config set-credentials cluster-admin --client-key=$(pwd)/client.key
+          key=$(CLIENT_KEY)
+          kubectl config set users.cluster-admin.client-key-data $(echo "$key" | base64 -i -)
+          # kubectl config set-credentials cluster-admin --client-key=$(pwd)/client.key
 
           kubectl config set-context kms --user=cluster-admin --cluster=kms-aks-engine
           kubectl config use-context kms
