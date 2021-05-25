@@ -6,8 +6,13 @@
 package auth
 
 import (
+	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/Azure/go-autorest/autorest/adal"
+	"github.com/Azure/go-autorest/autorest/azure"
+	"github.com/Azure/kubernetes-kms/pkg/config"
 )
 
 func TestParseAzureEnvironment(t *testing.T) {
@@ -52,5 +57,134 @@ func TestRedactClientCredentials(t *testing.T) {
 			}
 		})
 	}
+}
 
+func TestGetServicePrincipalTokenFromMSIWithUserAssignedID(t *testing.T) {
+	tests := []struct {
+		name   string
+		config *config.AzureConfig
+	}{
+		{
+			name: "using user-assigned managed identity to access keyvault",
+			config: &config.AzureConfig{
+				UseManagedIdentityExtension: true,
+				UserAssignedIdentityID:      "clientID",
+				TenantID:                    "TenantID",
+				ClientID:                    "AADClientID",
+				ClientSecret:                "AADClientSecret",
+			},
+		},
+		// The Azure service principal is ignored when
+		// UseManagedIdentityExtension is set to true
+		{
+			name: "using user-assigned managed identity over service principal if set to true",
+			config: &config.AzureConfig{
+				UseManagedIdentityExtension: true,
+				UserAssignedIdentityID:      "clientID",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			token, err := GetServicePrincipalToken(test.config, "https://login.microsoftonline.com/", "https://vault.azure.net")
+			if err != nil {
+				t.Fatalf("expected err to be nil, got: %v", err)
+			}
+			msiEndpoint, err := adal.GetMSIVMEndpoint()
+			if err != nil {
+				t.Fatalf("expected err to be nil, got: %v", err)
+			}
+			spt, err := adal.NewServicePrincipalTokenFromMSIWithUserAssignedID(msiEndpoint, "https://vault.azure.net", "clientID")
+			if err != nil {
+				t.Fatalf("expected err to be nil, got: %v", err)
+			}
+			if !reflect.DeepEqual(token, spt) {
+				t.Fatalf("expected: %v, got: %v", spt, token)
+			}
+		})
+	}
+}
+
+func TestGetServicePrincipalTokenFromMSI(t *testing.T) {
+	tests := []struct {
+		name   string
+		config *config.AzureConfig
+	}{
+		{
+			name: "using system-assigned managed identity to access keyvault",
+			config: &config.AzureConfig{
+				UseManagedIdentityExtension: true,
+			},
+		},
+		// The Azure service principal is ignored when
+		// UseManagedIdentityExtension is set to true
+		{
+			name: "using system-assigned managed identity over service principal if set to true",
+			config: &config.AzureConfig{
+				UseManagedIdentityExtension: true,
+				TenantID:                    "TenantID",
+				ClientID:                    "AADClientID",
+				ClientSecret:                "AADClientSecret",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			token, err := GetServicePrincipalToken(test.config, "https://login.microsoftonline.com/", "https://vault.azure.net")
+			if err != nil {
+				t.Fatalf("expected err to be nil, got: %v", err)
+			}
+			msiEndpoint, err := adal.GetMSIVMEndpoint()
+			if err != nil {
+				t.Fatalf("expected err to be nil, got: %v", err)
+			}
+			spt, err := adal.NewServicePrincipalTokenFromMSI(msiEndpoint, "https://vault.azure.net")
+			if err != nil {
+				t.Fatalf("expected err to be nil, got: %v", err)
+			}
+			if !reflect.DeepEqual(token, spt) {
+				t.Fatalf("expected: %v, got: %v", spt, token)
+			}
+		})
+	}
+}
+
+func TestGetServicePrincipalToken(t *testing.T) {
+	tests := []struct {
+		name   string
+		config *config.AzureConfig
+	}{
+		{
+			name: "using service-principal credentials to access keyvault",
+			config: &config.AzureConfig{
+				TenantID:     "TenantID",
+				ClientID:     "AADClientID",
+				ClientSecret: "AADClientSecret",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			token, err := GetServicePrincipalToken(test.config, "https://login.microsoftonline.com/", "https://vault.azure.net")
+			if err != nil {
+				t.Fatalf("expected err to be nil, got: %v", err)
+			}
+			env := &azure.PublicCloud
+
+			oauthConfig, err := adal.NewOAuthConfig(env.ActiveDirectoryEndpoint, test.config.TenantID)
+			if err != nil {
+				t.Fatalf("expected err to be nil, got: %v", err)
+			}
+			spt, err := adal.NewServicePrincipalToken(*oauthConfig, test.config.ClientID, test.config.ClientSecret, "https://vault.azure.net")
+			if err != nil {
+				t.Fatalf("expected err to be nil, got: %v", err)
+			}
+			if !reflect.DeepEqual(token, spt) {
+				t.Fatalf("expected: %v, got: %v", spt, token)
+			}
+		})
+	}
 }
