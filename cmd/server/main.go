@@ -32,7 +32,7 @@ var (
 	keyName       = flag.String("key-name", "", "Azure Key Vault KMS key name")
 	keyVersion    = flag.String("key-version", "", "Azure Key Vault KMS key version")
 	logFormatJSON = flag.Bool("log-format-json", false, "set log formatter to json")
-	// TODO change this to follow the hyphen format. DEPRECATE this flag and introduce the new flag
+	// TODO change this to follow the hyphen format. DEPRECATE this flag and introduce the new flag 
 	configFilePath = flag.String("configFilePath", "/etc/kubernetes/azure.json", "Path for Azure Cloud Provider config file")
 	versionInfo    = flag.Bool("version", false, "Prints the version information")
 
