@@ -10,6 +10,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/Azure/kubernetes-kms/pkg/auth"
 	"github.com/Azure/kubernetes-kms/pkg/config"
@@ -115,6 +116,10 @@ func getVaultURL(vaultName string, azureEnvironment *azure.Environment) (vaultUR
 	if len(vaultName) < 3 || len(vaultName) > 24 {
 		return nil, fmt.Errorf("invalid vault name: %q, must be between 3 and 24 chars", vaultName)
 	}
+
+	//Trim quotes from vault name. https://github.com/Azure/kubernetes-kms/issues/85
+	vaultName = strings.Trim(vaultName, "\"")
+
 	// See docs for validation spec: https://docs.microsoft.com/en-us/azure/key-vault/about-keys-secrets-and-certificates#objects-identifiers-and-versioning
 	isValid := regexp.MustCompile(`^[-A-Za-z0-9]+$`).MatchString
 	if !isValid(vaultName) {

@@ -106,6 +106,11 @@ func TestGetVaultURL(t *testing.T) {
 			vaultName:   "testkv",
 			expectedErr: false,
 		},
+		{
+			desc:        "vault name with double quotes",
+			vaultName:   "\"testkv\"",
+			expectedErr: false,
+		},
 	}
 
 	for idx, test := range tests {
@@ -118,7 +123,7 @@ func TestGetVaultURL(t *testing.T) {
 			if test.expectedErr && err == nil || !test.expectedErr && err != nil {
 				t.Fatalf("expected error: %v, got error: %v", test.expectedErr, err)
 			}
-			expectedURL := "https://" + test.vaultName + "." + vaultDNSSuffix[idx] + "/"
+			expectedURL := "https://" + strings.Trim(test.vaultName, "\"") + "." + vaultDNSSuffix[idx] + "/"
 			if !test.expectedErr && expectedURL != *vaultURL {
 				t.Fatalf("expected vault url: %s, got: %s", expectedURL, *vaultURL)
 			}
