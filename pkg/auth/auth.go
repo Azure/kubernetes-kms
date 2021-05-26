@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/Azure/kubernetes-kms/pkg/config"
 
@@ -23,11 +24,8 @@ import (
 
 // GetKeyvaultToken() returns token for Keyvault endpoint
 func GetKeyvaultToken(config *config.AzureConfig, env *azure.Environment) (authorizer autorest.Authorizer, err error) {
-	kvEndPoint := env.KeyVaultEndpoint
-	if '/' == kvEndPoint[len(kvEndPoint)-1] {
-		kvEndPoint = kvEndPoint[:len(kvEndPoint)-1]
-	}
-	servicePrincipalToken, err := GetServicePrincipalToken(config, env, kvEndPoint)
+	kvEndPoint := strings.TrimSuffix(env.KeyVaultEndpoint, "/")
+	servicePrincipalToken, err := GetServicePrincipalToken(config, env.ActiveDirectoryEndpoint, kvEndPoint)
 	if err != nil {
 		return nil, err
 	}
@@ -36,8 +34,8 @@ func GetKeyvaultToken(config *config.AzureConfig, env *azure.Environment) (autho
 }
 
 // GetServicePrincipalToken creates a new service principal token based on the configuration
-func GetServicePrincipalToken(config *config.AzureConfig, env *azure.Environment, resource string) (*adal.ServicePrincipalToken, error) {
-	oauthConfig, err := adal.NewOAuthConfig(env.ActiveDirectoryEndpoint, config.TenantID)
+func GetServicePrincipalToken(config *config.AzureConfig, aadEndpoint, resource string) (adal.OAuthTokenProvider, error) {
+	oauthConfig, err := adal.NewOAuthConfig(aadEndpoint, config.TenantID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OAuth config, error: %v", err)
 	}
@@ -52,7 +50,7 @@ func GetServicePrincipalToken(config *config.AzureConfig, env *azure.Environment
 		if len(config.UserAssignedIdentityID) > 0 {
 			klog.V(2).InfoS("using User-assigned managed identity to retrieve access token", "clientID", redactClientCredentials(config.UserAssignedIdentityID))
 			return adal.NewServicePrincipalTokenFromMSIWithUserAssignedID(msiEndpoint,
-				env.ServiceManagementEndpoint,
+				resource,
 				config.UserAssignedIdentityID)
 		}
 		klog.V(2).InfoS("using system-assigned managed identity to retrieve access token")
@@ -88,7 +86,7 @@ func GetServicePrincipalToken(config *config.AzureConfig, env *azure.Environment
 			config.ClientID,
 			certificate,
 			privateKey,
-			env.ServiceManagementEndpoint)
+			resource)
 	}
 
 	return nil, fmt.Errorf("no credentials provided for accessing keyvault")
