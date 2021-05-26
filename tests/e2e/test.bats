@@ -60,5 +60,5 @@ setup() {
     [[ "${result//$'\r'}" == "200" ]]
 
     #cleanup
-    run kubectl delete pod curl --force
+    run kubectl delete pod curl --force --grace-period 0
 }
