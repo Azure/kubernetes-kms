@@ -10,8 +10,8 @@ jobs:
       - group: kubernetes-kms-soak-aks-engine
 
     steps:
-      - script: make e2e-install-prerequisites
-        displayName: "Install e2e test prerequisites"
+      - script: make install-soak-prerequisites
+        displayName: "Install e2e soak test prerequisites"
 
       - script: |
           key=$(cat <<-END
@@ -32,5 +32,5 @@ jobs:
 
       - template: cluster-health-template.yml
 
-      - script: make e2e-test
+      - script: make IS_SOAK_TEST=true e2e-test
         displayName: "Run e2e tests"
