@@ -3,5 +3,4 @@ steps:
       kubectl wait --for=condition=ready node --all
       kubectl wait pod -n kube-system --for=condition=Ready --all
       kubectl get nodes -owide
-      kubectl cluster-info
     displayName: "Check cluster's health"
