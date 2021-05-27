@@ -63,7 +63,7 @@ func (r *reporter) ReportDecryptCountMetric(ctx context.Context) {
 	labels := []attribute.KeyValue{
 		attribute.String(osTypeKey, runtimeOS),
 	}
-	encryptTotal.Add(ctx, 1, labels...)
+	decryptTotal.Add(ctx, 1, labels...)
 }
 
 func (r *reporter) ReportEncryptErrorCountMetric(ctx context.Context, errorType string) {
@@ -79,7 +79,7 @@ func (r *reporter) ReportDecryptErrorCountMetric(ctx context.Context, errorType 
 		attribute.String(errorTypeKey, errorType),
 		attribute.String(osTypeKey, runtimeOS),
 	}
-	encryptErrorTotal.Add(ctx, 1, labels...)
+	decryptErrorTotal.Add(ctx, 1, labels...)
 }
 
 func (r *reporter) ReportEncryptDurationMetric(ctx context.Context, duration float64) {
