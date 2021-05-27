@@ -11,8 +11,8 @@ import (
 
 	"github.com/Azure/kubernetes-kms/pkg/config"
 	internalerrors "github.com/Azure/kubernetes-kms/pkg/errors"
-	"github.com/Azure/kubernetes-kms/pkg/version"
 	"github.com/Azure/kubernetes-kms/pkg/metrics"
+	"github.com/Azure/kubernetes-kms/pkg/version"
 
 	k8spb "k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1"
 	"k8s.io/klog/v2"
