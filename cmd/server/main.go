@@ -16,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Azure/kubernetes-kms/pkg/metrics"
 	"github.com/Azure/kubernetes-kms/pkg/plugin"
 	"github.com/Azure/kubernetes-kms/pkg/utils"
 	"github.com/Azure/kubernetes-kms/pkg/version"
@@ -39,6 +40,8 @@ var (
 	healthzPort    = flag.Int("healthz-port", 8787, "port for health check")
 	healthzPath    = flag.String("healthz-path", "/healthz", "path for health check")
 	healthzTimeout = flag.Duration("healthz-timeout", 20*time.Second, "RPC timeout for health check")
+	metricsBackend = flag.String("metrics-backend", "prometheus", "Backend used for metrics")
+	metricsAddress = flag.String("metrics-addr", "8095", "The address the metric endpoint binds to")
 )
 
 func main() {
@@ -56,6 +59,12 @@ func main() {
 	}
 
 	ctx := withShutdownSignal(context.Background())
+
+	// initialize metrics exporter
+	err := metrics.InitMetricsExporter(*metricsBackend, *metricsAddress)
+	if err != nil {
+		klog.Fatalf("failed to initialize metrics exporter, error: %+v", err)
+	}
 
 	klog.InfoS("Starting KeyManagementServiceServer service", "version", version.BuildVersion, "buildDate", version.BuildDate)
 	kmsServer, err := plugin.New(ctx, *configFilePath, *keyvaultName, *keyName, *keyVersion)
