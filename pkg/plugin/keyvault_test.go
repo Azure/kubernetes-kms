@@ -57,6 +57,14 @@ func TestNewKeyVaultClient(t *testing.T) {
 			keyVersion:  "262067a9e8ba401aa8a746c5f1a7e147",
 			expectedErr: false,
 		},
+		{
+			desc:        "no error with double quotes",
+			config:      &config.AzureConfig{ClientID: "clientid", ClientSecret: "clientsecret"},
+			vaultName:   "\"testkv\"",
+			keyName:     "\"key1\"",
+			keyVersion:  "\"262067a9e8ba401aa8a746c5f1a7e147\"",
+			expectedErr: false,
+		},
 	}
 
 	for _, test := range tests {
@@ -118,7 +126,7 @@ func TestGetVaultURL(t *testing.T) {
 			if test.expectedErr && err == nil || !test.expectedErr && err != nil {
 				t.Fatalf("expected error: %v, got error: %v", test.expectedErr, err)
 			}
-			expectedURL := "https://" + test.vaultName + "." + vaultDNSSuffix[idx] + "/"
+			expectedURL := "https://" + strings.Trim(test.vaultName, "\"") + "." + vaultDNSSuffix[idx] + "/"
 			if !test.expectedErr && expectedURL != *vaultURL {
 				t.Fatalf("expected vault url: %s, got: %s", expectedURL, *vaultURL)
 			}
