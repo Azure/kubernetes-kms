@@ -57,6 +57,14 @@ func TestNewKeyVaultClient(t *testing.T) {
 			keyVersion:  "262067a9e8ba401aa8a746c5f1a7e147",
 			expectedErr: false,
 		},
+		{
+			desc:        "no error with double quotes",
+			config:      &config.AzureConfig{ClientID: "clientid", ClientSecret: "clientsecret"},
+			vaultName:   "\"testkv\"",
+			keyName:     "\"key1\"",
+			keyVersion:  "\"262067a9e8ba401aa8a746c5f1a7e147\"",
+			expectedErr: false,
+		},
 	}
 
 	for _, test := range tests {
@@ -104,11 +112,6 @@ func TestGetVaultURL(t *testing.T) {
 		{
 			desc:        "valid vault name in public cloud",
 			vaultName:   "testkv",
-			expectedErr: false,
-		},
-		{
-			desc:        "vault name with double quotes",
-			vaultName:   "\"testkv\"",
 			expectedErr: false,
 		},
 	}
