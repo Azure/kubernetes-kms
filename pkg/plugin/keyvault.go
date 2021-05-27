@@ -13,6 +13,7 @@ import (
 
 	"github.com/Azure/kubernetes-kms/pkg/auth"
 	"github.com/Azure/kubernetes-kms/pkg/config"
+	"github.com/Azure/kubernetes-kms/pkg/utils"
 	"github.com/Azure/kubernetes-kms/pkg/version"
 
 	kv "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
@@ -38,6 +39,11 @@ type keyVaultClient struct {
 
 // NewKeyVaultClient returns a new key vault client to use for kms operations
 func newKeyVaultClient(config *config.AzureConfig, vaultName, keyName, keyVersion string) (*keyVaultClient, error) {
+	//Sanitize vaultName, keyName, keyVersion. (https://github.com/Azure/kubernetes-kms/issues/85)
+	vaultName = utils.SanitizeString(vaultName)
+	keyName = utils.SanitizeString(keyName)
+	keyVersion = utils.SanitizeString(keyVersion)
+
 	// this should be the case for bring your own key, clusters bootstrapped with
 	// aks-engine or aks and standalone kms plugin deployments
 	if len(vaultName) == 0 || len(keyName) == 0 || len(keyVersion) == 0 {
@@ -115,6 +121,7 @@ func getVaultURL(vaultName string, azureEnvironment *azure.Environment) (vaultUR
 	if len(vaultName) < 3 || len(vaultName) > 24 {
 		return nil, fmt.Errorf("invalid vault name: %q, must be between 3 and 24 chars", vaultName)
 	}
+
 	// See docs for validation spec: https://docs.microsoft.com/en-us/azure/key-vault/about-keys-secrets-and-certificates#objects-identifiers-and-versioning
 	isValid := regexp.MustCompile(`^[-A-Za-z0-9]+$`).MatchString
 	if !isValid(vaultName) {
