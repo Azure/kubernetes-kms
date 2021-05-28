@@ -32,8 +32,8 @@ type reporter struct {
 type StatsReporter interface {
 	ReportEncryptCountMetric(ctx context.Context)
 	ReportDecryptCountMetric(ctx context.Context)
-	ReportEncryptErrorCountMetric(ctx context.Context, errorType string)
-	ReportDecryptErrorCountMetric(ctx context.Context, errorType string)
+	ReportEncryptErrorCountMetric(ctx context.Context, errorMessage string)
+	ReportDecryptErrorCountMetric(ctx context.Context, errorMessage string)
 	ReportEncryptDurationMetric(ctx context.Context, duration float64)
 	ReportDecryptDurationMetric(ctx context.Context, duration float64)
 }
@@ -66,18 +66,18 @@ func (r *reporter) ReportDecryptCountMetric(ctx context.Context) {
 	totalRequest.Add(ctx, 1, labels...)
 }
 
-func (r *reporter) ReportEncryptErrorCountMetric(ctx context.Context, errorType string) {
+func (r *reporter) ReportEncryptErrorCountMetric(ctx context.Context, errorMessage string) {
 	labels := []attribute.KeyValue{
-		attribute.String(errorTypeKey, errorType),
+		attribute.String(errorTypeKey, errorMessage),
 		attribute.String(operationTypeKey, encryptOperationTypeValue),
 		attribute.String(statusTypeKey, errorStatusTypeValue),
 	}
 	totalRequest.Add(ctx, 1, labels...)
 }
 
-func (r *reporter) ReportDecryptErrorCountMetric(ctx context.Context, errorType string) {
+func (r *reporter) ReportDecryptErrorCountMetric(ctx context.Context, errorMessage string) {
 	labels := []attribute.KeyValue{
-		attribute.String(errorTypeKey, errorType),
+		attribute.String(errorTypeKey, errorMessage),
 		attribute.String(operationTypeKey, decryptOperationTypeValue),
 		attribute.String(statusTypeKey, errorStatusTypeValue),
 	}

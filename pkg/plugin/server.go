@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/Azure/kubernetes-kms/pkg/config"
-	internalerrors "github.com/Azure/kubernetes-kms/pkg/errors"
 	"github.com/Azure/kubernetes-kms/pkg/metrics"
 	"github.com/Azure/kubernetes-kms/pkg/version"
 
@@ -56,7 +55,7 @@ func (s *KeyManagementServiceServer) Encrypt(ctx context.Context, request *k8spb
 	var err error
 	defer func() {
 		if err != nil {
-			s.reporter.ReportEncryptErrorCountMetric(ctx, internalerrors.FailedToEncrypt)
+			s.reporter.ReportEncryptErrorCountMetric(ctx, err.Error())
 			return
 		}
 		s.reporter.ReportEncryptCountMetric(ctx)
@@ -80,7 +79,7 @@ func (s *KeyManagementServiceServer) Decrypt(ctx context.Context, request *k8spb
 	var err error
 	defer func() {
 		if err != nil {
-			s.reporter.ReportDecryptErrorCountMetric(ctx, internalerrors.FailedToDecrypt)
+			s.reporter.ReportDecryptErrorCountMetric(ctx, err.Error())
 			return
 		}
 		s.reporter.ReportDecryptCountMetric(ctx)
