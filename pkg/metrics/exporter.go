@@ -7,7 +7,9 @@ import (
 	"k8s.io/klog/v2"
 )
 
-const prometheusExporter = "prometheus"
+const (
+	prometheusExporter = "prometheus"
+)
 
 // InitMetricsExporter initializes new exporter
 func InitMetricsExporter(metricsBackend, metricsAddress string) error {

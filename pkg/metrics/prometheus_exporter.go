@@ -19,7 +19,7 @@ func initPrometheusExporter(metricsAddress string) error {
 		}},
 	)
 	if err != nil {
-		return fmt.Errorf("Failed to register prometheus exporter - %v", err)
+		return fmt.Errorf("failed to register prometheus exporter: %v", err)
 	}
 
 	http.HandleFunc(fmt.Sprintf("/%s", metricsEndpoint), exporter.ServeHTTP)
@@ -28,6 +28,6 @@ func initPrometheusExporter(metricsAddress string) error {
 		klog.Fatalf("Failed to register prometheus endpoint - %v", err)
 	}()
 
-	klog.Infof("Prometheus metrics server running on address: %v", metricsAddress)
+	klog.InfoS("Prometheus metrics server running", "address", metricsAddress)
 	return nil
 }

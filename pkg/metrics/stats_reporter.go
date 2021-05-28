@@ -40,8 +40,8 @@ type StatsReporter interface {
 func NewStatsReporter() StatsReporter {
 	meter := global.Meter(instrumentationName)
 
-	encryptTotal = metric.Must(meter).NewInt64Counter("total_encrypt", metric.WithDescription("Total number of Encrypt requests"))
-	decryptTotal = metric.Must(meter).NewInt64Counter("total_decrypt", metric.WithDescription("Total number of Decrypt requests"))
+	encryptTotal = metric.Must(meter).NewInt64Counter("total_encrypt", metric.WithDescription("Total number of encrypt requests"))
+	decryptTotal = metric.Must(meter).NewInt64Counter("total_decrypt", metric.WithDescription("Total number of decrypt requests"))
 	encryptErrorTotal = metric.Must(meter).NewInt64Counter("total_encrypt_error", metric.WithDescription("Total number of encrypt requests with error"))
 	decryptErrorTotal = metric.Must(meter).NewInt64Counter("total_decrypt_error", metric.WithDescription("Total number of decrypt requests with error"))
 	encryptDuration = metric.Must(meter).NewFloat64ValueRecorder("encrypt_duration_seconds", metric.WithDescription("Distribution of how long it took to encrypt request"))
