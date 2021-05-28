@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Azure/kubernetes-kms/pkg/metrics"
 	mockkeyvault "github.com/Azure/kubernetes-kms/pkg/plugin/mock_keyvault"
 
 	"google.golang.org/grpc"
@@ -137,7 +138,10 @@ func setupFakeKMSServer(socketPath string) (*KeyManagementServiceServer, *mockke
 		return nil, nil, err
 	}
 	kvClient := &mockkeyvault.KeyVaultClient{}
-	fakeKMSServer := &KeyManagementServiceServer{kvClient: kvClient}
+	fakeKMSServer := &KeyManagementServiceServer{
+		kvClient: kvClient,
+		reporter: metrics.NewStatsReporter(),
+	}
 	s := grpc.NewServer()
 	pb.RegisterKeyManagementServiceServer(s, fakeKMSServer)
 	go s.Serve(listener)
