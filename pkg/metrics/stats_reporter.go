@@ -26,7 +26,7 @@ type reporter struct {
 	meter metric.Meter
 }
 
-//StatsReporter reports metrics
+// StatsReporter reports metrics
 type StatsReporter interface {
 	ReportEncryptCountMetric(ctx context.Context)
 	ReportDecryptCountMetric(ctx context.Context)
@@ -36,7 +36,7 @@ type StatsReporter interface {
 	ReportDecryptDurationMetric(ctx context.Context, duration float64)
 }
 
-//NewStatsReporter instantiates otel reporter
+// NewStatsReporter instantiates otel reporter
 func NewStatsReporter() StatsReporter {
 	meter := global.Meter(instrumentationName)
 

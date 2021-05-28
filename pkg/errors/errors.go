@@ -1,9 +1,9 @@
 package errors
 
 const (
-	//FailedToEncrypt error
+	// FailedToEncrypt error
 	FailedToEncrypt = "FailedToEncrypt"
 
-	//FailedToDecrypt error
+	// FailedToDecrypt error
 	FailedToDecrypt = "FailedToDecrypt"
 )

@@ -40,7 +40,7 @@ func New(ctx context.Context, configFilePath, vaultName, keyName, keyVersion str
 	}, nil
 }
 
-//Version of kms
+// Version of kms
 func (s *KeyManagementServiceServer) Version(ctx context.Context, request *k8spb.VersionRequest) (*k8spb.VersionResponse, error) {
 	return &k8spb.VersionResponse{
 		Version:        version.APIVersion,
@@ -49,7 +49,7 @@ func (s *KeyManagementServiceServer) Version(ctx context.Context, request *k8spb
 	}, nil
 }
 
-//Encrypt message
+// Encrypt message
 func (s *KeyManagementServiceServer) Encrypt(ctx context.Context, request *k8spb.EncryptRequest) (*k8spb.EncryptResponse, error) {
 	start := time.Now()
 
@@ -73,7 +73,7 @@ func (s *KeyManagementServiceServer) Encrypt(ctx context.Context, request *k8spb
 	return &k8spb.EncryptResponse{Cipher: cipher}, nil
 }
 
-//Decrypt message
+// Decrypt message
 func (s *KeyManagementServiceServer) Decrypt(ctx context.Context, request *k8spb.DecryptRequest) (*k8spb.DecryptResponse, error) {
 	start := time.Now()
 
