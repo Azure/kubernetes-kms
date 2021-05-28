@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/otel/exporters/metric/prometheus"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 const (
