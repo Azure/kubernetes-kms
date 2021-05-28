@@ -42,7 +42,7 @@ type StatsReporter interface {
 func NewStatsReporter() StatsReporter {
 	meter := global.Meter(instrumentationName)
 
-	totalRequest = metric.Must(meter).NewInt64Counter("total_request", metric.WithDescription("Total number of requests."))
+	totalRequest = metric.Must(meter).NewInt64Counter("total_request", metric.WithDescription("Total number of requests"))
 	requestDuration = metric.Must(meter).NewFloat64ValueRecorder("duration_seconds", metric.WithDescription("Distribution of how long it took for an operation"))
 
 	return &reporter{
