@@ -9,17 +9,21 @@ import (
 	"go.opentelemetry.io/otel/metric/global"
 )
 
+const (
+	instrumentationName       = "keyvaultkms"
+	errorTypeKey              = "error_type"
+	statusTypeKey             = "status"
+	errorStatusTypeValue      = "error"
+	successStatusTypeValue    = "success"
+	operationTypeKey          = "operation"
+	encryptOperationTypeValue = "encrypt"
+	decryptOperationTypeValue = "decrypt"
+)
+
 var (
-	instrumentationName = "keyvaultkms"
-	osTypeKey           = "os_type"
-	errorTypeKey        = "error_type"
-	encryptTotal        metric.Int64Counter
-	decryptTotal        metric.Int64Counter
-	encryptErrorTotal   metric.Int64Counter
-	decryptErrorTotal   metric.Int64Counter
-	encryptDuration     metric.Float64ValueRecorder
-	decryptDuration     metric.Float64ValueRecorder
-	runtimeOS           = runtime.GOOS
+	totalRequest    metric.Int64Counter
+	requestDuration metric.Float64ValueRecorder
+	runtimeOS       = runtime.GOOS
 )
 
 type reporter struct {
@@ -40,12 +44,8 @@ type StatsReporter interface {
 func NewStatsReporter() StatsReporter {
 	meter := global.Meter(instrumentationName)
 
-	encryptTotal = metric.Must(meter).NewInt64Counter("total_encrypt", metric.WithDescription("Total number of encrypt requests"))
-	decryptTotal = metric.Must(meter).NewInt64Counter("total_decrypt", metric.WithDescription("Total number of decrypt requests"))
-	encryptErrorTotal = metric.Must(meter).NewInt64Counter("total_encrypt_error", metric.WithDescription("Total number of encrypt requests with error"))
-	decryptErrorTotal = metric.Must(meter).NewInt64Counter("total_decrypt_error", metric.WithDescription("Total number of decrypt requests with error"))
-	encryptDuration = metric.Must(meter).NewFloat64ValueRecorder("encrypt_duration_seconds", metric.WithDescription("Distribution of how long it took to encrypt request"))
-	decryptDuration = metric.Must(meter).NewFloat64ValueRecorder("decrypt_duration_seconds", metric.WithDescription("Distribution of how long it took to decrypt request"))
+	totalRequest = metric.Must(meter).NewInt64Counter("total_request", metric.WithDescription("Total number of requests."))
+	requestDuration = metric.Must(meter).NewFloat64ValueRecorder("duration_seconds", metric.WithDescription("Distribution of how long it took for an operation"))
 
 	return &reporter{
 		meter: meter,
@@ -54,48 +54,52 @@ func NewStatsReporter() StatsReporter {
 
 func (r *reporter) ReportEncryptCountMetric(ctx context.Context) {
 	labels := []attribute.KeyValue{
-		attribute.String(osTypeKey, runtimeOS),
+		attribute.String(operationTypeKey, encryptOperationTypeValue),
+		attribute.String(statusTypeKey, successStatusTypeValue),
 	}
-	encryptTotal.Add(ctx, 1, labels...)
+	totalRequest.Add(ctx, 1, labels...)
 }
 
 func (r *reporter) ReportDecryptCountMetric(ctx context.Context) {
 	labels := []attribute.KeyValue{
-		attribute.String(osTypeKey, runtimeOS),
+		attribute.String(operationTypeKey, decryptOperationTypeValue),
+		attribute.String(statusTypeKey, successStatusTypeValue),
 	}
-	decryptTotal.Add(ctx, 1, labels...)
+	totalRequest.Add(ctx, 1, labels...)
 }
 
 func (r *reporter) ReportEncryptErrorCountMetric(ctx context.Context, errorType string) {
 	labels := []attribute.KeyValue{
 		attribute.String(errorTypeKey, errorType),
-		attribute.String(osTypeKey, runtimeOS),
+		attribute.String(operationTypeKey, encryptOperationTypeValue),
+		attribute.String(statusTypeKey, errorStatusTypeValue),
 	}
-	encryptErrorTotal.Add(ctx, 1, labels...)
+	totalRequest.Add(ctx, 1, labels...)
 }
 
 func (r *reporter) ReportDecryptErrorCountMetric(ctx context.Context, errorType string) {
 	labels := []attribute.KeyValue{
 		attribute.String(errorTypeKey, errorType),
-		attribute.String(osTypeKey, runtimeOS),
+		attribute.String(operationTypeKey, decryptOperationTypeValue),
+		attribute.String(statusTypeKey, errorStatusTypeValue),
 	}
-	decryptErrorTotal.Add(ctx, 1, labels...)
+	totalRequest.Add(ctx, 1, labels...)
 }
 
 func (r *reporter) ReportEncryptDurationMetric(ctx context.Context, duration float64) {
 	r.meter.RecordBatch(ctx,
 		[]attribute.KeyValue{
-			attribute.String(osTypeKey, runtimeOS),
+			attribute.String(operationTypeKey, encryptOperationTypeValue),
 		},
-		encryptDuration.Measurement(duration),
+		requestDuration.Measurement(duration),
 	)
 }
 
 func (r *reporter) ReportDecryptDurationMetric(ctx context.Context, duration float64) {
 	r.meter.RecordBatch(ctx,
 		[]attribute.KeyValue{
-			attribute.String(osTypeKey, runtimeOS),
+			attribute.String(operationTypeKey, decryptOperationTypeValue),
 		},
-		decryptDuration.Measurement(duration),
+		requestDuration.Measurement(duration),
 	)
 }
