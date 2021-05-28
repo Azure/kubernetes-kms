@@ -8,7 +8,7 @@ Prometheus is the only exporter that's currently supported.
 
 | Metric                          | Description                                                               | Tags                                                                              |
 | ------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| total_request                   | Total number of requests                                                  | `status=<success OR error>`<br>`operation=<encrypt OR decrypt>`                           |
+| total_request                   | Total number of requests                                                  | `status=success OR error`<br>`operation=encrypt OR decrypt`                           |
 | duration_seconds                | Distribution of how long it took for an operation                         | `operation=encrypt OR decrypt`                       |
 
 
