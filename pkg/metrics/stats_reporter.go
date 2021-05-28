@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"context"
-	"runtime"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -23,7 +22,6 @@ const (
 var (
 	totalRequest    metric.Int64Counter
 	requestDuration metric.Float64ValueRecorder
-	runtimeOS       = runtime.GOOS
 )
 
 type reporter struct {
