@@ -44,8 +44,8 @@ func NewStatsReporter() StatsReporter {
 	decryptTotal = metric.Must(meter).NewInt64Counter("total_decrypt", metric.WithDescription("Total number of Decrypt requests"))
 	encryptErrorTotal = metric.Must(meter).NewInt64Counter("total_encrypt_error", metric.WithDescription("Total number of encrypt requests with error"))
 	decryptErrorTotal = metric.Must(meter).NewInt64Counter("total_decrypt_error", metric.WithDescription("Total number of decrypt requests with error"))
-	encryptDuration = metric.Must(meter).NewFloat64ValueRecorder("encrypt_duration_sec", metric.WithDescription("Distribution of how long it took to encrypt request"))
-	decryptDuration = metric.Must(meter).NewFloat64ValueRecorder("decrypt_duration_sec", metric.WithDescription("Distribution of how long it took to decrypt request"))
+	encryptDuration = metric.Must(meter).NewFloat64ValueRecorder("encrypt_duration_seconds", metric.WithDescription("Distribution of how long it took to encrypt request"))
+	decryptDuration = metric.Must(meter).NewFloat64ValueRecorder("decrypt_duration_seconds", metric.WithDescription("Distribution of how long it took to decrypt request"))
 
 	return &reporter{
 		meter: meter,
