@@ -22,6 +22,8 @@ const (
 	EncryptOperationTypeValue = "encrypt"
 	// DecryptOperationTypeValue sets operation tag to "decrypt"
 	DecryptOperationTypeValue = "decrypt"
+	// GrpcOperationTypeValue sets operation tag to "grpc"
+	GrpcOperationTypeValue = "grpc"
 )
 
 var (
