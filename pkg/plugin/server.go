@@ -55,11 +55,10 @@ func (s *KeyManagementServiceServer) Encrypt(ctx context.Context, request *k8spb
 	var err error
 	defer func() {
 		if err != nil {
-			s.reporter.ReportEncryptErrorCountMetric(ctx, err.Error())
+			s.reporter.ReportRequest(ctx, metrics.EncryptOperationTypeValue, metrics.ErrorStatusTypeValue, time.Since(start).Seconds(), err.Error())
 			return
 		}
-		s.reporter.ReportEncryptCountMetric(ctx)
-		s.reporter.ReportEncryptDurationMetric(ctx, time.Since(start).Seconds())
+		s.reporter.ReportRequest(ctx, metrics.EncryptOperationTypeValue, metrics.SuccessStatusTypeValue, time.Since(start).Seconds())
 	}()
 
 	klog.V(2).Infof("encrypt request started")
@@ -79,11 +78,10 @@ func (s *KeyManagementServiceServer) Decrypt(ctx context.Context, request *k8spb
 	var err error
 	defer func() {
 		if err != nil {
-			s.reporter.ReportDecryptErrorCountMetric(ctx, err.Error())
+			s.reporter.ReportRequest(ctx, metrics.DecryptOperationTypeValue, metrics.ErrorStatusTypeValue, time.Since(start).Seconds(), err.Error())
 			return
 		}
-		s.reporter.ReportDecryptCountMetric(ctx)
-		s.reporter.ReportDecryptDurationMetric(ctx, time.Since(start).Seconds())
+		s.reporter.ReportRequest(ctx, metrics.DecryptOperationTypeValue, metrics.SuccessStatusTypeValue, time.Since(start).Seconds())
 	}()
 
 	klog.V(2).Infof("decrypt request started")
