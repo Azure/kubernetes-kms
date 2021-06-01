@@ -31,7 +31,7 @@ func TestInitMetricsExporter(t *testing.T) {
 			err := InitMetricsExporter(testCase.metricsBackend, metricsAddress)
 
 			if testCase.expectedError && err == nil || !testCase.expectedError && err != nil {
-				t.Fatalf("expected error: %v, got error: %v", testCase.expectedError, err)
+				t.Fatalf("expected error: %v, found: %v", testCase.expectedError, err)
 			}
 		})
 	}
