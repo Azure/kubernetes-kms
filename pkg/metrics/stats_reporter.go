@@ -10,7 +10,7 @@ import (
 
 const (
 	instrumentationName  = "keyvaultkms"
-	errorTypeKey         = "error_type"
+	errorMessageKey      = "error_message"
 	statusTypeKey        = "status"
 	operationTypeKey     = "operation"
 	kmsRequestMetricName = "kms_request"
@@ -59,7 +59,7 @@ func (r *reporter) ReportRequest(ctx context.Context, operationType, status stri
 	// Add errors
 	if (status == ErrorStatusTypeValue) && len(errors) > 0 {
 		for _, err := range errors {
-			labels = append(labels, attribute.String(errorTypeKey, err))
+			labels = append(labels, attribute.String(errorMessageKey, err))
 		}
 	}
 
