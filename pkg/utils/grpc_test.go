@@ -46,3 +46,32 @@ func TestParseEndpoint(t *testing.T) {
 		})
 	}
 }
+
+func TestGetGRPCMethodName(t *testing.T) {
+	testCases := []struct {
+		name           string
+		input          string
+		expectedOutput string
+	}{
+		{
+			name:           "With_Correct_Method_Name",
+			input:          "/v1beta1.KeyManagementService/Encrypt",
+			expectedOutput: "encrypt",
+		},
+		{
+			name:           "With_Incorrect_Method_Name",
+			input:          "/Encrypt",
+			expectedOutput: "unknown",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			methodName := getGRPCMethodName(testCase.input)
+
+			if methodName != testCase.expectedOutput {
+				t.Fatalf("expected output: '%s', found: '%s'", testCase.expectedOutput, methodName)
+			}
+		})
+	}
+}

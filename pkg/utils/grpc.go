@@ -49,7 +49,7 @@ func UnaryServerInterceptor() func(ctx context.Context, req interface{}, info *g
 func getGRPCMethodName(fullMethodName string) string {
 	fullMethodName = strings.TrimPrefix(fullMethodName, "/")
 	methodNames := strings.Split(fullMethodName, "/")
-	if len(methodNames) > 0 {
+	if len(methodNames) >= 2 {
 		return strings.ToLower(methodNames[1])
 	}
 
