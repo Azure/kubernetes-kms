@@ -44,7 +44,7 @@ setup() {
       assert_success
     fi
 
-    #cleanup
+    # cleanup
     run kubectl delete secret secret1 -n default
 }
 
@@ -59,6 +59,6 @@ setup() {
     result=$(kubectl exec curl -- curl http://${pod_ip}:8787/healthz -o /dev/null -w '%{http_code}\n' -s)
     [[ "${result//$'\r'}" == "200" ]]
 
-    #cleanup
+    # cleanup
     run kubectl delete pod curl --force --grace-period 0
 }
