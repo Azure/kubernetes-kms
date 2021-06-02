@@ -67,6 +67,9 @@ jobs:
           echo "##vso[task.setvariable variable=LOCAL_IMAGE_VERSION]$(git rev-parse --short HEAD)"
         displayName: "Update Image version"
       
+      # This stage will upgrade kms plugin. The path (./tests/e2e/generated_manifests) is mounted in kind cluster.
+      # Any changes in the host will automatically be reflected in /etc/kubernetes/manifests mount path and that static pod is restarted with new changes.
+      # manifest-template updates these files with registry, imageName and version to desired upgrade values.
       - template: manifest-template.yml
         parameters:
           registry: localhost:$(REGISTRY_PORT)
