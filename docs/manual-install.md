@@ -73,7 +73,7 @@ This guide demonstrates steps required to enable the KMS Plugin for Key Vault in
         imagePullPolicy: IfNotPresent
         args:
           - --listen-addr=unix:///opt/azurekms.socket             # [OPTIONAL] gRPC listen address. Default is unix:///opt/azurekms.socket
-          - --keyvault-name=${KV_NAME}                            # [REQUIRED] Name of the keyvault
+          - --keyvault-name=${KV_NAME}                            # [REQUIRED] Name of the keyvault. Must match criteria specified at https://docs.microsoft.com/en-us/azure/key-vault/general/about-keys-secrets-certificates#vault-name-and-object-name
           - --key-name=${KEY_NAME}                                # [REQUIRED] Name of the keyvault key used for encrypt/decrypt
           - --key-version=${KEY_VERSION}                          # [REQUIRED] Version of the key to use
           - --log-format-json=false                               # [OPTIONAL] Set log formatter to json. Default is false.
