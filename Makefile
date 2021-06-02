@@ -90,11 +90,7 @@ e2e-install-prerequisites:
 	curl -sSLO https://github.com/bats-core/bats-core/archive/v${BATS_VERSION}.tar.gz && tar -zxvf v${BATS_VERSION}.tar.gz && sudo bash bats-core-${BATS_VERSION}/install.sh /usr/local
 
 .PHONY: install-soak-prerequisites
-install-soak-prerequisites:
-	# Download and install kubectl
-	curl -LO https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl && chmod +x ./kubectl && sudo mv kubectl /usr/local/bin/
-	# Download and install bats
-	curl -sSLO https://github.com/bats-core/bats-core/archive/v${BATS_VERSION}.tar.gz && tar -zxvf v${BATS_VERSION}.tar.gz && sudo bash bats-core-${BATS_VERSION}/install.sh /usr/local
+install-soak-prerequisites: e2e-install-prerequisites
 	# Download and install node-shell
 	curl -LO https://github.com/kvaps/kubectl-node-shell/raw/master/kubectl-node_shell && chmod +x ./kubectl-node_shell && sudo mv ./kubectl-node_shell /usr/local/bin/kubectl-node_shell
 
