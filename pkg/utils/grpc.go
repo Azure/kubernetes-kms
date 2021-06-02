@@ -23,29 +23,27 @@ func ParseEndpoint(ep string) (string, string, error) {
 }
 
 // UnaryServerInterceptor provides metrics around Unary RPCs.
-func UnaryServerInterceptor() func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		start := time.Now()
-		reporter := metrics.NewStatsReporter()
+func UnaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	start := time.Now()
+	reporter := metrics.NewStatsReporter()
 
-		var err error
-		defer func() {
-			errors := ""
-			status := metrics.SuccessStatusTypeValue
-			if err != nil {
-				status = metrics.ErrorStatusTypeValue
-				errors = err.Error()
-			}
-			reporter.ReportRequest(ctx, fmt.Sprintf("%s_%s", metrics.GrpcOperationTypeValue, getGRPCMethodName(info.FullMethod)), status, time.Since(start).Seconds(), errors)
-		}()
-
-		klog.V(5).Infof("GRPC call: %s", info.FullMethod)
-		resp, err := handler(ctx, req)
+	var err error
+	defer func() {
+		errors := ""
+		status := metrics.SuccessStatusTypeValue
 		if err != nil {
-			klog.ErrorS(err, "GRPC request error")
+			status = metrics.ErrorStatusTypeValue
+			errors = err.Error()
 		}
-		return resp, err
+		reporter.ReportRequest(ctx, fmt.Sprintf("%s_%s", metrics.GrpcOperationTypeValue, getGRPCMethodName(info.FullMethod)), status, time.Since(start).Seconds(), errors)
+	}()
+
+	klog.V(5).Infof("GRPC call: %s", info.FullMethod)
+	resp, err := handler(ctx, req)
+	if err != nil {
+		klog.ErrorS(err, "GRPC request error")
 	}
+	return resp, err
 }
 
 func getGRPCMethodName(fullMethodName string) string {

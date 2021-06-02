@@ -87,7 +87,7 @@ func main() {
 		klog.Fatalf("failed to listen: %v", err)
 	}
 	opts := []grpc.ServerOption{
-		grpc.UnaryInterceptor(utils.UnaryServerInterceptor()),
+		grpc.UnaryInterceptor(utils.UnaryServerInterceptor),
 	}
 
 	s := grpc.NewServer(opts...)
