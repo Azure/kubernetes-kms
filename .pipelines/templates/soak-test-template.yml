@@ -24,23 +24,6 @@ jobs:
           echo "##vso[task.setvariable variable=KUBECONFIG]${KUBECONFIG}"
         displayName: "Set KUBECONFIG"
 
-      # - script: |
-      #     key=$(cat <<-END
-      #     -----BEGIN RSA PRIVATE KEY-----
-      #     $(CLIENT_KEY)
-      #     -----END RSA PRIVATE KEY-----
-      #     END
-      #     )
-
-      #     kubectl config set-cluster kms-aks-engine --server=$(API_SERVER_ENDPOINT)
-      #     kubectl config set clusters.kms-aks-engine.certificate-authority-data $(CA_DATA)
-      #     kubectl config set-credentials cluster-admin
-      #     kubectl config set users.cluster-admin.client-certificate-data $(CLIENT_CERTIFICATE_DATA)
-      #     kubectl config set users.cluster-admin.client-key-data "$(echo "$key" | base64 -i -)"
-      #     kubectl config set-context kms --user=cluster-admin --cluster=kms-aks-engine
-      #     kubectl config use-context kms
-      #   displayName: "Set KUBECONFIG"
-
       - template: cluster-health-template.yml
 
       - script: make IS_SOAK_TEST=true e2e-test
