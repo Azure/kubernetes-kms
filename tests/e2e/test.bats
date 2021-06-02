@@ -8,7 +8,7 @@ ETCD_CA_CERT=/etc/kubernetes/pki/etcd/ca.crt
 ETCD_CERT=/etc/kubernetes/pki/etcd/server.crt
 ETCD_KEY=/etc/kubernetes/pki/etcd/server.key
 
-setup() {
+setup_file() {
     export IS_SOAK_TEST="${IS_SOAK_TEST}"
     if [ ${IS_SOAK_TEST} = true ]; then
       ETCD_CA_CERT=/etc/kubernetes/certs/ca.crt
