@@ -25,26 +25,45 @@ jobs:
       - script: make e2e-install-prerequisites
         displayName: "Install e2e test prerequisites"
 
-      - script: |
-          . scripts/setup-local-registry.sh
-        displayName: "Setup local registry"
-        env:
-          REGISTRY_NAME: $(REGISTRY_NAME)
-          REGISTRY_PORT: $(REGISTRY_PORT)
-          CLIENT_ID: $(AZURE_CLIENT_ID)
-          CLIENT_SECRET: $(AZURE_CLIENT_SECRET)
+      # - script: |
+      #     . scripts/setup-local-registry.sh
+      #   displayName: "Setup local registry"
+      #   env:
+      #     REGISTRY_NAME: $(REGISTRY_NAME)
+      #     REGISTRY_PORT: $(REGISTRY_PORT)
+      #     CLIENT_ID: $(AZURE_CLIENT_ID)
+      #     CLIENT_SECRET: $(AZURE_CLIENT_SECRET)
+
+      # - script: |
+      #     . scripts/setup-kind-cluster.sh &
+      #     . scripts/connect-registry.sh &
+      #     wait
+      #   displayName: "Setup kind cluster with azure kms plugin"
+      #   env:
+      #     REGISTRY_NAME: $(REGISTRY_NAME)
+      #     REGISTRY_PORT: $(REGISTRY_PORT)
+      #     KUBERNETES_VERSION: $(KUBERNETES_VERSION)
+      #     KIND_CLUSTER_NAME: $(KIND_CLUSTER_NAME)
+      #     KIND_NETWORK: $(KIND_NETWORK)
+
+      # - script: |
+      #     . scripts/setup-local-registry.sh
+      #   displayName: "Setup local registry"
+      #   env:
+      #     REGISTRY_NAME: $(REGISTRY_NAME)
+      #     REGISTRY_PORT: $(REGISTRY_PORT)
+      #     CLIENT_ID: $(AZURE_CLIENT_ID)
+      #     CLIENT_SECRET: $(AZURE_CLIENT_SECRET)
 
       - script: |
-          . scripts/setup-kind-cluster.sh &
-          . scripts/connect-registry.sh &
-          wait
+          make e2e-setup-kind
         displayName: "Setup kind cluster with azure kms plugin"
         env:
-          REGISTRY_NAME: $(REGISTRY_NAME)
-          REGISTRY_PORT: $(REGISTRY_PORT)
           KUBERNETES_VERSION: $(KUBERNETES_VERSION)
           KIND_CLUSTER_NAME: $(KIND_CLUSTER_NAME)
           KIND_NETWORK: $(KIND_NETWORK)
+          CLIENT_ID: $(AZURE_CLIENT_ID)
+          CLIENT_SECRET: $(AZURE_CLIENT_SECRET)
 
       - template: cluster-health-template.yml
       - template: kind-debug-template.yml
