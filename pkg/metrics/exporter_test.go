@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"net/http"
 	"testing"
 )
 
@@ -24,6 +25,11 @@ func TestInitMetricsExporter(t *testing.T) {
 			metricsBackend: "nonprometheus",
 			expectedError:  true,
 		},
+		{
+			name:           "With_Uppercase_Backend_Name",
+			metricsBackend: "Prometheus",
+			expectedError:  false,
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -33,6 +39,9 @@ func TestInitMetricsExporter(t *testing.T) {
 			if testCase.expectedError && err == nil || !testCase.expectedError && err != nil {
 				t.Fatalf("expected error: %v, found: %v", testCase.expectedError, err)
 			}
+
+			//Reset handler to test /metrics  repeatedly.
+			http.DefaultServeMux = new(http.ServeMux)
 		})
 	}
 }
