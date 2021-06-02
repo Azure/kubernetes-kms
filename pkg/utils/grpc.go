@@ -30,11 +30,13 @@ func UnaryServerInterceptor() func(ctx context.Context, req interface{}, info *g
 
 		var err error
 		defer func() {
+			errors := ""
+			status := metrics.SuccessStatusTypeValue
 			if err != nil {
-				reporter.ReportRequest(ctx, fmt.Sprintf("%s_%s", metrics.GrpcOperationTypeValue, getGRPCMethodName(info.FullMethod)), metrics.ErrorStatusTypeValue, time.Since(start).Seconds(), err.Error())
-				return
+				status = metrics.ErrorStatusTypeValue
+				errors = err.Error()
 			}
-			reporter.ReportRequest(ctx, fmt.Sprintf("%s_%s", metrics.GrpcOperationTypeValue, getGRPCMethodName(info.FullMethod)), metrics.SuccessStatusTypeValue, time.Since(start).Seconds())
+			reporter.ReportRequest(ctx, fmt.Sprintf("%s_%s", metrics.GrpcOperationTypeValue, getGRPCMethodName(info.FullMethod)), status, time.Since(start).Seconds(), errors)
 		}()
 
 		klog.V(5).Infof("GRPC call: %s", info.FullMethod)
