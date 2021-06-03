@@ -56,9 +56,11 @@ jobs:
       #     CLIENT_SECRET: $(AZURE_CLIENT_SECRET)
 
       - script: |
-          make e2e-setup-kind
+          REGISTRY_NAME=$(REGISTRY_NAME) REGISTRY_PORT=$(REGISTRY_PORT) KUBERNETES_VERSION=$(KUBERNETES_VERSION) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) KIND_NETWORK=$(KIND_NETWORK) make e2e-setup-kind
         displayName: "Setup kind cluster with azure kms plugin"
         env:
+          REGISTRY_NAME: $(REGISTRY_NAME)
+          REGISTRY_PORT: $(REGISTRY_PORT)
           KUBERNETES_VERSION: $(KUBERNETES_VERSION)
           KIND_CLUSTER_NAME: $(KIND_CLUSTER_NAME)
           KIND_NETWORK: $(KIND_NETWORK)
