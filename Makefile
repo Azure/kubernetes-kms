@@ -101,8 +101,6 @@ e2e-setup-kind: setup-local-registry
 
 .PHONY: setup-local-registry
 setup-local-registry:
-	export REGISTRY_NAME=$(LOCAL_REGISTRY_NAME)
-	export REGISTRY_PORT=$(LOCAL_REGISTRY_PORT)
 	. scripts/setup-local-registry.sh
 
 e2e-generate-manifests:
