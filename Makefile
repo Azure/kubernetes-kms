@@ -95,13 +95,13 @@ install-soak-prerequisites: e2e-install-prerequisites
 	curl -LO https://github.com/kvaps/kubectl-node-shell/raw/master/kubectl-node_shell && chmod +x ./kubectl-node_shell && sudo mv ./kubectl-node_shell /usr/local/bin/kubectl-node_shell
 
 e2e-setup-kind: setup-local-registry
-	scripts/setup-kind-cluster.sh &
-	scripts/connect-registry.sh &
+	./scripts/setup-kind-cluster.sh &
+	./scripts/connect-registry.sh &
 	wait
 
 .PHONY: setup-local-registry
 setup-local-registry:
-	scripts/setup-local-registry.sh
+	./scripts/setup-local-registry.sh
 
 e2e-generate-manifests:
 	@mkdir -p tests/e2e/generated_manifests
