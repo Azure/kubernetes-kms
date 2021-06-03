@@ -97,7 +97,7 @@ install-soak-prerequisites: e2e-install-prerequisites
 e2e-setup-kind: setup-local-registry
 	./scripts/setup-kind-cluster.sh &
 	./scripts/connect-registry.sh &
-	sleep 1m
+	sleep 90s
 
 .PHONY: setup-local-registry
 setup-local-registry:
