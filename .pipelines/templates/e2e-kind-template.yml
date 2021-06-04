@@ -1,0 +1,46 @@
+jobs:
+  - job: e2e_tests
+    timeoutInMinutes: 10
+    cancelTimeoutInMinutes: 5
+    workspace:
+      clean: all
+    variables:
+      - name: REGISTRY_NAME
+        value: kind-registry
+      - name: REGISTRY_PORT
+        value: 5000
+      - name: KUBERNETES_VERSION
+        value: v1.21.1
+      - name: KIND_CLUSTER_NAME
+        value: kms
+      - name: KIND_NETWORK
+        value: kind
+      - group: kubernetes-kms
+
+    steps:
+      - task: GoTool@0
+        inputs:
+          version: 1.16
+
+      - script: make e2e-install-prerequisites
+        displayName: "Install e2e test prerequisites"
+
+      - script: |
+          REGISTRY_NAME=$(REGISTRY_NAME) REGISTRY_PORT=$(REGISTRY_PORT) KUBERNETES_VERSION=$(KUBERNETES_VERSION) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) KIND_NETWORK=$(KIND_NETWORK) make e2e-setup-kind
+        displayName: "Setup kind cluster with azure kms plugin"
+        env:
+          REGISTRY_NAME: $(REGISTRY_NAME)
+          REGISTRY_PORT: $(REGISTRY_PORT)
+          KUBERNETES_VERSION: $(KUBERNETES_VERSION)
+          KIND_CLUSTER_NAME: $(KIND_CLUSTER_NAME)
+          KIND_NETWORK: $(KIND_NETWORK)
+          CLIENT_ID: $(AZURE_CLIENT_ID)
+          CLIENT_SECRET: $(AZURE_CLIENT_SECRET)
+
+      - template: cluster-health-template.yml
+      - template: kind-debug-template.yml
+
+      - script: make e2e-test
+        displayName: "Run e2e tests"
+
+      - template: cleanup-template.yml
