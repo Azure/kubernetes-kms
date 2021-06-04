@@ -39,7 +39,7 @@ func TestInitMetricsExporter(t *testing.T) {
 				t.Fatalf("expected error: %v, found: %v", testCase.expectedError, err)
 			}
 
-			//Reset handler to test /metrics  repeatedly.
+			// Reset handler to test /metrics  repeatedly.
 			http.DefaultServeMux = new(http.ServeMux)
 		})
 	}
