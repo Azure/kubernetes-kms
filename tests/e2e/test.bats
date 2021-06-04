@@ -48,6 +48,19 @@ setup_file() {
     run kubectl delete secret secret1 -n default
 }
 
+@test "check if metrics endpoint works" {
+    kubectl run curl --image=curlimages/curl:7.75.0 -- tail -f /dev/null
+    kubectl wait --for=condition=Ready --timeout=60s pod curl
+
+    local pod_ip=$(kubectl get pod -n kube-system -l component=azure-kms-provider -o jsonpath="{.items[0].status.podIP}")
+    run kubectl exec curl -- curl http://${pod_ip}:8095/metrics
+    assert_match "kms_request_bucket" "${output}"
+    assert_success
+
+    # cleanup
+    run kubectl delete pod curl --force --grace-period 0
+}
+
 @test "check healthz for kms plugin" {
     kubectl run curl --image=curlimages/curl:7.75.0 -- tail -f /dev/null
     kubectl wait --for=condition=Ready --timeout=60s pod curl
