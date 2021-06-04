@@ -5,6 +5,8 @@ REPO_PATH="$(ORG_PATH)/$(PROJECT_NAME)"
 REGISTRY_NAME ?= upstreamk8sci
 REPO_PREFIX ?= oss/azure/kms
 REGISTRY ?= $(REGISTRY_NAME).azurecr.io/$(REPO_PREFIX)
+LOCAL_REGISTRY_NAME ?= kind-registry
+LOCAL_REGISTRY_PORT ?= 5000
 IMAGE_NAME ?= keyvault
 IMAGE_VERSION ?= v0.0.11
 IMAGE_TAG ?= $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_VERSION)
@@ -26,8 +28,8 @@ DOCKER_BUILDKIT = 1
 export DOCKER_BUILDKIT
 
 # Testing var
-KIND_VERSION ?= 0.8.1
-KUBERNETES_VERSION ?= v1.19.0
+KIND_VERSION ?= 0.11.0
+KUBERNETES_VERSION ?= v1.21.1
 BATS_VERSION ?= 1.2.1
 
 GO_BUILD_OPTIONS := --tags "netgo osusergo"  -ldflags "-s -X $(BUILD_VERSION_VAR)=$(IMAGE_VERSION) -X $(GIT_VAR)=$(GIT_HASH) -X $(BUILD_DATE_VAR)=$(BUILD_DATE) -extldflags '-static'"
@@ -87,8 +89,19 @@ e2e-install-prerequisites:
 	# Download and install bats
 	curl -sSLO https://github.com/bats-core/bats-core/archive/v${BATS_VERSION}.tar.gz && tar -zxvf v${BATS_VERSION}.tar.gz && sudo bash bats-core-${BATS_VERSION}/install.sh /usr/local
 
-e2e-setup-kind:
-	./scripts/ci-e2e-kind.sh
+.PHONY: install-soak-prerequisites
+install-soak-prerequisites: e2e-install-prerequisites
+	# Download and install node-shell
+	curl -LO https://github.com/kvaps/kubectl-node-shell/raw/master/kubectl-node_shell && chmod +x ./kubectl-node_shell && sudo mv ./kubectl-node_shell /usr/local/bin/kubectl-node_shell
+
+e2e-setup-kind: setup-local-registry
+	./scripts/setup-kind-cluster.sh &
+	./scripts/connect-registry.sh &
+	sleep 90s
+
+.PHONY: setup-local-registry
+setup-local-registry:
+	./scripts/setup-local-registry.sh
 
 e2e-generate-manifests:
 	@mkdir -p tests/e2e/generated_manifests

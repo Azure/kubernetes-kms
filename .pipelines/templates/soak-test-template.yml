@@ -1,0 +1,30 @@
+jobs:
+  - job: soak_test_aks_engine
+    timeoutInMinutes: 10
+    cancelTimeoutInMinutes: 5
+
+    workspace:
+      clean: all
+
+    variables:
+      - group: kubernetes-kms-soak-aks-engine
+
+    steps:
+      - script: make install-soak-prerequisites
+        displayName: "Install e2e soak test prerequisites"
+
+      - task: DownloadSecureFile@1
+        name: kubeconfig
+        inputs:
+          secureFile: kubeconfig
+        displayName: "Download KUBECONFIG"
+      
+      - script: |
+          export KUBECONFIG=$(kubeconfig.secureFilePath)
+          echo "##vso[task.setvariable variable=KUBECONFIG]${KUBECONFIG}"
+        displayName: "Set KUBECONFIG"
+
+      - template: cluster-health-template.yml
+
+      - script: make IS_SOAK_TEST=true e2e-test
+        displayName: "Run e2e tests"
