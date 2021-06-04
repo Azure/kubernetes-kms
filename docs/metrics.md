@@ -1,13 +1,12 @@
 # Metrics provided by KMS plugin for Key Vault
 
-This project uses [opentelemetry](https://opentelemetry.io/) for reporting metrics. Please refer it's status [here](https://github.com/open-telemetry/opentelemetry-go#project-status). Prometheus is the only exporter that's currently supported.
+This project uses [opentelemetry](https://opentelemetry.io/) for reporting metrics. Please refer to it's status [here](https://github.com/open-telemetry/opentelemetry-go#project-status). Prometheus is the only exporter that's currently supported.
 
 ## List of metrics provided by the kms plugin
 
 | Metric                          | Description                                                               | Tags                                                                              |
 | ------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| total_request                   | Total number of requests                                                  | `status=success OR error`<br>`operation=encrypt OR decrypt`                           |
-| duration_seconds                | Distribution of how long it took for an operation                         | `operation=encrypt OR decrypt`                       |
+| kms_request                   | Distribution of how long it took for an operation                                                  | `status=success OR error`<br><br>`operation=encrypt OR decrypt OR grpc_encrypt OR grpc_decrypt`<br><br>`error_message`                           |
 
 
 ### Sample Metrics output
