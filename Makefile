@@ -69,10 +69,10 @@ authors:
 	$Q rm -f GITAUTHORS
 
 integration-test:
-	$Q sudo GOPATH=$(GOPATH) go test -v -count=1 github.com/Azure/kubernetes-kms/tests/client
+	$Q sudo GOPATH=$(GOPATH) go test -v -count=1 -failfast github.com/Azure/kubernetes-kms/tests/client
 
 unit-test:
-	go test -race -v -count=1 `go list ./... | grep -v client`
+	go test -race -v -count=1 -failfast `go list ./... | grep -v client`
 
 .PHONY: mod
 mod:

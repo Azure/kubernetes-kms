@@ -7,8 +7,10 @@ package plugin
 
 import (
 	"context"
+	"time"
 
 	"github.com/Azure/kubernetes-kms/pkg/config"
+	"github.com/Azure/kubernetes-kms/pkg/metrics"
 	"github.com/Azure/kubernetes-kms/pkg/version"
 
 	k8spb "k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1"
@@ -18,6 +20,7 @@ import (
 // KeyManagementServiceServer is a gRPC server.
 type KeyManagementServiceServer struct {
 	kvClient Client
+	reporter metrics.StatsReporter
 }
 
 // New creates an instance of the KMS Service Server.
@@ -32,9 +35,11 @@ func New(ctx context.Context, configFilePath, vaultName, keyName, keyVersion str
 	}
 	return &KeyManagementServiceServer{
 		kvClient: kvClient,
+		reporter: metrics.NewStatsReporter(),
 	}, nil
 }
 
+// Version of kms
 func (s *KeyManagementServiceServer) Version(ctx context.Context, request *k8spb.VersionRequest) (*k8spb.VersionResponse, error) {
 	return &k8spb.VersionResponse{
 		Version:        version.APIVersion,
@@ -43,7 +48,21 @@ func (s *KeyManagementServiceServer) Version(ctx context.Context, request *k8spb
 	}, nil
 }
 
+// Encrypt message
 func (s *KeyManagementServiceServer) Encrypt(ctx context.Context, request *k8spb.EncryptRequest) (*k8spb.EncryptResponse, error) {
+	start := time.Now()
+
+	var err error
+	defer func() {
+		errors := ""
+		status := metrics.SuccessStatusTypeValue
+		if err != nil {
+			status = metrics.ErrorStatusTypeValue
+			errors = err.Error()
+		}
+		s.reporter.ReportRequest(ctx, metrics.EncryptOperationTypeValue, status, time.Since(start).Seconds(), errors)
+	}()
+
 	klog.V(2).Infof("encrypt request started")
 	cipher, err := s.kvClient.Encrypt(ctx, request.Plain)
 	if err != nil {
@@ -54,7 +73,21 @@ func (s *KeyManagementServiceServer) Encrypt(ctx context.Context, request *k8spb
 	return &k8spb.EncryptResponse{Cipher: cipher}, nil
 }
 
+// Decrypt message
 func (s *KeyManagementServiceServer) Decrypt(ctx context.Context, request *k8spb.DecryptRequest) (*k8spb.DecryptResponse, error) {
+	start := time.Now()
+
+	var err error
+	defer func() {
+		errors := ""
+		status := metrics.SuccessStatusTypeValue
+		if err != nil {
+			status = metrics.ErrorStatusTypeValue
+			errors = err.Error()
+		}
+		s.reporter.ReportRequest(ctx, metrics.DecryptOperationTypeValue, status, time.Since(start).Seconds(), errors)
+	}()
+
 	klog.V(2).Infof("decrypt request started")
 	plain, err := s.kvClient.Decrypt(ctx, request.Cipher)
 	if err != nil {

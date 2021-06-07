@@ -39,7 +39,7 @@ type keyVaultClient struct {
 
 // NewKeyVaultClient returns a new key vault client to use for kms operations
 func newKeyVaultClient(config *config.AzureConfig, vaultName, keyName, keyVersion string) (*keyVaultClient, error) {
-	//Sanitize vaultName, keyName, keyVersion. (https://github.com/Azure/kubernetes-kms/issues/85)
+	// Sanitize vaultName, keyName, keyVersion. (https://github.com/Azure/kubernetes-kms/issues/85)
 	vaultName = utils.SanitizeString(vaultName)
 	keyName = utils.SanitizeString(keyName)
 	keyVersion = utils.SanitizeString(keyVersion)
