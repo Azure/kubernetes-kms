@@ -17,6 +17,12 @@ setup_file() {
     fi
 }
 
+teardown_file() {
+    # To ensure resources gets deleted in case of test failure. This allows clean re-run for next time.
+    kubectl delete secret secret1 -n default
+    kubectl delete pod curl --force --grace-period 0
+}
+
 @test "azure keyvault kms plugin is running" {
     wait_for_process ${WAIT_TIME} ${SLEEP_TIME} "kubectl -n kube-system wait --for=condition=Ready --timeout=60s pod -l component=azure-kms-provider"
 }
