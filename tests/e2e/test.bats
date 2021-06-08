@@ -4,18 +4,16 @@ load helpers
 
 WAIT_TIME=120
 SLEEP_TIME=1
-ETCD_CA_CERT=/etc/kubernetes/pki/etcd/ca.crt
-ETCD_CERT=/etc/kubernetes/pki/etcd/server.crt
-ETCD_KEY=/etc/kubernetes/pki/etcd/server.key
 
-setup_file() {
-    export IS_SOAK_TEST="${IS_SOAK_TEST}"
-    if [ ${IS_SOAK_TEST} = true ]; then
-      ETCD_CA_CERT=/etc/kubernetes/certs/ca.crt
-      ETCD_CERT=/etc/kubernetes/certs/etcdclient.crt
-      ETCD_KEY=/etc/kubernetes/certs/etcdclient.key
-    fi
-}
+if [ ${IS_SOAK_TEST} = true ]; then
+    export ETCD_CA_CERT=/etc/kubernetes/certs/ca.crt
+    export ETCD_CERT=/etc/kubernetes/certs/etcdclient.crt
+    export ETCD_KEY=/etc/kubernetes/certs/etcdclient.key
+else
+    export ETCD_CA_CERT=/etc/kubernetes/pki/etcd/ca.crt
+    export ETCD_CERT=/etc/kubernetes/pki/etcd/server.crt
+    export ETCD_KEY=/etc/kubernetes/pki/etcd/server.key
+fi
 
 @test "azure keyvault kms plugin is running" {
     wait_for_process ${WAIT_TIME} ${SLEEP_TIME} "kubectl -n kube-system wait --for=condition=Ready --timeout=60s pod -l component=azure-kms-provider"
@@ -49,6 +47,11 @@ setup_file() {
 }
 
 @test "check if metrics endpoint works" {
+    # ToDo - enbale this test after v0.0.12 release
+    if [ ${SKIP_METRICS} = true ]; then
+      skip "metrics endpoint is not yet released in soak cluster."
+    fi
+
     kubectl run curl --image=curlimages/curl:7.75.0 -- tail -f /dev/null
     kubectl wait --for=condition=Ready --timeout=60s pod curl
 
