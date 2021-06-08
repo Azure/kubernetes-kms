@@ -47,8 +47,8 @@ fi
 }
 
 @test "check if metrics endpoint works" {
-    #ToDo - enbale this test after v0.0.12 release
-    if [ ${IS_SOAK_TEST} = true ]; then
+    # ToDo - enbale this test after v0.0.12 release
+    if [ ${SKIP_METRICS} = true ]; then
       skip "metrics endpoint is not yet released in soak cluster."
     fi
 

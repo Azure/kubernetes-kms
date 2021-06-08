@@ -60,7 +60,8 @@ jobs:
       - template: cluster-health-template.yml
       - template: kind-debug-template.yml
 
-      - script: make e2e-test
+      # ToDo - remove SKIP_METRICS after v0.0.12 release
+      - script: SKIP_METRICS=true make e2e-test
         displayName: "Run e2e tests"
 
       - script: |

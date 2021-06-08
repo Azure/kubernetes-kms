@@ -26,5 +26,5 @@ jobs:
 
       - template: cluster-health-template.yml
 
-      - script: IS_SOAK_TEST=true make e2e-test 
+      - script: IS_SOAK_TEST=true SKIP_METRICS=true make e2e-test 
         displayName: "Run e2e tests"
