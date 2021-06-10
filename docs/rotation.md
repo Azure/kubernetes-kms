@@ -41,6 +41,13 @@ spec:
       - --healthz-path=/healthz                               # [OPTIONAL] path for health check. Default is /healthz
       - --healthz-timeout=20s                                 # [OPTIONAL] RPC timeout for health check. Default is 20s
       - -v=5
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        readOnlyRootFilesystem: true
+        runAsUser: 0
       ports:
         - containerPort: 8788                                 # Must match the value defined in --healthz-port
           protocol: TCP
