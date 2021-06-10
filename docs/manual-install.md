@@ -81,6 +81,13 @@ This guide demonstrates steps required to enable the KMS Plugin for Key Vault in
           - --healthz-path=/healthz                               # [OPTIONAL] path for health check. Default is /healthz
           - --healthz-timeout=20s                                 # [OPTIONAL] RPC timeout for health check. Default is 20s
           - -v=1
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsUser: 0
         ports:
           - containerPort: 8787                                   # Must match the value defined in --healthz-port
             protocol: TCP
