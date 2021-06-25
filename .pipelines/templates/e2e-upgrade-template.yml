@@ -89,9 +89,10 @@ jobs:
               sleep 5
             fi
           done
-          # Give additional 5s for pulgin code to start. ToDo - (nilekh) check if we can deploy plugin with readiness probe.
-          sleep 5
         displayName: "Wait for kms upgrade"
+      
+      - template: cluster-health-template.yml
+      - template: kind-debug-template.yml
 
       - script: make e2e-test
         displayName: "Run e2e tests"
