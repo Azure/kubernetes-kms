@@ -17,5 +17,3 @@ pool:
 jobs:
   - template: templates/unit-tests-template.yml
   - template: templates/e2e-kind-template.yml
-  - template: templates/soak-test-template.yml
-  - template: templates/e2e-upgrade-template.yml 
