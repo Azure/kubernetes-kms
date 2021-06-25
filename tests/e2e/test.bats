@@ -5,7 +5,7 @@ load helpers
 WAIT_TIME=120
 SLEEP_TIME=1
 
-if [ ${IS_SOAK_TEST} = true ]; then
+if [[ ${IS_SOAK_TEST} = true ]]; then
     export ETCD_CA_CERT=/etc/kubernetes/certs/ca.crt
     export ETCD_CERT=/etc/kubernetes/certs/etcdclient.crt
     export ETCD_KEY=/etc/kubernetes/certs/etcdclient.key
@@ -57,7 +57,7 @@ fi
 @test "check healthz for kms plugin" {
     local randomString=$(openssl rand -hex 5)
     kubectl run curl-${randomString} --image=curlimages/curl:7.75.0 --labels="test=healthz_test" -- tail -f /dev/null
-    kubectl wait --for=condition=Ready --timeout=60s pod curl
+    kubectl wait --for=condition=Ready --timeout=60s pod curl-${randomString}
 
     local pod_ip=$(kubectl get pod -n kube-system -l component=azure-kms-provider -o jsonpath="{.items[0].status.podIP}")
     result=$(kubectl exec curl-${randomString} -- curl http://${pod_ip}:8787/healthz)
