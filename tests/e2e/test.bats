@@ -41,40 +41,39 @@ fi
       assert_match "k8s:enc:kms:v1:azurekmsprovider" "${output}"
       assert_success
     fi
-
-    # cleanup
-    run kubectl delete secret secret1 -n default
 }
 
 @test "check if metrics endpoint works" {
-    # ToDo - enbale this test after v0.0.12 release
-    if [ ${SKIP_METRICS} = true ]; then
-      skip "metrics endpoint is not yet released in soak cluster."
-    fi
-
-    kubectl run curl --image=curlimages/curl:7.75.0 -- tail -f /dev/null
-    kubectl wait --for=condition=Ready --timeout=60s pod curl
+    local randomString=$(openssl rand -hex 5)
+    kubectl run curl-${randomString} --image=curlimages/curl:7.75.0 --labels="test=metrics_test" -- tail -f /dev/null
+    kubectl wait --for=condition=Ready --timeout=60s pod curl-${randomString}
 
     local pod_ip=$(kubectl get pod -n kube-system -l component=azure-kms-provider -o jsonpath="{.items[0].status.podIP}")
-    run kubectl exec curl -- curl http://${pod_ip}:8095/metrics
+    run kubectl exec curl-${randomString} -- curl http://${pod_ip}:8095/metrics
     assert_match "kms_request_bucket" "${output}"
     assert_success
-
-    # cleanup
-    run kubectl delete pod curl --force --grace-period 0
 }
 
 @test "check healthz for kms plugin" {
-    kubectl run curl --image=curlimages/curl:7.75.0 -- tail -f /dev/null
+    local randomString=$(openssl rand -hex 5)
+    kubectl run curl-${randomString} --image=curlimages/curl:7.75.0 --labels="test=healthz_test" -- tail -f /dev/null
     kubectl wait --for=condition=Ready --timeout=60s pod curl
 
     local pod_ip=$(kubectl get pod -n kube-system -l component=azure-kms-provider -o jsonpath="{.items[0].status.podIP}")
-    result=$(kubectl exec curl -- curl http://${pod_ip}:8787/healthz)
+    result=$(kubectl exec curl-${randomString} -- curl http://${pod_ip}:8787/healthz)
     [[ "${result//$'\r'}" == "ok" ]]
 
-    result=$(kubectl exec curl -- curl http://${pod_ip}:8787/healthz -o /dev/null -w '%{http_code}\n' -s)
+    result=$(kubectl exec curl-${randomString} -- curl http://${pod_ip}:8787/healthz -o /dev/null -w '%{http_code}\n' -s)
     [[ "${result//$'\r'}" == "200" ]]
 
     # cleanup
     run kubectl delete pod curl --force --grace-period 0
+}
+
+teardown_file() {
+    # cleanup
+    run kubectl delete secret secret1 -n default
+
+    run kubectl delete pod -l test=metrics_test --force --grace-period 0
+    run kubectl delete pod -l test=healthz_test --force --grace-period 0
 }
