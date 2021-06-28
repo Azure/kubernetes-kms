@@ -60,8 +60,7 @@ jobs:
       - template: cluster-health-template.yml
       - template: kind-debug-template.yml
 
-      # ToDo - remove SKIP_METRICS after v0.0.12 release
-      - script: SKIP_METRICS=true make e2e-test
+      - script: make e2e-test
         displayName: "Run e2e tests"
 
       - script: |
@@ -90,7 +89,12 @@ jobs:
               sleep 5
             fi
           done
+          # Give additional 5s for plugin to start. Remove this once https://github.com/Azure/kubernetes-kms/issues/113 is fixed.
+          sleep 5
         displayName: "Wait for kms upgrade"
+      
+      - template: cluster-health-template.yml
+      - template: kind-debug-template.yml
 
       - script: make e2e-test
         displayName: "Run e2e tests"
