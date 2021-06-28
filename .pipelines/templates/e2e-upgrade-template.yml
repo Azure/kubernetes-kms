@@ -89,7 +89,7 @@ jobs:
               sleep 5
             fi
           done
-          # Give additional 5s for pulgin to start. Remove this once https://github.com/Azure/kubernetes-kms/issues/113 is fixed.
+          # Give additional 5s for plugin to start. Remove this once https://github.com/Azure/kubernetes-kms/issues/113 is fixed.
           sleep 5
         displayName: "Wait for kms upgrade"
       
