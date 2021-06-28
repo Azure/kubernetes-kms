@@ -44,30 +44,27 @@ fi
 }
 
 @test "check if metrics endpoint works" {
-    local randomString=$(openssl rand -hex 5)
-    kubectl run curl-${randomString} --image=curlimages/curl:7.75.0 --labels="test=metrics_test" -- tail -f /dev/null
-    kubectl wait --for=condition=Ready --timeout=60s pod curl-${randomString}
+    local curl_pod_name=curl-$(openssl rand -hex 5)
+    kubectl run ${curl_pod_name} --image=curlimages/curl:7.75.0 --labels="test=metrics_test" -- tail -f /dev/null
+    kubectl wait --for=condition=Ready --timeout=60s pod ${curl_pod_name}
 
     local pod_ip=$(kubectl get pod -n kube-system -l component=azure-kms-provider -o jsonpath="{.items[0].status.podIP}")
-    run kubectl exec curl-${randomString} -- curl http://${pod_ip}:8095/metrics
+    run kubectl exec ${curl_pod_name} -- curl http://${pod_ip}:8095/metrics
     assert_match "kms_request_bucket" "${output}"
     assert_success
 }
 
 @test "check healthz for kms plugin" {
-    local randomString=$(openssl rand -hex 5)
-    kubectl run curl-${randomString} --image=curlimages/curl:7.75.0 --labels="test=healthz_test" -- tail -f /dev/null
-    kubectl wait --for=condition=Ready --timeout=60s pod curl-${randomString}
+    local curl_pod_name=curl-$(openssl rand -hex 5)
+    kubectl run ${curl_pod_name} --image=curlimages/curl:7.75.0 --labels="test=healthz_test" -- tail -f /dev/null
+    kubectl wait --for=condition=Ready --timeout=60s pod ${curl_pod_name}
 
     local pod_ip=$(kubectl get pod -n kube-system -l component=azure-kms-provider -o jsonpath="{.items[0].status.podIP}")
-    result=$(kubectl exec curl-${randomString} -- curl http://${pod_ip}:8787/healthz)
+    result=$(kubectl exec ${curl_pod_name} -- curl http://${pod_ip}:8787/healthz)
     [[ "${result//$'\r'}" == "ok" ]]
 
-    result=$(kubectl exec curl-${randomString} -- curl http://${pod_ip}:8787/healthz -o /dev/null -w '%{http_code}\n' -s)
+    result=$(kubectl exec ${curl_pod_name} -- curl http://${pod_ip}:8787/healthz -o /dev/null -w '%{http_code}\n' -s)
     [[ "${result//$'\r'}" == "200" ]]
-
-    # cleanup
-    run kubectl delete pod curl --force --grace-period 0
 }
 
 teardown_file() {
