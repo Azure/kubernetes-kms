@@ -1,6 +1,6 @@
 jobs:
   - job: e2e_tests
-    timeoutInMinutes: 10
+    timeoutInMinutes: 15
     cancelTimeoutInMinutes: 5
     workspace:
       clean: all

@@ -18,6 +18,7 @@ BUILD_DATE_VAR := $(REPO_PATH)/pkg/version.BuildDate
 BUILD_DATE := $$(date +%Y-%m-%d-%H:%M)
 GIT_VAR := $(REPO_PATH)/pkg/version.GitCommit
 GIT_HASH := $$(git rev-parse --short HEAD)
+LDFLAGS ?= "-X $(BUILD_DATE_VAR)=$(BUILD_DATE) -X $(BUILD_VERSION_VAR)=$(IMAGE_VERSION) -X $(GIT_VAR)=$(GIT_HASH)"
 
 GO_FILES=$(shell go list ./... | grep -v /test/e2e)
 TOOLS_MOD_DIR := ./tools
@@ -30,9 +31,11 @@ export DOCKER_BUILDKIT
 # Testing var
 KIND_VERSION ?= 0.11.0
 KUBERNETES_VERSION ?= v1.21.1
-BATS_VERSION ?= 1.2.1
+BATS_VERSION ?= 1.4.1
 
-GO_BUILD_OPTIONS := --tags "netgo osusergo"  -ldflags "-s -X $(BUILD_VERSION_VAR)=$(IMAGE_VERSION) -X $(GIT_VAR)=$(GIT_HASH) -X $(BUILD_DATE_VAR)=$(BUILD_DATE) -extldflags '-static'"
+## --------------------------------------
+## Linting
+## --------------------------------------
 
 $(TOOLS_DIR)/golangci-lint: $(TOOLS_MOD_DIR)/go.mod $(TOOLS_MOD_DIR)/go.sum $(TOOLS_MOD_DIR)/tools.go
 	cd $(TOOLS_MOD_DIR) && \
@@ -42,41 +45,71 @@ $(TOOLS_DIR)/golangci-lint: $(TOOLS_MOD_DIR)/go.mod $(TOOLS_MOD_DIR)/go.sum $(TO
 lint: $(TOOLS_DIR)/golangci-lint
 	$(TOOLS_DIR)/golangci-lint run --timeout=5m -v
 
+## --------------------------------------
+## Images
+## --------------------------------------
+
+ALL_LINUX_ARCH ?= amd64 arm64
+# Output type of docker buildx build
+OUTPUT_TYPE ?= type=registry
+
+BUILDX_BUILDER_NAME ?= img-builder
+QEMU_VERSION ?= 5.2.0-2
+# The architecture of the image
+ARCH ?= amd64
+
 .PHONY: build
 build:
-	$Q GOOS=linux CGO_ENABLED=0 go build $(GO_BUILD_OPTIONS) -o _output/kubernetes-kms ./cmd/server/
+	go build -a -ldflags $(LDFLAGS) -o _output/kubernetes-kms ./cmd/server/
 
-.PHONY: build-darwin
-build-darwin:
-	$Q GOOS=darwin CGO_ENABLED=0 go build $(GO_BUILD_OPTIONS) -o _output/kubernetes-kms ./cmd/server/
+.PHONY: docker-init-buildx
+docker-init-buildx:
+	@if ! docker buildx ls | grep $(BUILDX_BUILDER_NAME); then \
+		docker run --rm --privileged multiarch/qemu-user-static:$(QEMU_VERSION) --reset -p yes; \
+		docker buildx create --name $(BUILDX_BUILDER_NAME) --use; \
+		docker buildx inspect $(BUILDX_BUILDER_NAME) --bootstrap; \
+	fi
 
-build-image: clean build
-	$Q docker build -t $(IMAGE_TAG) .
+.PHONY: docker-build
+docker-build:
+	docker buildx build \
+		--build-arg LDFLAGS=$(LDFLAGS) \
+		--no-cache \
+		--platform="linux/$(ARCH)" \
+		--output=$(OUTPUT_TYPE) \
+		-t $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_VERSION)-linux-$(ARCH)  . \
+		--progress=plain; \
+		
+	@if [ "$(ARCH)" = "amd64" ] && [ "$(OUTPUT_TYPE)" = "type=docker" ]; then \
+		docker tag $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_VERSION)-linux-$(ARCH) $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_VERSION); \
+	fi
 
-push-image: build-image
-	$Q docker push $(IMAGE_TAG)
+.PHONY: docker-build-all
+docker-build-all:
+	@for arch in $(ALL_LINUX_ARCH); do \
+		$(MAKE) ARCH=$${arch} docker-build; \
+	done
 
-.PHONY: clean unit-test integration-test
+.PHONY: docker-push-manifest
+docker-push-manifest:
+	docker manifest create --amend $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_VERSION) $(foreach arch,$(ALL_LINUX_ARCH),$(REGISTRY)/$(IMAGE_NAME):$(IMAGE_VERSION)-linux-$(arch)); \
+	for arch in $(ALL_LINUX_ARCH); do \
+		docker manifest annotate --os linux --arch $${arch} $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_VERSION) $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_VERSION)-linux-$${arch}; \
+	done; \
+	docker manifest push --purge $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_VERSION); \
 
-clean:
-	$Q rm -rf _output/
+## --------------------------------------
+## Testing
+## --------------------------------------
 
-authors:
-	$Q git log --all --format='%aN <%cE>' | sort -u  | sed -n '/github/!p' > GITAUTHORS
-	$Q cat AUTHORS GITAUTHORS  | sort -u > NEWAUTHORS
-	$Q mv NEWAUTHORS AUTHORS
-	$Q rm -f NEWAUTHORS
-	$Q rm -f GITAUTHORS
-
+.PHONY: integration-test
 integration-test:
-	$Q sudo GOPATH=$(GOPATH) go test -v -count=1 -failfast github.com/Azure/kubernetes-kms/tests/client
+	go test -v -count=1 -failfast github.com/Azure/kubernetes-kms/tests/client
 
+.PHONY: unit-test
 unit-test:
 	go test -race -v -count=1 -failfast `go list ./... | grep -v client`
 
-.PHONY: mod
-mod:
-	@go mod tidy
 
 ## --------------------------------------
 ## E2E Testing
