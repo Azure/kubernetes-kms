@@ -17,10 +17,12 @@ fi
 export REGISTRY=localhost:${REGISTRY_PORT}
 export IMAGE_NAME=keyvault
 export IMAGE_VERSION=e2e-$(git rev-parse --short HEAD)
+export OUTPUT_TYPE=type=docker
 
 # push build image to local registry
-echo "Pushing image to local registry"
-make push-image
+echo "Build and push image to local registry"
+make docker-init-buildx docker-build
+docker push "${REGISTRY}/${IMAGE_NAME}:${IMAGE_VERSION}"
 
 # generate manifest for local
 make e2e-generate-manifests

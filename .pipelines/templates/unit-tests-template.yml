@@ -32,6 +32,6 @@ jobs:
           sudo ./_output/kubernetes-kms --keyvault-name $KV_NAME --key-name $KV_KEY --key-version $KV_KEY_VERSION --listen-addr "unix:///opt/azurekms.sock" > /dev/null &
           echo Waiting 2 seconds for the server to start
           sleep 2
-          make integration-test
+          sudo make integration-test
         displayName: Run integration tests
       - template: scan-images-template.yml
