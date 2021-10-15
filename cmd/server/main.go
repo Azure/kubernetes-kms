@@ -43,6 +43,10 @@ var (
 	healthzTimeout = flag.Duration("healthz-timeout", 20*time.Second, "RPC timeout for health check")
 	metricsBackend = flag.String("metrics-backend", "prometheus", "Backend used for metrics")
 	metricsAddress = flag.String("metrics-addr", "8095", "The address the metric endpoint binds to")
+
+	proxyMode    = flag.Bool("proxy-mode", false, "Proxy mode")
+	proxyAddress = flag.String("proxy-address", "", "proxy address")
+	proxyPort    = flag.Int("proxy-port", 7788, "port for proxy")
 )
 
 func main() {
@@ -68,7 +72,7 @@ func main() {
 	}
 
 	klog.InfoS("Starting KeyManagementServiceServer service", "version", version.BuildVersion, "buildDate", version.BuildDate)
-	kmsServer, err := plugin.New(ctx, *configFilePath, *keyvaultName, *keyName, *keyVersion)
+	kmsServer, err := plugin.New(ctx, *configFilePath, *keyvaultName, *keyName, *keyVersion, *proxyMode, *proxyAddress, *proxyPort)
 	if err != nil {
 		klog.Fatalf("failed to create server, error: %v", err)
 	}

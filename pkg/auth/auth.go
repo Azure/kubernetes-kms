@@ -9,6 +9,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -22,10 +23,15 @@ import (
 	"k8s.io/klog/v2"
 )
 
+const (
+	activeDirectoryEndpointTemplate          = "%s/oauth2/%s%s"
+	activeDirectoryEndpointWithProxyTemplate = "AzureActiveDirectory/%s/oauth2/%s%s"
+)
+
 // GetKeyvaultToken() returns token for Keyvault endpoint
-func GetKeyvaultToken(config *config.AzureConfig, env *azure.Environment) (authorizer autorest.Authorizer, err error) {
+func GetKeyvaultToken(config *config.AzureConfig, env *azure.Environment, proxyMode bool) (authorizer autorest.Authorizer, err error) {
 	kvEndPoint := strings.TrimSuffix(env.KeyVaultEndpoint, "/")
-	servicePrincipalToken, err := GetServicePrincipalToken(config, env.ActiveDirectoryEndpoint, kvEndPoint)
+	servicePrincipalToken, err := GetServicePrincipalToken(config, env.ActiveDirectoryEndpoint, kvEndPoint, proxyMode)
 	if err != nil {
 		return nil, err
 	}
@@ -34,8 +40,8 @@ func GetKeyvaultToken(config *config.AzureConfig, env *azure.Environment) (autho
 }
 
 // GetServicePrincipalToken creates a new service principal token based on the configuration
-func GetServicePrincipalToken(config *config.AzureConfig, aadEndpoint, resource string) (adal.OAuthTokenProvider, error) {
-	oauthConfig, err := adal.NewOAuthConfig(aadEndpoint, config.TenantID)
+func GetServicePrincipalToken(config *config.AzureConfig, aadEndpoint, resource string, proxyMode bool) (adal.OAuthTokenProvider, error) {
+	oauthConfig, err := newOAuthConfig(aadEndpoint, config.TenantID, proxyMode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OAuth config, error: %v", err)
 	}
@@ -123,4 +129,40 @@ func decodePkcs12(pkcs []byte, password string) (*x509.Certificate, *rsa.Private
 func redactClientCredentials(sensitiveString string) string {
 	r, _ := regexp.Compile(`^(\S{4})(\S|\s)*(\S{4})$`)
 	return r.ReplaceAllString(sensitiveString, "$1##### REDACTED #####$3")
+}
+
+// newOAuthConfig returns an OAuthConfig with tenant specific urls
+func newOAuthConfig(activeDirectoryEndpoint, tenantID string, proxyMode bool) (*adal.OAuthConfig, error) {
+	api := "?api-version=1.0"
+	u, err := url.Parse(activeDirectoryEndpoint)
+	if err != nil {
+		return nil, err
+	}
+	authorityURL, err := u.Parse(tenantID)
+	if err != nil {
+		return nil, err
+	}
+	endpointTemplate := activeDirectoryEndpointTemplate
+	if proxyMode {
+		endpointTemplate = activeDirectoryEndpointWithProxyTemplate
+	}
+	authorizeURL, err := u.Parse(fmt.Sprintf(endpointTemplate, tenantID, "authorize", api))
+	if err != nil {
+		return nil, err
+	}
+	tokenURL, err := u.Parse(fmt.Sprintf(endpointTemplate, tenantID, "token", api))
+	if err != nil {
+		return nil, err
+	}
+	deviceCodeURL, err := u.Parse(fmt.Sprintf(endpointTemplate, tenantID, "devicecode", api))
+	if err != nil {
+		return nil, err
+	}
+
+	return &adal.OAuthConfig{
+		AuthorityEndpoint:  *authorityURL,
+		AuthorizeEndpoint:  *authorizeURL,
+		TokenEndpoint:      *tokenURL,
+		DeviceCodeEndpoint: *deviceCodeURL,
+	}, nil
 }
