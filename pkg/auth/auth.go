@@ -9,11 +9,13 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
+	"net/http"
 	"os"
 	"regexp"
 	"strings"
 
 	"github.com/Azure/kubernetes-kms/pkg/config"
+	"github.com/Azure/kubernetes-kms/pkg/consts"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
@@ -23,9 +25,9 @@ import (
 )
 
 // GetKeyvaultToken() returns token for Keyvault endpoint
-func GetKeyvaultToken(config *config.AzureConfig, env *azure.Environment) (authorizer autorest.Authorizer, err error) {
+func GetKeyvaultToken(config *config.AzureConfig, env *azure.Environment, proxyMode bool) (authorizer autorest.Authorizer, err error) {
 	kvEndPoint := strings.TrimSuffix(env.KeyVaultEndpoint, "/")
-	servicePrincipalToken, err := GetServicePrincipalToken(config, env.ActiveDirectoryEndpoint, kvEndPoint)
+	servicePrincipalToken, err := GetServicePrincipalToken(config, env.ActiveDirectoryEndpoint, kvEndPoint, proxyMode)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +36,7 @@ func GetKeyvaultToken(config *config.AzureConfig, env *azure.Environment) (autho
 }
 
 // GetServicePrincipalToken creates a new service principal token based on the configuration
-func GetServicePrincipalToken(config *config.AzureConfig, aadEndpoint, resource string) (adal.OAuthTokenProvider, error) {
+func GetServicePrincipalToken(config *config.AzureConfig, aadEndpoint, resource string, proxyMode bool) (adal.OAuthTokenProvider, error) {
 	oauthConfig, err := adal.NewOAuthConfig(aadEndpoint, config.TenantID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OAuth config, error: %v", err)
@@ -64,11 +66,18 @@ func GetServicePrincipalToken(config *config.AzureConfig, aadEndpoint, resource 
 		klog.V(2).InfoS("azure: using client_id+client_secret to retrieve access token",
 			"clientID", redactClientCredentials(config.ClientID), "clientSecret", redactClientCredentials(config.ClientSecret))
 
-		return adal.NewServicePrincipalToken(
+		spt, err := adal.NewServicePrincipalToken(
 			*oauthConfig,
 			config.ClientID,
 			config.ClientSecret,
 			resource)
+		if err != nil {
+			return nil, err
+		}
+		if proxyMode {
+			return addTargetTypeHeader(spt), nil
+		}
+		return spt, nil
 	}
 
 	if len(config.AADClientCertPath) > 0 && len(config.AADClientCertPassword) > 0 {
@@ -81,12 +90,19 @@ func GetServicePrincipalToken(config *config.AzureConfig, aadEndpoint, resource 
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode the client certificate, error: %v", err)
 		}
-		return adal.NewServicePrincipalTokenFromCertificate(
+		spt, err := adal.NewServicePrincipalTokenFromCertificate(
 			*oauthConfig,
 			config.ClientID,
 			certificate,
 			privateKey,
 			resource)
+		if err != nil {
+			return nil, err
+		}
+		if proxyMode {
+			return addTargetTypeHeader(spt), nil
+		}
+		return spt, nil
 	}
 
 	return nil, fmt.Errorf("no credentials provided for accessing keyvault")
@@ -123,4 +139,18 @@ func decodePkcs12(pkcs []byte, password string) (*x509.Certificate, *rsa.Private
 func redactClientCredentials(sensitiveString string) string {
 	r, _ := regexp.Compile(`^(\S{4})(\S|\s)*(\S{4})$`)
 	return r.ReplaceAllString(sensitiveString, "$1##### REDACTED #####$3")
+}
+
+// addTargetTypeHeader adds the target header if proxy mode is enabled
+func addTargetTypeHeader(spt *adal.ServicePrincipalToken) *adal.ServicePrincipalToken {
+	spt.SetSender(autorest.CreateSender(
+		(func() autorest.SendDecorator {
+			return func(s autorest.Sender) autorest.Sender {
+				return autorest.SenderFunc(func(r *http.Request) (*http.Response, error) {
+					r.Header.Set(consts.RequestHeaderTargetType, consts.TargetTypeAzureActiveDirectory)
+					return s.Do(r)
+				})
+			}
+		})()))
+	return spt
 }

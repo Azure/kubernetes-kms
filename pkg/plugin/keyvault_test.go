@@ -9,29 +9,39 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Azure/go-autorest/autorest/azure"
+
 	"github.com/Azure/kubernetes-kms/pkg/auth"
 	"github.com/Azure/kubernetes-kms/pkg/config"
+	"github.com/Azure/kubernetes-kms/pkg/utils"
 )
 
 func TestNewKeyVaultClient(t *testing.T) {
+	// nolint: maligned
 	tests := []struct {
-		desc        string
-		config      *config.AzureConfig
-		vaultName   string
-		keyName     string
-		keyVersion  string
-		vaultSKU    string
-		expectedErr bool
+		desc             string
+		config           *config.AzureConfig
+		vaultName        string
+		keyName          string
+		keyVersion       string
+		proxyMode        bool
+		proxyAddress     string
+		proxyPort        int
+		vaultSKU         string
+		expectedErr      bool
+		expectedVaultURL string
 	}{
 		{
 			desc:        "vault name not provided",
 			config:      &config.AzureConfig{},
+			proxyMode:   false,
 			expectedErr: true,
 		},
 		{
 			desc:        "key name not provided",
 			config:      &config.AzureConfig{},
 			vaultName:   "testkv",
+			proxyMode:   false,
 			expectedErr: true,
 		},
 		{
@@ -39,6 +49,7 @@ func TestNewKeyVaultClient(t *testing.T) {
 			config:      &config.AzureConfig{},
 			vaultName:   "testkv",
 			keyName:     "k8s",
+			proxyMode:   false,
 			expectedErr: true,
 		},
 		{
@@ -50,26 +61,42 @@ func TestNewKeyVaultClient(t *testing.T) {
 			expectedErr: true,
 		},
 		{
-			desc:        "no error",
-			config:      &config.AzureConfig{ClientID: "clientid", ClientSecret: "clientsecret"},
-			vaultName:   "testkv",
-			keyName:     "key1",
-			keyVersion:  "262067a9e8ba401aa8a746c5f1a7e147",
-			expectedErr: false,
+			desc:             "no error",
+			config:           &config.AzureConfig{ClientID: "clientid", ClientSecret: "clientsecret"},
+			vaultName:        "testkv",
+			keyName:          "key1",
+			keyVersion:       "262067a9e8ba401aa8a746c5f1a7e147",
+			proxyMode:        false,
+			expectedErr:      false,
+			expectedVaultURL: "https://testkv.vault.azure.net/",
 		},
 		{
-			desc:        "no error with double quotes",
-			config:      &config.AzureConfig{ClientID: "clientid", ClientSecret: "clientsecret"},
-			vaultName:   "\"testkv\"",
-			keyName:     "\"key1\"",
-			keyVersion:  "\"262067a9e8ba401aa8a746c5f1a7e147\"",
-			expectedErr: false,
+			desc:             "no error with double quotes",
+			config:           &config.AzureConfig{ClientID: "clientid", ClientSecret: "clientsecret"},
+			vaultName:        "\"testkv\"",
+			keyName:          "\"key1\"",
+			keyVersion:       "\"262067a9e8ba401aa8a746c5f1a7e147\"",
+			proxyMode:        false,
+			expectedErr:      false,
+			expectedVaultURL: "https://testkv.vault.azure.net/",
+		},
+		{
+			desc:             "no error with proxy mode",
+			config:           &config.AzureConfig{ClientID: "clientid", ClientSecret: "clientsecret"},
+			vaultName:        "testkv",
+			keyName:          "key1",
+			keyVersion:       "262067a9e8ba401aa8a746c5f1a7e147",
+			proxyMode:        true,
+			proxyAddress:     "localhost",
+			proxyPort:        7788,
+			expectedErr:      false,
+			expectedVaultURL: "http://localhost:7788/testkv.vault.azure.net/",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			kvClient, err := newKeyVaultClient(test.config, test.vaultName, test.keyName, test.keyVersion)
+			kvClient, err := newKeyVaultClient(test.config, test.vaultName, test.keyName, test.keyVersion, test.proxyMode, test.proxyAddress, test.proxyPort)
 			if test.expectedErr && err == nil || !test.expectedErr && err != nil {
 				t.Fatalf("expected error: %v, got error: %v", test.expectedErr, err)
 			}
@@ -79,6 +106,17 @@ func TestNewKeyVaultClient(t *testing.T) {
 				}
 				if !strings.Contains(kvClient.baseClient.UserAgent, "k8s-kms-keyvault") {
 					t.Fatalf("expected k8s-kms-keyvault user agent")
+				}
+
+				vaultURL, err := getVaultURL(utils.SanitizeString(test.vaultName), &azure.PublicCloud)
+				if err != nil {
+					t.Fatalf("expected no error of getting vault URL, got error: %v", err)
+				}
+				if test.proxyMode {
+					vaultURL = getProxiedVaultURL(vaultURL, test.proxyAddress, test.proxyPort)
+				}
+				if *vaultURL != test.expectedVaultURL {
+					t.Fatalf("expected vault URL: %v, got vault URL: %v", test.expectedVaultURL, *vaultURL)
 				}
 			}
 		})
