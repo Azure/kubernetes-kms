@@ -10,13 +10,16 @@ import (
 	"encoding/base64"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/Azure/kubernetes-kms/pkg/auth"
 	"github.com/Azure/kubernetes-kms/pkg/config"
+	"github.com/Azure/kubernetes-kms/pkg/consts"
 	"github.com/Azure/kubernetes-kms/pkg/utils"
 	"github.com/Azure/kubernetes-kms/pkg/version"
 
 	kv "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
+	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"k8s.io/klog/v2"
 )
@@ -38,7 +41,7 @@ type keyVaultClient struct {
 }
 
 // NewKeyVaultClient returns a new key vault client to use for kms operations
-func newKeyVaultClient(config *config.AzureConfig, vaultName, keyName, keyVersion string) (*keyVaultClient, error) {
+func newKeyVaultClient(config *config.AzureConfig, vaultName, keyName, keyVersion string, proxyMode bool, proxyAddress string, proxyPort int) (*keyVaultClient, error) {
 	// Sanitize vaultName, keyName, keyVersion. (https://github.com/Azure/kubernetes-kms/issues/85)
 	vaultName = utils.SanitizeString(vaultName)
 	keyName = utils.SanitizeString(keyName)
@@ -58,7 +61,11 @@ func newKeyVaultClient(config *config.AzureConfig, vaultName, keyName, keyVersio
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse cloud environment: %s, error: %+v", config.Cloud, err)
 	}
-	token, err := auth.GetKeyvaultToken(config, env)
+	if proxyMode {
+		env.ActiveDirectoryEndpoint = fmt.Sprintf("http://%s:%d/", proxyAddress, proxyPort)
+	}
+
+	token, err := auth.GetKeyvaultToken(config, env, proxyMode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get key vault token, error: %+v", err)
 	}
@@ -69,7 +76,12 @@ func newKeyVaultClient(config *config.AzureConfig, vaultName, keyName, keyVersio
 		return nil, fmt.Errorf("failed to get vault url, error: %+v", err)
 	}
 
-	klog.InfoS("using kms key for encrypt/decrypt", "vaultName", vaultName, "keyName", keyName, "keyVersion", keyVersion)
+	if proxyMode {
+		kvClient.RequestInspector = autorest.WithHeader(consts.RequestHeaderTargetType, consts.TargetTypeKeyVault)
+		vaultURL = getProxiedVaultURL(vaultURL, proxyAddress, proxyPort)
+	}
+
+	klog.InfoS("using kms key for encrypt/decrypt", "vaultURL", *vaultURL, "keyName", keyName, "keyVersion", keyVersion)
 
 	client := &keyVaultClient{
 		baseClient:       kvClient,
@@ -130,5 +142,11 @@ func getVaultURL(vaultName string, azureEnvironment *azure.Environment) (vaultUR
 
 	vaultDNSSuffixValue := azureEnvironment.KeyVaultDNSSuffix
 	vaultURI := "https://" + vaultName + "." + vaultDNSSuffixValue + "/"
+
 	return &vaultURI, nil
+}
+
+func getProxiedVaultURL(vaultURL *string, proxyAddress string, proxyPort int) *string {
+	proxiedVaultURL := fmt.Sprintf("http://%s:%d/%s", proxyAddress, proxyPort, strings.TrimPrefix(*vaultURL, "https://"))
+	return &proxiedVaultURL
 }

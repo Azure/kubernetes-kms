@@ -61,8 +61,9 @@ func TestRedactClientCredentials(t *testing.T) {
 
 func TestGetServicePrincipalTokenFromMSIWithUserAssignedID(t *testing.T) {
 	tests := []struct {
-		name   string
-		config *config.AzureConfig
+		name      string
+		config    *config.AzureConfig
+		proxyMode bool // The proxy mode doesn't matter if user-assigned managed identity is used to get service principal token
 	}{
 		{
 			name: "using user-assigned managed identity to access keyvault",
@@ -73,6 +74,7 @@ func TestGetServicePrincipalTokenFromMSIWithUserAssignedID(t *testing.T) {
 				ClientID:                    "AADClientID",
 				ClientSecret:                "AADClientSecret",
 			},
+			proxyMode: false,
 		},
 		// The Azure service principal is ignored when
 		// UseManagedIdentityExtension is set to true
@@ -82,12 +84,13 @@ func TestGetServicePrincipalTokenFromMSIWithUserAssignedID(t *testing.T) {
 				UseManagedIdentityExtension: true,
 				UserAssignedIdentityID:      "clientID",
 			},
+			proxyMode: true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			token, err := GetServicePrincipalToken(test.config, "https://login.microsoftonline.com/", "https://vault.azure.net")
+			token, err := GetServicePrincipalToken(test.config, "https://login.microsoftonline.com/", "https://vault.azure.net", test.proxyMode)
 			if err != nil {
 				t.Fatalf("expected err to be nil, got: %v", err)
 			}
@@ -108,14 +111,16 @@ func TestGetServicePrincipalTokenFromMSIWithUserAssignedID(t *testing.T) {
 
 func TestGetServicePrincipalTokenFromMSI(t *testing.T) {
 	tests := []struct {
-		name   string
-		config *config.AzureConfig
+		name      string
+		config    *config.AzureConfig
+		proxyMode bool // The proxy mode doesn't matter if MSI is used to get service principal token
 	}{
 		{
 			name: "using system-assigned managed identity to access keyvault",
 			config: &config.AzureConfig{
 				UseManagedIdentityExtension: true,
 			},
+			proxyMode: false,
 		},
 		// The Azure service principal is ignored when
 		// UseManagedIdentityExtension is set to true
@@ -127,12 +132,13 @@ func TestGetServicePrincipalTokenFromMSI(t *testing.T) {
 				ClientID:                    "AADClientID",
 				ClientSecret:                "AADClientSecret",
 			},
+			proxyMode: true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			token, err := GetServicePrincipalToken(test.config, "https://login.microsoftonline.com/", "https://vault.azure.net")
+			token, err := GetServicePrincipalToken(test.config, "https://login.microsoftonline.com/", "https://vault.azure.net", test.proxyMode)
 			if err != nil {
 				t.Fatalf("expected err to be nil, got: %v", err)
 			}
@@ -168,7 +174,7 @@ func TestGetServicePrincipalToken(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			token, err := GetServicePrincipalToken(test.config, "https://login.microsoftonline.com/", "https://vault.azure.net")
+			token, err := GetServicePrincipalToken(test.config, "https://login.microsoftonline.com/", "https://vault.azure.net", false)
 			if err != nil {
 				t.Fatalf("expected err to be nil, got: %v", err)
 			}
@@ -183,7 +189,7 @@ func TestGetServicePrincipalToken(t *testing.T) {
 				t.Fatalf("expected err to be nil, got: %v", err)
 			}
 			if !reflect.DeepEqual(token, spt) {
-				t.Fatalf("expected: %v, got: %v", spt, token)
+				t.Fatalf("expected: %+v, got: %+v", spt, token)
 			}
 		})
 	}
