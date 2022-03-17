@@ -14,6 +14,7 @@ COPY pkg/ pkg/
 
 ARG TARGETARCH
 ARG TARGETPLATFORM
+ARG LDFLAGS
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} GO111MODULE=on go build -a -ldflags "${LDFLAGS:--X github.com/Azure/kubernetes-kms/pkg/version.BuildVersion=latest}" -o _output/kubernetes-kms main.go
 
 # Use distroless as minimal base image to package the manager binary
