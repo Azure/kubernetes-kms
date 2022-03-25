@@ -9,15 +9,14 @@ linters:
     - gocyclo
     - gofmt
     - goimports
-    - golint
     - gosec
     - gosimple
     - govet
     - ineffassign
-    - maligned
     - misspell
     - nakedret
     - prealloc
+    - revive
     - staticcheck
     - structcheck
     - unused
