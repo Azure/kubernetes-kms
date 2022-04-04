@@ -41,7 +41,13 @@ type keyVaultClient struct {
 }
 
 // NewKeyVaultClient returns a new key vault client to use for kms operations
-func newKeyVaultClient(config *config.AzureConfig, vaultName, keyName, keyVersion string, proxyMode bool, proxyAddress string, proxyPort int) (*keyVaultClient, error) {
+func newKeyVaultClient(
+	config *config.AzureConfig,
+	vaultName, keyName, keyVersion string,
+	proxyMode bool,
+	proxyAddress string,
+	proxyPort int,
+	managedHSM bool) (*keyVaultClient, error) {
 	// Sanitize vaultName, keyName, keyVersion. (https://github.com/Azure/kubernetes-kms/issues/85)
 	vaultName = utils.SanitizeString(vaultName)
 	keyName = utils.SanitizeString(keyName)
@@ -65,13 +71,17 @@ func newKeyVaultClient(config *config.AzureConfig, vaultName, keyName, keyVersio
 		env.ActiveDirectoryEndpoint = fmt.Sprintf("http://%s:%d/", proxyAddress, proxyPort)
 	}
 
-	token, err := auth.GetKeyvaultToken(config, env, proxyMode)
+	vaultResourceURL := getVaultResourceIdentifier(managedHSM, env)
+	if vaultResourceURL == azure.NotAvailable {
+		return nil, fmt.Errorf("keyvault resource identifier not available for cloud: %s", env.Name)
+	}
+	token, err := auth.GetKeyvaultToken(config, env, vaultResourceURL, proxyMode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get key vault token, error: %+v", err)
 	}
 	kvClient.Authorizer = token
 
-	vaultURL, err := getVaultURL(vaultName, env)
+	vaultURL, err := getVaultURL(vaultName, managedHSM, env)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get vault url, error: %+v", err)
 	}
@@ -128,7 +138,7 @@ func (kvc *keyVaultClient) Decrypt(ctx context.Context, plain []byte) ([]byte, e
 	return bytes, nil
 }
 
-func getVaultURL(vaultName string, azureEnvironment *azure.Environment) (vaultURL *string, err error) {
+func getVaultURL(vaultName string, managedHSM bool, env *azure.Environment) (vaultURL *string, err error) {
 	// Key Vault name must be a 3-24 character string
 	if len(vaultName) < 3 || len(vaultName) > 24 {
 		return nil, fmt.Errorf("invalid vault name: %q, must be between 3 and 24 chars", vaultName)
@@ -140,13 +150,30 @@ func getVaultURL(vaultName string, azureEnvironment *azure.Environment) (vaultUR
 		return nil, fmt.Errorf("invalid vault name: %q, must match [-a-zA-Z0-9]{3,24}", vaultName)
 	}
 
-	vaultDNSSuffixValue := azureEnvironment.KeyVaultDNSSuffix
-	vaultURI := "https://" + vaultName + "." + vaultDNSSuffixValue + "/"
+	vaultDNSSuffixValue := getVaultDNSSuffix(managedHSM, env)
+	if vaultDNSSuffixValue == azure.NotAvailable {
+		return nil, fmt.Errorf("vault dns suffix not available for cloud: %s", env.Name)
+	}
 
+	vaultURI := fmt.Sprintf("https://%s.%s/", vaultName, vaultDNSSuffixValue)
 	return &vaultURI, nil
 }
 
 func getProxiedVaultURL(vaultURL *string, proxyAddress string, proxyPort int) *string {
 	proxiedVaultURL := fmt.Sprintf("http://%s:%d/%s", proxyAddress, proxyPort, strings.TrimPrefix(*vaultURL, "https://"))
 	return &proxiedVaultURL
+}
+
+func getVaultDNSSuffix(managedHSM bool, env *azure.Environment) string {
+	if managedHSM {
+		return env.ManagedHSMDNSSuffix
+	}
+	return env.KeyVaultDNSSuffix
+}
+
+func getVaultResourceIdentifier(managedHSM bool, env *azure.Environment) string {
+	if managedHSM {
+		return env.ResourceIdentifiers.ManagedHSM
+	}
+	return env.ResourceIdentifiers.KeyVault
 }

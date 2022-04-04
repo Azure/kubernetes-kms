@@ -33,6 +33,7 @@ var (
 	keyvaultName  = flag.String("keyvault-name", "", "Azure Key Vault name")
 	keyName       = flag.String("key-name", "", "Azure Key Vault KMS key name")
 	keyVersion    = flag.String("key-version", "", "Azure Key Vault KMS key version")
+	managedHSM    = flag.Bool("managed-hsm", false, "Azure Key Vault Managed HSM. Refer to https://docs.microsoft.com/en-us/azure/key-vault/managed-hsm/overview for more details.")
 	logFormatJSON = flag.Bool("log-format-json", false, "set log formatter to json")
 	// TODO remove this flag in future release.
 	_              = flag.String("configFilePath", "/etc/kubernetes/azure.json", "[DEPRECATED] Path for Azure Cloud Provider config file")
@@ -52,7 +53,6 @@ var (
 
 func main() {
 	klog.InitFlags(nil)
-
 	flag.Parse()
 
 	if *logFormatJSON {
@@ -75,7 +75,18 @@ func main() {
 	}
 
 	klog.InfoS("Starting KeyManagementServiceServer service", "version", version.BuildVersion, "buildDate", version.BuildDate)
-	kmsServer, err := plugin.New(ctx, *configFilePath, *keyvaultName, *keyName, *keyVersion, *proxyMode, *proxyAddress, *proxyPort)
+
+	pc := &plugin.Config{
+		KeyVaultName:   *keyvaultName,
+		KeyName:        *keyName,
+		KeyVersion:     *keyVersion,
+		ManagedHSM:     *managedHSM,
+		ProxyMode:      *proxyMode,
+		ProxyAddress:   *proxyAddress,
+		ProxyPort:      *proxyPort,
+		ConfigFilePath: *configFilePath,
+	}
+	kmsServer, err := plugin.New(ctx, pc)
 	if err != nil {
 		klog.Fatalf("failed to create server, error: %v", err)
 	}
