@@ -14,7 +14,7 @@ const (
 // InitMetricsExporter initializes new exporter
 func InitMetricsExporter(metricsBackend, metricsAddress string) error {
 	exporter := strings.ToLower(metricsBackend)
-	klog.Infof("metrics backend: %s", exporter)
+	klog.InfoS("metrics backend", "exporter", exporter)
 
 	switch exporter {
 	// Prometheus is the only exporter supported for now

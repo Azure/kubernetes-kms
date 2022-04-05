@@ -74,13 +74,13 @@ func (s *KeyManagementServiceServer) Encrypt(ctx context.Context, request *k8spb
 		s.reporter.ReportRequest(ctx, metrics.EncryptOperationTypeValue, status, time.Since(start).Seconds(), errors)
 	}()
 
-	klog.V(2).Infof("encrypt request started")
+	klog.V(2).Info("encrypt request started")
 	cipher, err := s.kvClient.Encrypt(ctx, request.Plain)
 	if err != nil {
 		klog.ErrorS(err, "failed to encrypt")
 		return &k8spb.EncryptResponse{}, err
 	}
-	klog.V(2).Infof("encrypt request complete")
+	klog.V(2).Info("encrypt request complete")
 	return &k8spb.EncryptResponse{Cipher: cipher}, nil
 }
 
@@ -99,12 +99,12 @@ func (s *KeyManagementServiceServer) Decrypt(ctx context.Context, request *k8spb
 		s.reporter.ReportRequest(ctx, metrics.DecryptOperationTypeValue, status, time.Since(start).Seconds(), errors)
 	}()
 
-	klog.V(2).Infof("decrypt request started")
+	klog.V(2).Info("decrypt request started")
 	plain, err := s.kvClient.Decrypt(ctx, request.Cipher)
 	if err != nil {
 		klog.ErrorS(err, "failed to decrypt")
 		return &k8spb.DecryptResponse{}, err
 	}
-	klog.V(2).Infof("decrypt request complete")
+	klog.V(2).Info("decrypt request complete")
 	return &k8spb.DecryptResponse{Plain: plain}, nil
 }

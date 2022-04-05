@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Azure/kubernetes-kms/pkg/metrics"
+
 	"google.golang.org/grpc"
 	"k8s.io/klog/v2"
 )
@@ -38,7 +39,7 @@ func UnaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.Una
 		reporter.ReportRequest(ctx, fmt.Sprintf("%s_%s", metrics.GrpcOperationTypeValue, getGRPCMethodName(info.FullMethod)), status, time.Since(start).Seconds(), errors)
 	}()
 
-	klog.V(5).Infof("GRPC call: %s", info.FullMethod)
+	klog.V(5).InfoS("GRPC call", "method", info.FullMethod)
 	resp, err := handler(ctx, req)
 	if err != nil {
 		klog.ErrorS(err, "GRPC request error")
