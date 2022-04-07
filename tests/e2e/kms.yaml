@@ -17,7 +17,12 @@ spec:
         - --keyvault-name=${KEYVAULT_NAME}
         - --key-name=${KEY_NAME}
         - --key-version=${KEY_VERSION}
+        - --managed-hsm=false
         - -v=5
+      env:
+      # setting this env var so we get debug logs in SDK from CI runs
+      - name: AZURE_GO_SDK_LOG_LEVEL
+        value: DEBUG
       securityContext:
         allowPrivilegeEscalation: false
         capabilities:

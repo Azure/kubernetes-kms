@@ -6,18 +6,76 @@
 package plugin
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/Azure/go-autorest/autorest/azure"
-
 	"github.com/Azure/kubernetes-kms/pkg/auth"
 	"github.com/Azure/kubernetes-kms/pkg/config"
-	"github.com/Azure/kubernetes-kms/pkg/utils"
 )
 
+var (
+	testEnvs       = []string{"", "AZUREPUBLICCLOUD", "AZURECHINACLOUD", "AZUREGERMANCLOUD", "AZUREUSGOVERNMENTCLOUD"}
+	vaultDNSSuffix = []string{"vault.azure.net", "vault.azure.net", "vault.azure.cn", "vault.microsoftazure.de", "vault.usgovcloudapi.net"}
+)
+
+func TestNewKeyVaultClientError(t *testing.T) {
+	tests := []struct {
+		desc         string
+		config       *config.AzureConfig
+		vaultName    string
+		keyName      string
+		keyVersion   string
+		proxyMode    bool
+		proxyAddress string
+		proxyPort    int
+		managedHSM   bool
+	}{
+		{
+			desc:      "vault name not provided",
+			config:    &config.AzureConfig{},
+			proxyMode: false,
+		},
+		{
+			desc:      "key name not provided",
+			config:    &config.AzureConfig{},
+			vaultName: "testkv",
+			proxyMode: false,
+		},
+		{
+			desc:      "key version not provided",
+			config:    &config.AzureConfig{},
+			vaultName: "testkv",
+			keyName:   "k8s",
+			proxyMode: false,
+		},
+		{
+			desc:       "no credentials in config",
+			config:     &config.AzureConfig{},
+			vaultName:  "testkv",
+			keyName:    "key1",
+			keyVersion: "262067a9e8ba401aa8a746c5f1a7e147",
+		},
+		{
+			desc:       "managed hsm not available in the azure environment",
+			config:     &config.AzureConfig{ClientID: "clientid", ClientSecret: "clientsecret", Cloud: "AzureGermanCloud"},
+			vaultName:  "testkv",
+			keyName:    "key1",
+			keyVersion: "262067a9e8ba401aa8a746c5f1a7e147",
+			managedHSM: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			if _, err := newKeyVaultClient(test.config, test.vaultName, test.keyName, test.keyVersion, test.proxyMode, test.proxyAddress, test.proxyPort, test.managedHSM); err == nil {
+				t.Fatalf("newKeyVaultClient() expected error, got nil")
+			}
+		})
+	}
+}
+
 func TestNewKeyVaultClient(t *testing.T) {
-	// nolint: maligned
 	tests := []struct {
 		desc             string
 		config           *config.AzureConfig
@@ -27,39 +85,9 @@ func TestNewKeyVaultClient(t *testing.T) {
 		proxyMode        bool
 		proxyAddress     string
 		proxyPort        int
-		vaultSKU         string
-		expectedErr      bool
+		managedHSM       bool
 		expectedVaultURL string
 	}{
-		{
-			desc:        "vault name not provided",
-			config:      &config.AzureConfig{},
-			proxyMode:   false,
-			expectedErr: true,
-		},
-		{
-			desc:        "key name not provided",
-			config:      &config.AzureConfig{},
-			vaultName:   "testkv",
-			proxyMode:   false,
-			expectedErr: true,
-		},
-		{
-			desc:        "key version not provided",
-			config:      &config.AzureConfig{},
-			vaultName:   "testkv",
-			keyName:     "k8s",
-			proxyMode:   false,
-			expectedErr: true,
-		},
-		{
-			desc:        "no credentials in config",
-			config:      &config.AzureConfig{},
-			vaultName:   "testkv",
-			keyName:     "key1",
-			keyVersion:  "262067a9e8ba401aa8a746c5f1a7e147",
-			expectedErr: true,
-		},
 		{
 			desc:             "no error",
 			config:           &config.AzureConfig{ClientID: "clientid", ClientSecret: "clientsecret"},
@@ -67,7 +95,6 @@ func TestNewKeyVaultClient(t *testing.T) {
 			keyName:          "key1",
 			keyVersion:       "262067a9e8ba401aa8a746c5f1a7e147",
 			proxyMode:        false,
-			expectedErr:      false,
 			expectedVaultURL: "https://testkv.vault.azure.net/",
 		},
 		{
@@ -77,7 +104,6 @@ func TestNewKeyVaultClient(t *testing.T) {
 			keyName:          "\"key1\"",
 			keyVersion:       "\"262067a9e8ba401aa8a746c5f1a7e147\"",
 			proxyMode:        false,
-			expectedErr:      false,
 			expectedVaultURL: "https://testkv.vault.azure.net/",
 		},
 		{
@@ -89,83 +115,89 @@ func TestNewKeyVaultClient(t *testing.T) {
 			proxyMode:        true,
 			proxyAddress:     "localhost",
 			proxyPort:        7788,
-			expectedErr:      false,
 			expectedVaultURL: "http://localhost:7788/testkv.vault.azure.net/",
+		},
+		{
+			desc:             "no error with managed hsm",
+			config:           &config.AzureConfig{ClientID: "clientid", ClientSecret: "clientsecret"},
+			vaultName:        "testkv",
+			keyName:          "key1",
+			keyVersion:       "262067a9e8ba401aa8a746c5f1a7e147",
+			managedHSM:       true,
+			proxyMode:        false,
+			expectedVaultURL: "https://testkv.managedhsm.azure.net/",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			kvClient, err := newKeyVaultClient(test.config, test.vaultName, test.keyName, test.keyVersion, test.proxyMode, test.proxyAddress, test.proxyPort)
-			if test.expectedErr && err == nil || !test.expectedErr && err != nil {
-				t.Fatalf("expected error: %v, got error: %v", test.expectedErr, err)
+			kvClient, err := newKeyVaultClient(test.config, test.vaultName, test.keyName, test.keyVersion, test.proxyMode, test.proxyAddress, test.proxyPort, test.managedHSM)
+			if err != nil {
+				t.Fatalf("newKeyVaultClient() failed with error: %v", err)
 			}
-			if !test.expectedErr {
-				if kvClient == nil {
-					t.Fatalf("expected kv client to not be nil")
-				}
-				if !strings.Contains(kvClient.baseClient.UserAgent, "k8s-kms-keyvault") {
-					t.Fatalf("expected k8s-kms-keyvault user agent")
-				}
-
-				vaultURL, err := getVaultURL(utils.SanitizeString(test.vaultName), &azure.PublicCloud)
-				if err != nil {
-					t.Fatalf("expected no error of getting vault URL, got error: %v", err)
-				}
-				if test.proxyMode {
-					vaultURL = getProxiedVaultURL(vaultURL, test.proxyAddress, test.proxyPort)
-				}
-				if *vaultURL != test.expectedVaultURL {
-					t.Fatalf("expected vault URL: %v, got vault URL: %v", test.expectedVaultURL, *vaultURL)
-				}
+			if kvClient == nil {
+				t.Fatalf("newKeyVaultClient() expected kv client to not be nil")
+			}
+			if !strings.Contains(kvClient.baseClient.UserAgent, "k8s-kms-keyvault") {
+				t.Fatalf("newKeyVaultClient() expected k8s-kms-keyvault user agent")
+			}
+			if kvClient.vaultURL != test.expectedVaultURL {
+				t.Fatalf("expected vault URL: %v, got vault URL: %v", test.expectedVaultURL, kvClient.vaultURL)
 			}
 		})
 	}
 }
 
-func TestGetVaultURL(t *testing.T) {
-	testEnvs := []string{"", "AZUREPUBLICCLOUD", "AZURECHINACLOUD", "AZUREGERMANCLOUD", "AZUREUSGOVERNMENTCLOUD"}
-	vaultDNSSuffix := []string{"vault.azure.net", "vault.azure.net", "vault.azure.cn", "vault.microsoftazure.de", "vault.usgovcloudapi.net"}
-
+func TestGetVaultURLError(t *testing.T) {
 	tests := []struct {
-		desc        string
-		vaultName   string
-		expectedErr bool
+		desc       string
+		vaultName  string
+		managedHSM bool
 	}{
 		{
-			desc:        "vault name > 24",
-			vaultName:   "longkeyvaultnamewhichisnotvalid",
-			expectedErr: true,
+			desc:      "vault name > 24",
+			vaultName: "longkeyvaultnamewhichisnotvalid",
 		},
 		{
-			desc:        "vault name < 3",
-			vaultName:   "kv",
-			expectedErr: true,
+			desc:      "vault name < 3",
+			vaultName: "kv",
 		},
 		{
-			desc:        "vault name contains non alpha-numeric chars",
-			vaultName:   "kv_test",
-			expectedErr: true,
-		},
-		{
-			desc:        "valid vault name in public cloud",
-			vaultName:   "testkv",
-			expectedErr: false,
+			desc:      "vault name contains non alpha-numeric chars",
+			vaultName: "kv_test",
 		},
 	}
 
-	for idx, test := range tests {
-		t.Run(test.desc, func(t *testing.T) {
+	for _, test := range tests {
+		for idx := range testEnvs {
+			t.Run(fmt.Sprintf("%s/%s", test.desc, testEnvs[idx]), func(t *testing.T) {
+				azEnv, err := auth.ParseAzureEnvironment(testEnvs[idx])
+				if err != nil {
+					t.Fatalf("failed to parse azure environment from name, err: %+v", err)
+				}
+				if _, err = getVaultURL(test.vaultName, test.managedHSM, azEnv); err == nil {
+					t.Fatalf("getVaultURL() expected error, got nil")
+				}
+			})
+		}
+	}
+}
+
+func TestGetVaultURL(t *testing.T) {
+	vaultName := "testkv"
+
+	for idx := range testEnvs {
+		t.Run(testEnvs[idx], func(t *testing.T) {
 			azEnv, err := auth.ParseAzureEnvironment(testEnvs[idx])
 			if err != nil {
 				t.Fatalf("failed to parse azure environment from name, err: %+v", err)
 			}
-			vaultURL, err := getVaultURL(test.vaultName, azEnv)
-			if test.expectedErr && err == nil || !test.expectedErr && err != nil {
-				t.Fatalf("expected error: %v, got error: %v", test.expectedErr, err)
+			vaultURL, err := getVaultURL(vaultName, false, azEnv)
+			if err != nil {
+				t.Fatalf("expected no error of getting vault URL, got error: %v", err)
 			}
-			expectedURL := "https://" + strings.Trim(test.vaultName, "\"") + "." + vaultDNSSuffix[idx] + "/"
-			if !test.expectedErr && expectedURL != *vaultURL {
+			expectedURL := "https://" + vaultName + "." + vaultDNSSuffix[idx] + "/"
+			if expectedURL != *vaultURL {
 				t.Fatalf("expected vault url: %s, got: %s", expectedURL, *vaultURL)
 			}
 		})

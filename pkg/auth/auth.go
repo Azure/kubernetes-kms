@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"os"
 	"regexp"
-	"strings"
 
 	"github.com/Azure/kubernetes-kms/pkg/config"
 	"github.com/Azure/kubernetes-kms/pkg/consts"
@@ -25,9 +24,8 @@ import (
 )
 
 // GetKeyvaultToken() returns token for Keyvault endpoint
-func GetKeyvaultToken(config *config.AzureConfig, env *azure.Environment, proxyMode bool) (authorizer autorest.Authorizer, err error) {
-	kvEndPoint := strings.TrimSuffix(env.KeyVaultEndpoint, "/")
-	servicePrincipalToken, err := GetServicePrincipalToken(config, env.ActiveDirectoryEndpoint, kvEndPoint, proxyMode)
+func GetKeyvaultToken(config *config.AzureConfig, env *azure.Environment, resource string, proxyMode bool) (authorizer autorest.Authorizer, err error) {
+	servicePrincipalToken, err := GetServicePrincipalToken(config, env.ActiveDirectoryEndpoint, resource, proxyMode)
 	if err != nil {
 		return nil, err
 	}

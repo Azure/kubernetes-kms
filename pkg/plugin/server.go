@@ -23,13 +23,24 @@ type KeyManagementServiceServer struct {
 	reporter metrics.StatsReporter
 }
 
+type Config struct {
+	ConfigFilePath string
+	KeyVaultName   string
+	KeyName        string
+	KeyVersion     string
+	ManagedHSM     bool
+	ProxyMode      bool
+	ProxyAddress   string
+	ProxyPort      int
+}
+
 // New creates an instance of the KMS Service Server.
-func New(ctx context.Context, configFilePath, vaultName, keyName, keyVersion string, proxyMode bool, proxyAddress string, proxyPort int) (*KeyManagementServiceServer, error) {
-	cfg, err := config.GetAzureConfig(configFilePath)
+func New(ctx context.Context, pc *Config) (*KeyManagementServiceServer, error) {
+	cfg, err := config.GetAzureConfig(pc.ConfigFilePath)
 	if err != nil {
 		return nil, err
 	}
-	kvClient, err := newKeyVaultClient(cfg, vaultName, keyName, keyVersion, proxyMode, proxyAddress, proxyPort)
+	kvClient, err := newKeyVaultClient(cfg, pc.KeyVaultName, pc.KeyName, pc.KeyVersion, pc.ProxyMode, pc.ProxyAddress, pc.ProxyPort, pc.ManagedHSM)
 	if err != nil {
 		return nil, err
 	}
