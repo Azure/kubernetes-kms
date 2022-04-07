@@ -1,6 +1,7 @@
 {
     "cloud": "AzurePublicCloud",
-    "tenantId": "$TENANT_ID",
-    "aadClientId": "$CLIENT_ID",
-    "aadClientSecret": "$CLIENT_SECRET"
+    "tenantId": "$AZURE_TENANT_ID",
+    "aadClientId": "$AZURE_CLIENT_ID",
+    "aadClientSecret": "$AZURE_CLIENT_SECRET"
 }
+

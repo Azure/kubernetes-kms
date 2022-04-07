@@ -10,11 +10,18 @@ jobs:
       - name: REGISTRY_PORT
         value: 5000
       - name: KUBERNETES_VERSION
-        value: v1.21.1
+        value: v1.23.5
       - name: KIND_CLUSTER_NAME
         value: kms
       - name: KIND_NETWORK
         value: kind
+      # contains the following environment variables:
+      # - AZURE_CLIENT_ID
+      # - AZURE_CLIENT_SECRET
+      # - AZURE_TENANT_ID
+      # - KEYVAULT_NAME
+      # - KEY_NAME
+      # - KEY_VERSION
       - group: kubernetes-kms
 
     steps:
@@ -26,7 +33,7 @@ jobs:
         displayName: "Install e2e test prerequisites"
 
       - script: |
-          REGISTRY_NAME=$(REGISTRY_NAME) REGISTRY_PORT=$(REGISTRY_PORT) KUBERNETES_VERSION=$(KUBERNETES_VERSION) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) KIND_NETWORK=$(KIND_NETWORK) make e2e-setup-kind
+          make e2e-setup-kind
         displayName: "Setup kind cluster with azure kms plugin"
         env:
           REGISTRY_NAME: $(REGISTRY_NAME)
@@ -34,8 +41,8 @@ jobs:
           KUBERNETES_VERSION: $(KUBERNETES_VERSION)
           KIND_CLUSTER_NAME: $(KIND_CLUSTER_NAME)
           KIND_NETWORK: $(KIND_NETWORK)
-          CLIENT_ID: $(AZURE_CLIENT_ID)
-          CLIENT_SECRET: $(AZURE_CLIENT_SECRET)
+          AZURE_CLIENT_ID: $(AZURE_CLIENT_ID)
+          AZURE_CLIENT_SECRET: $(AZURE_CLIENT_SECRET)
 
       - template: cluster-health-template.yml
       - template: kind-debug-template.yml

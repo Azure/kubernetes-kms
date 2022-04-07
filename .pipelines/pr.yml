@@ -11,8 +11,7 @@ pr:
     exclude:
       - docs/*
 
-pool:
-  vmImage: ubuntu-latest
+pool: staging-pool
 
 jobs:
   - template: templates/unit-tests-template.yml
