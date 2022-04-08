@@ -71,7 +71,8 @@ func main() {
 	// initialize metrics exporter
 	err := metrics.InitMetricsExporter(*metricsBackend, *metricsAddress)
 	if err != nil {
-		klog.Fatalf("failed to initialize metrics exporter, error: %+v", err)
+		klog.ErrorS(err, "failed to initialize metrics exporter")
+		os.Exit(1)
 	}
 
 	klog.InfoS("Starting KeyManagementServiceServer service", "version", version.BuildVersion, "buildDate", version.BuildDate)
@@ -88,21 +89,25 @@ func main() {
 	}
 	kmsServer, err := plugin.New(ctx, pc)
 	if err != nil {
-		klog.Fatalf("failed to create server, error: %v", err)
+		klog.ErrorS(err, "failed to create server")
+		os.Exit(1)
 	}
 
 	// Initialize and run the GRPC server
 	proto, addr, err := utils.ParseEndpoint(*listenAddr)
 	if err != nil {
-		klog.Fatalf("failed to parse endpoint, err: %+v", err)
+		klog.ErrorS(err, "failed to parse endpoint")
+		os.Exit(1)
 	}
 	if err := os.Remove(addr); err != nil && !os.IsNotExist(err) {
-		klog.Fatalf("failed to remove %s, error: %s", addr, err.Error())
+		klog.ErrorS(err, "failed to remove socket file", "addr", addr)
+		os.Exit(1)
 	}
 
 	listener, err := net.Listen(proto, addr)
 	if err != nil {
-		klog.Fatalf("failed to listen: %v", err)
+		klog.ErrorS(err, "failed to listen", "addr", addr, "proto", proto)
+		os.Exit(1)
 	}
 	opts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(utils.UnaryServerInterceptor),
@@ -111,7 +116,7 @@ func main() {
 	s := grpc.NewServer(opts...)
 	pb.RegisterKeyManagementServiceServer(s, kmsServer)
 
-	klog.Infof("Listening for connections on address: %v", listener.Addr())
+	klog.InfoS("Listening for connections", "addr", listener.Addr().String())
 	go s.Serve(listener)
 
 	healthz := &plugin.HealthZ{
@@ -127,7 +132,7 @@ func main() {
 
 	<-ctx.Done()
 	// gracefully stop the grpc server
-	klog.Infof("terminating the server")
+	klog.Info("terminating the server")
 	s.GracefulStop()
 
 	klog.Flush()

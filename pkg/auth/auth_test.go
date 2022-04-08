@@ -10,9 +10,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Azure/kubernetes-kms/pkg/config"
+
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
-	"github.com/Azure/kubernetes-kms/pkg/config"
 )
 
 func TestParseAzureEnvironment(t *testing.T) {

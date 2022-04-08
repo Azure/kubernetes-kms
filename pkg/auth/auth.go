@@ -41,7 +41,7 @@ func GetServicePrincipalToken(config *config.AzureConfig, aadEndpoint, resource 
 	}
 
 	if config.UseManagedIdentityExtension {
-		klog.V(2).Infof("using managed identity extension to retrieve access token")
+		klog.V(2).Info("using managed identity extension to retrieve access token")
 		msiEndpoint, err := adal.GetMSIVMEndpoint()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get managed service identity endpoint, error: %v", err)
@@ -79,7 +79,7 @@ func GetServicePrincipalToken(config *config.AzureConfig, aadEndpoint, resource 
 	}
 
 	if len(config.AADClientCertPath) > 0 && len(config.AADClientCertPassword) > 0 {
-		klog.V(2).Infof("using jwt client_assertion (client_cert+client_private_key) to retrieve access token")
+		klog.V(2).Info("using jwt client_assertion (client_cert+client_private_key) to retrieve access token")
 		certData, err := os.ReadFile(config.AADClientCertPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read client certificate from file %s, error: %v", config.AADClientCertPath, err)

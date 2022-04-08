@@ -10,11 +10,11 @@ import (
 	"fmt"
 	"testing"
 
-	k8spb "k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1"
-
 	"github.com/Azure/kubernetes-kms/pkg/metrics"
 	mockkeyvault "github.com/Azure/kubernetes-kms/pkg/plugin/mock_keyvault"
 	"github.com/Azure/kubernetes-kms/pkg/version"
+
+	k8spb "k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1"
 )
 
 func TestEncrypt(t *testing.T) {
