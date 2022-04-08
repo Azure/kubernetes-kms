@@ -1,8 +1,9 @@
 # KMS Plugin for Key Vault
 
-[![Build Status](https://dev.azure.com/azure/kubernetes-kms/_apis/build/status/kubernetes-kms-CI?branchName=master)](https://dev.azure.com/azure/kubernetes-kms/_build/latest?definitionId=84&branchName=master)
+[![Build Status](https://dev.azure.com/AzureContainerUpstream/Kubernetes%20KMS/_apis/build/status/Kubernetes%20KMS%20CI?branchName=master)](https://dev.azure.com/AzureContainerUpstream/Kubernetes%20KMS/_build/latest?definitionId=442&branchName=master)
 [![Go Report Card](https://goreportcard.com/badge/Azure/kubernetes-kms)](https://goreportcard.com/report/Azure/kubernetes-kms)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/Azure/kubernetes-kms)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/Azure/kubernetes-kms)
 
 Enables encryption at rest of your Kubernetes data in etcd using Azure Key Vault.
 
