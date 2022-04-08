@@ -15,14 +15,14 @@ make e2e-install-prerequisites
 ```
 
 The E2E test suite extracts runtime configurations through environment variables. Below is a list of environment variables to set before running the E2E test suite.
-| Variable      | Description                                                                                         |
-| ------------- | --------------------------------------------------------------------------------------------------- |
-| CLIENT_ID     | The client ID of your service principal that has `encrypt, decrypt` access to the keyvault key.     |
-| CLIENT_SECRET | The client secret of your service principal that has `encrypt, decrypt` access to the keyvault key. |
-| TENANT_ID     | The Azure tenant ID.                                                                                |
-| KEYVAULT_NAME | The Azure Keyvault name.                                                                            |
-| KEY_NAME      | The name of Keyvault key that will be used by the kms plugin.                                       |
-| KEY_VERSION   | The version of Keyvault key that will be used by the kms plugin.                                    |
+| Variable            | Description                                                                                         |
+| ------------------- | --------------------------------------------------------------------------------------------------- |
+| AZURE_CLIENT_ID     | The client ID of your service principal that has `encrypt, decrypt` access to the keyvault key.     |
+| AZURE_CLIENT_SECRET | The client secret of your service principal that has `encrypt, decrypt` access to the keyvault key. |
+| AZURE_TENANT_ID     | The Azure tenant ID.                                                                                |
+| KEYVAULT_NAME       | The Azure Keyvault name.                                                                            |
+| KEY_NAME            | The name of Keyvault key that will be used by the kms plugin.                                       |
+| KEY_VERSION         | The version of Keyvault key that will be used by the kms plugin.                                    |
 
 ## Running the tests
 
