@@ -69,7 +69,7 @@ This guide demonstrates steps required to enable the KMS Plugin for Key Vault in
     hostNetwork: true
     containers:
       - name: azure-kms-provider
-        image: mcr.microsoft.com/oss/azure/kms/keyvault:v0.2.0
+        image: mcr.microsoft.com/oss/azure/kms/keyvault:v0.3.0
         imagePullPolicy: IfNotPresent
         args:
           - --listen-addr=unix:///opt/azurekms.socket             # [OPTIONAL] gRPC listen address. Default is unix:///opt/azurekms.socket
@@ -80,6 +80,7 @@ This guide demonstrates steps required to enable the KMS Plugin for Key Vault in
           - --healthz-port=8787                                   # [OPTIONAL] port for health check. Default is 8787
           - --healthz-path=/healthz                               # [OPTIONAL] path for health check. Default is /healthz
           - --healthz-timeout=20s                                 # [OPTIONAL] RPC timeout for health check. Default is 20s
+          - --managed-hsm=false                                   # [OPTIONAL] Use Azure Key Vault managed HSM. Default is false.
           - -v=1
         securityContext:
           allowPrivilegeEscalation: false
