@@ -29,7 +29,7 @@ spec:
   hostNetwork: true
   containers:
     - name: azure-kms-provider
-      image: mcr.microsoft.com/oss/azure/kms/keyvault:v0.2.0
+      image: mcr.microsoft.com/oss/azure/kms/keyvault:v0.3.0
       imagePullPolicy: IfNotPresent
       args:
       - --listen-addr=unix:///opt/azurekms2.socket            # unix:///opt/azurekms.socket is used by the primary kms plugin pod. So use a different listen address here for the new kms plugin pod.
@@ -40,6 +40,7 @@ spec:
       - --healthz-port=8788                                   # The port used here should be different than the one used by the primary kms plugin pod.
       - --healthz-path=/healthz                               # [OPTIONAL] path for health check. Default is /healthz
       - --healthz-timeout=20s                                 # [OPTIONAL] RPC timeout for health check. Default is 20s
+      - --managed-hsm=false                                   # [OPTIONAL] Use Azure Key Vault managed HSM. Default is false.
       - -v=5
       securityContext:
         allowPrivilegeEscalation: false
