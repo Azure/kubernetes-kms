@@ -28,12 +28,6 @@ From the Kubernetes documentation on [Encrypting Secret Data at Rest]:
 
 💡 Make sure you have a Kubernetes cluster version 1.10 or later, the minimum version that is supported by KMS Plugin for Key Vault.
 
-### 🎁 aks-engine
-
-[AKS Engine] creates customized Kubernetes clusters on Azure.
-
-Follow the AKS Engine documentation about [Azure Key Vault Data Encryption] and refer to the [example cluster configuration] to create a Kubernetes cluster with KMS Plugin for Key Vault automatically configured. Once the cluster is running, there will be an Azure Key Vault containing a new key in the same resource group as the cluster.
-
 ### Azure Kubernetes Service (AKS)
 
 Azure Kubernetes Service ([AKS]) creates managed, supported Kubernetes clusters on Azure.
