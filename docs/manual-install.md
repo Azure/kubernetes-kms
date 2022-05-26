@@ -41,9 +41,6 @@ This guide demonstrates steps required to enable the KMS Plugin for Key Vault in
   | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
   | AKS cluster with service principal               | `az aks show -g <AKSResourceGroup> -n <AKSClusterName> --query servicePrincipalProfile.clientId -otsv`                                                                        |
   | AKS cluster with managed identity                | `az aks show -g <AKSResourceGroup> -n <AKSClusterName> --query identityProfile.kubeletidentity.clientId -otsv`                                                                |
-  | aks-engine cluster with service principal        | Use the client ID of the service principal defined in the API model                                                                                                           |
-  | aks-engine cluster with system-assigned identity | `az <vm\|vmss> identity show -g <NodeResourceGroup> -n <VM\|VMSS Name> --query principalId -otsv`                                                                             |
-  | aks-engine cluster with user-assigned identity   | `az <vm\|vmss> identity show -g <NodeResourceGroup> -n <VM\|VMSS Name> --query userAssignedIdentities -otsv`, then copy the `clientID` of the selected user-assigned identity |
 
   Assign the following permissions:
 
