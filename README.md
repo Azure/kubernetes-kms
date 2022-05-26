@@ -32,9 +32,9 @@ From the Kubernetes documentation on [Encrypting Secret Data at Rest]:
 
 Azure Kubernetes Service ([AKS]) creates managed, supported Kubernetes clusters on Azure.
 
-For more information about K8s secrets in AKS follow this [doc](https://docs.microsoft.com/en-us/azure/aks/concepts-security#kubernetes-secrets).
+To try out the KMS plugin for KeyValut on AKS, follow this [doc](https://docs.microsoft.com/en-us/azure/aks/use-kms-etcd-encryption).
 
-AKS does encrypt secrets at rest, but keys are managed by the service and users cannot bring their own.
+AKS does encrypt secrets at rest by default, but in that case keys are managed by the service and users cannot bring their own.
 
 ### Setting up KMS Plugin manually
 
