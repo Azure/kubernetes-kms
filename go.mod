@@ -14,7 +14,7 @@ require (
 	google.golang.org/grpc v1.40.1
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/apiserver v0.23.8
-	k8s.io/component-base v0.23.8
+	k8s.io/component-base v0.23.9
 	k8s.io/klog/v2 v2.30.0
 )
 
@@ -55,7 +55,7 @@ require (
 	google.golang.org/genproto v0.0.0-20210831024726-fe130286e0e2 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	k8s.io/apimachinery v0.23.8 // indirect
+	k8s.io/apimachinery v0.23.9 // indirect
 	k8s.io/utils v0.0.0-20211116205334-6203023598ed // indirect
 	sigs.k8s.io/json v0.0.0-20211020170558-c049b76a60c6 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
