@@ -7,6 +7,7 @@ import (
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	k8spb "k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1"
 )
 
@@ -102,7 +103,10 @@ func newUnixSocketConnection(path string) (*grpc.ClientConn, error) {
 	dialer := func(ctx context.Context, addr string) (net.Conn, error) {
 		return (&net.Dialer{}).DialContext(ctx, netProtocol, addr)
 	}
-	connection, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithContextDialer(dialer))
+	connection, err := grpc.Dial(
+		addr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithContextDialer(dialer))
 	if err != nil {
 		return nil, err
 	}
