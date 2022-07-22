@@ -87,8 +87,5 @@ This project has adopted the [Microsoft Open Source Code of Conduct](https://ope
 KMS Plugin for Key Vault is an open source project that is [**not** covered by the Microsoft Azure support policy](https://support.microsoft.com/en-us/help/2941892/support-for-linux-and-open-source-technology-in-azure). [Please search open issues here](https://github.com/Azure/kubernetes-kms/issues), and if your issue isn't already represented please [open a new one](https://github.com/Azure/kubernetes-kms/issues/new/choose). The project maintainers will respond to the best of their abilities.
 
 [aks]: https://azure.microsoft.com/services/kubernetes-service/
-[aks engine]: https://github.com/Azure/aks-engine
-[azure key vault data encryption]: https://github.com/Azure/aks-engine/blob/master/docs/topics/features.md#azure-key-vault-data-encryption
 [encrypting secret data at rest]: https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/#providers
-[example cluster configuration]: https://github.com/Azure/aks-engine/blob/master/examples/kubernetes-config/kubernetes-keyvault-encryption.json
 [azure key vault provider for secrets store csi driver]: https://github.com/Azure/secrets-store-csi-driver-provider-azure
