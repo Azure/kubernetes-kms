@@ -27,7 +27,7 @@ jobs:
     steps:
       - task: GoTool@0
         inputs:
-          version: 1.18
+          version: 1.19
 
       - script: make e2e-install-prerequisites
         displayName: "Install e2e test prerequisites"
