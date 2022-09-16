@@ -1,5 +1,5 @@
 jobs:
-  - job: e2e_tests
+  - job:
     timeoutInMinutes: 15
     cancelTimeoutInMinutes: 5
     workspace:
@@ -23,15 +23,22 @@ jobs:
       # - KEY_NAME
       # - KEY_VERSION
       - group: kubernetes-kms
-
+    strategy:
+      matrix:
+        kind_v1_22_13:
+          KUBERNETES_VERSION: v1.22.13
+        kind_v1_23_10:
+          KUBERNETES_VERSION: v1.23.10
+        kind_v1_24_4:
+          KUBERNETES_VERSION: v1.24.4
+        kind_v1_25_0:
+          KUBERNETES_VERSION: v1.25.0
     steps:
       - task: GoTool@0
         inputs:
           version: 1.19
-
       - script: make e2e-install-prerequisites
         displayName: "Install e2e test prerequisites"
-
       - script: |
           make e2e-setup-kind
         displayName: "Setup kind cluster with azure kms plugin"
@@ -43,11 +50,8 @@ jobs:
           KIND_NETWORK: $(KIND_NETWORK)
           AZURE_CLIENT_ID: $(AZURE_CLIENT_ID)
           AZURE_CLIENT_SECRET: $(AZURE_CLIENT_SECRET)
-
       - template: cluster-health-template.yml
       - template: kind-debug-template.yml
-
       - script: make e2e-test
         displayName: "Run e2e tests"
-
       - template: cleanup-template.yml
