@@ -23,7 +23,7 @@ import (
 
 	"google.golang.org/grpc"
 	pb "k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1"
-	"k8s.io/component-base/config"
+	logsapi "k8s.io/component-base/logs/api/v1"
 	json "k8s.io/component-base/logs/json"
 	"k8s.io/klog/v2"
 )
@@ -57,7 +57,7 @@ func main() {
 
 	if *logFormatJSON {
 		jsonFactory := json.Factory{}
-		logger, _ := jsonFactory.Create(config.LoggingConfiguration{Format: "json"})
+		logger, _ := jsonFactory.Create(logsapi.LoggingConfiguration{Format: "json"})
 		klog.SetLogger(logger)
 	}
 
