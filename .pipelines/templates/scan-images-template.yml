@@ -5,8 +5,8 @@ steps:
       export OUTPUT_TYPE="type=docker"
       make docker-init-buildx docker-build
 
-      wget https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION:-0.30.2}/trivy_${TRIVY_VERSION:-0.30.2}_Linux-64bit.tar.gz
-      tar zxvf trivy_${TRIVY_VERSION:-0.30.2}_Linux-64bit.tar.gz
+      wget https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION:-0.32.0}/trivy_${TRIVY_VERSION:-0.32.0}_Linux-64bit.tar.gz
+      tar zxvf trivy_${TRIVY_VERSION:-0.32.0}_Linux-64bit.tar.gz
 
       # show all vulnerabilities in the logs
       ./trivy image "${REGISTRY}/keyvault:${IMAGE_VERSION}"
