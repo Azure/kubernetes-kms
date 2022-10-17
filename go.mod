@@ -13,7 +13,7 @@ require (
 	golang.org/x/net v0.0.0-20220906165146-f3363e06e74c
 	google.golang.org/grpc v1.49.0
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/apiserver v0.25.2
+	k8s.io/apiserver v0.25.3
 	k8s.io/component-base v0.25.3
 	k8s.io/klog/v2 v2.80.1
 )
