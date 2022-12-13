@@ -33,6 +33,8 @@ jobs:
           KUBERNETES_VERSION: v1.24.4
         kind_v1_25_0:
           KUBERNETES_VERSION: v1.25.0
+        kind_v1_26_0:
+          KUBERNETES_VERSION: v1.26.0
     steps:
       - task: GoTool@0
         inputs:
