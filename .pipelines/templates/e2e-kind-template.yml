@@ -25,12 +25,12 @@ jobs:
       - group: kubernetes-kms
     strategy:
       matrix:
-        kind_v1_23_10:
-          KUBERNETES_VERSION: v1.23.10
-        kind_v1_24_4:
-          KUBERNETES_VERSION: v1.24.4
-        kind_v1_25_0:
-          KUBERNETES_VERSION: v1.25.0
+        kind_v1_23_13:
+          KUBERNETES_VERSION: v1.23.13
+        kind_v1_24_7:
+          KUBERNETES_VERSION: v1.24.7
+        kind_v1_25_3:
+          KUBERNETES_VERSION: v1.25.3
         kind_v1_26_0:
           KUBERNETES_VERSION: v1.26.0
     steps:
