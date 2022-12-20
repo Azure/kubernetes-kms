@@ -8,7 +8,7 @@ REGISTRY ?= $(REGISTRY_NAME).azurecr.io/$(REPO_PREFIX)
 LOCAL_REGISTRY_NAME ?= kind-registry
 LOCAL_REGISTRY_PORT ?= 5000
 IMAGE_NAME ?= keyvault
-IMAGE_VERSION ?= v0.3.0
+IMAGE_VERSION ?= v0.4.0
 IMAGE_TAG := $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_VERSION)
 CGO_ENABLED_FLAG := 0
 
@@ -79,7 +79,7 @@ docker-build:
 		--output=$(OUTPUT_TYPE) \
 		-t $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_VERSION)-linux-$(ARCH)  . \
 		--progress=plain; \
-		
+
 	@if [ "$(ARCH)" = "amd64" ] && [ "$(OUTPUT_TYPE)" = "type=docker" ]; then \
 		docker tag $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_VERSION)-linux-$(ARCH) $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_VERSION); \
 	fi

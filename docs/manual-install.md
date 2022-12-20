@@ -37,10 +37,10 @@ This guide demonstrates steps required to enable the KMS Plugin for Key Vault in
 
   After your cluster is provisioned, depending on your cluster identity configuration, run one of the following commands to retrieve the **ID** of your managed identity or service principal, which will be used for role assignment to access Keyvault:
 
-  | Cluster configuration                            | Command                                                                                                                                                                       |
-  | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-  | AKS cluster with service principal               | `az aks show -g <AKSResourceGroup> -n <AKSClusterName> --query servicePrincipalProfile.clientId -otsv`                                                                        |
-  | AKS cluster with managed identity                | `az aks show -g <AKSResourceGroup> -n <AKSClusterName> --query identityProfile.kubeletidentity.clientId -otsv`                                                                |
+  | Cluster configuration              | Command                                                                                                        |
+  | ---------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+  | AKS cluster with service principal | `az aks show -g <AKSResourceGroup> -n <AKSClusterName> --query servicePrincipalProfile.clientId -otsv`         |
+  | AKS cluster with managed identity  | `az aks show -g <AKSResourceGroup> -n <AKSClusterName> --query identityProfile.kubeletidentity.clientId -otsv` |
 
   Assign the following permissions:
 
@@ -66,7 +66,7 @@ This guide demonstrates steps required to enable the KMS Plugin for Key Vault in
     hostNetwork: true
     containers:
       - name: azure-kms-provider
-        image: mcr.microsoft.com/oss/azure/kms/keyvault:v0.3.0
+        image: mcr.microsoft.com/oss/azure/kms/keyvault:v0.4.0
         imagePullPolicy: IfNotPresent
         args:
           - --listen-addr=unix:///opt/azurekms.socket             # [OPTIONAL] gRPC listen address. Default is unix:///opt/azurekms.socket
