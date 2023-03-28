@@ -72,6 +72,9 @@ Refer to [doc](docs/rotation.md) for steps to rotate the KMS Key on an existing 
 
 The KMS Plugin for Key Vault project welcomes contributions and suggestions. Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
+## Roadmap
+You can view the public roadmap for the KMS plugin for Azure KeyVault on the GitHub Project [here](https://github.com/orgs/Azure/projects/440). Note that all target dates are aspirational and subject to change.
+
 ## Release
 
 Currently, this project releases monthly to patch security vulnerabilities, and bi-monthly for new features. We target the **first week** of the month for release.
