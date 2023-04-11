@@ -9,7 +9,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	k8spb "k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1"
+	kmsv1 "k8s.io/kms/apis/v1beta1"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 )
 
 var (
-	client     k8spb.KeyManagementServiceClient
+	client     kmsv1.KeyManagementServiceClient
 	connection *grpc.ClientConn
 	err        error
 )
@@ -30,7 +30,7 @@ func setupTestCase(t *testing.T) func(t *testing.T) {
 	if err != nil {
 		fmt.Printf("%s", err)
 	}
-	client = k8spb.NewKeyManagementServiceClient(connection)
+	client = kmsv1.NewKeyManagementServiceClient(connection)
 	return func(t *testing.T) {
 		t.Log("teardown test case")
 		connection.Close()
@@ -54,13 +54,13 @@ func TestEncryptDecrypt(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			encryptRequest := k8spb.EncryptRequest{Version: version, Plain: tc.want}
+			encryptRequest := kmsv1.EncryptRequest{Version: version, Plain: tc.want}
 			encryptResponse, err := client.Encrypt(context.Background(), &encryptRequest)
 			if err != nil {
 				t.Fatalf("encrypt request failed with error: %+v", err)
 			}
 
-			decryptRequest := k8spb.DecryptRequest{Version: version, Cipher: encryptResponse.Cipher}
+			decryptRequest := kmsv1.DecryptRequest{Version: version, Cipher: encryptResponse.Cipher}
 			decryptResponse, err := client.Decrypt(context.Background(), &decryptRequest)
 			if !bytes.Equal(decryptResponse.Plain, tc.want) {
 				t.Fatalf("Expected secret, but got %s - %v", string(decryptResponse.Plain), err)
@@ -85,7 +85,7 @@ func TestVersion(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			request := &k8spb.VersionRequest{Version: tc.want}
+			request := &kmsv1.VersionRequest{Version: tc.want}
 			response, err := client.Version(context.Background(), request)
 			if err != nil {
 				t.Fatalf("failed get version from remote KMS provider: %v", err)

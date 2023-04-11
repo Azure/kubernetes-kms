@@ -29,8 +29,8 @@ DOCKER_BUILDKIT = 1
 export DOCKER_BUILDKIT
 
 # Testing var
-KIND_VERSION ?= 0.15.0
-KUBERNETES_VERSION ?= v1.25.0
+KIND_VERSION ?= 0.18.0
+KUBERNETES_VERSION ?= v1.27.1
 BATS_VERSION ?= 1.4.1
 
 ## --------------------------------------
@@ -132,6 +132,11 @@ e2e-setup-kind: setup-local-registry
 	./scripts/connect-registry.sh &
 	sleep 90s
 
+e2e-kmsv2-setup-kind: setup-local-registry
+	./scripts/setup-kmsv2-kind-cluster.sh &
+	./scripts/connect-registry.sh &
+	sleep 90s
+
 .PHONY: setup-local-registry
 setup-local-registry:
 	./scripts/setup-local-registry.sh
@@ -148,3 +153,7 @@ e2e-delete-kind:
 e2e-test:
 	# Run test suite with kind cluster
 	bats -t tests/e2e/test.bats
+
+e2e-kmsv2-test:
+	# Run test suite with kind cluster
+	bats -t tests/e2e/testkmsv2.bats

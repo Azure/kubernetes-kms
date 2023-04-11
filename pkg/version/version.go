@@ -13,8 +13,12 @@ var (
 	GitCommit string
 	// BuildVersion is the version of the KMS binary.
 	BuildVersion string
-	APIVersion   = "v1beta1"
-	Runtime      = "Microsoft AzureKMS"
+	// KMSv1APIVersion is the version of the KMS V1 APIs.
+	KMSv1APIVersion = "v1beta1"
+	// KMSv2APIVersion is the version of the KMS V2 APIs.
+	KMSv2APIVersion = "v2beta1"
+	// Runtime of the plugin.
+	Runtime = "Microsoft AzureKMS"
 )
 
 // PrintVersion prints the current KMS plugin version.

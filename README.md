@@ -55,7 +55,7 @@ Now that Azure KMS provider is running in your cluster and the encryption config
    sudo ETCDCTL_API=3 etcdctl --cacert=/etc/kubernetes/certs/ca.crt --cert=/etc/kubernetes/certs/etcdclient.crt --key=/etc/kubernetes/certs/etcdclient.key get /registry/secrets/default/secret1
    ```
 
-3. Check that the stored secret is prefixed with `k8s:enc:kms:v1:azurekmsprovider`. This indicates the Azure KMS provider has encrypted the data.
+3. Check that the stored secret is prefixed with `k8s:enc:kms:v1:azurekmsprovider` when KMSv1 is used for encryption, or with `k8s:enc:kms:v2:azurekmsprovider` when KMSv2 is used. This prefix indicates that the data has been encrypted by the Azure KMS provider.
 
 4. Verify the secret is decrypted correctly when retrieved via the Kubernetes API:
 
@@ -68,6 +68,9 @@ Now that Azure KMS provider is running in your cluster and the encryption config
 ## Rotation
 
 Refer to [doc](docs/rotation.md) for steps to rotate the KMS Key on an existing cluster.
+
+## Metrics
+Refer to [doc](docs/metrics.md) for details on the metrics exposed by the KMS Key Vault plugin.
 
 ## Contributing
 
