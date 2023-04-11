@@ -35,7 +35,7 @@ type Config struct {
 }
 
 // New creates an instance of the KMS Service Server.
-func New(ctx context.Context, pc *Config) (*KeyManagementServiceServer, error) {
+func New(pc *Config) (*KeyManagementServiceServer, error) {
 	cfg, err := config.GetAzureConfig(pc.ConfigFilePath)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func New(ctx context.Context, pc *Config) (*KeyManagementServiceServer, error) {
 }
 
 // Version of kms
-func (s *KeyManagementServiceServer) Version(ctx context.Context, request *k8spb.VersionRequest) (*k8spb.VersionResponse, error) {
+func (s *KeyManagementServiceServer) Version(_ context.Context, _ *k8spb.VersionRequest) (*k8spb.VersionResponse, error) {
 	return &k8spb.VersionResponse{
 		Version:        version.APIVersion,
 		RuntimeName:    version.Runtime,

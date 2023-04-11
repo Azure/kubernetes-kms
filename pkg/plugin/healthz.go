@@ -48,7 +48,7 @@ func (h *HealthZ) Serve() {
 	}
 }
 
-func (h *HealthZ) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *HealthZ) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 	klog.V(5).Info("Started health check")
 	ctx, cancel := context.WithTimeout(context.Background(), h.RPCTimeout)
 	defer cancel()

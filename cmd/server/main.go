@@ -87,7 +87,7 @@ func main() {
 		ProxyPort:      *proxyPort,
 		ConfigFilePath: *configFilePath,
 	}
-	kmsServer, err := plugin.New(ctx, pc)
+	kmsServer, err := plugin.New(pc)
 	if err != nil {
 		klog.ErrorS(err, "failed to create server")
 		os.Exit(1)

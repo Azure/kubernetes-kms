@@ -19,13 +19,13 @@ type KeyVaultClient struct {
 	decryptErr error
 }
 
-func (kvc *KeyVaultClient) Encrypt(ctx context.Context, cipher []byte) ([]byte, error) {
+func (kvc *KeyVaultClient) Encrypt(_ context.Context, _ []byte) ([]byte, error) {
 	kvc.mutex.Lock()
 	defer kvc.mutex.Unlock()
 	return kvc.encryptOut, kvc.encryptErr
 }
 
-func (kvc *KeyVaultClient) Decrypt(ctx context.Context, plain []byte) ([]byte, error) {
+func (kvc *KeyVaultClient) Decrypt(_ context.Context, _ []byte) ([]byte, error) {
 	kvc.mutex.Lock()
 	defer kvc.mutex.Unlock()
 	return kvc.decryptOut, kvc.decryptErr
