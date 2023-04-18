@@ -144,7 +144,9 @@ func setupFakeKMSServer(socketPath string) (*KeyManagementServiceServer, *mockke
 	}
 	s := grpc.NewServer()
 	pb.RegisterKeyManagementServiceServer(s, fakeKMSServer)
-	go s.Serve(listener)
+	go func() {
+		_ = s.Serve(listener)
+	}()
 
 	return fakeKMSServer, kvClient, nil
 }

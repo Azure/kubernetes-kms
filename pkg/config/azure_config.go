@@ -8,7 +8,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// AzureConfig is representing /etc/kubernetes/azure.json
+// AzureConfig is representing /etc/kubernetes/azure.json.
 type AzureConfig struct {
 	Cloud                       string `json:"cloud" yaml:"cloud"`
 	TenantID                    string `json:"tenantId" yaml:"tenantId"`
@@ -20,7 +20,7 @@ type AzureConfig struct {
 	AADClientCertPassword       string `json:"aadClientCertPassword" yaml:"aadClientCertPassword"`
 }
 
-// GetAzureConfig returns configs in the azure.json cloud provider file
+// GetAzureConfig returns configs in the azure.json cloud provider file.
 func GetAzureConfig(configFile string) (config *AzureConfig, err error) {
 	cfg := AzureConfig{}
 

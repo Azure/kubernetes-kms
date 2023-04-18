@@ -62,7 +62,9 @@ func main() {
 	}
 
 	if *versionInfo {
-		version.PrintVersion()
+		if err := version.PrintVersion(); err != nil {
+			klog.ErrorS(err, "failed to print version")
+		}
 		os.Exit(0)
 	}
 
@@ -117,7 +119,9 @@ func main() {
 	pb.RegisterKeyManagementServiceServer(s, kmsServer)
 
 	klog.InfoS("Listening for connections", "addr", listener.Addr().String())
-	go s.Serve(listener)
+	go func() {
+		_ = s.Serve(listener)
+	}()
 
 	healthz := &plugin.HealthZ{
 		KMSServer: kmsServer,
