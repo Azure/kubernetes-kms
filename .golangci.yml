@@ -18,8 +18,8 @@ linters:
     - errcheck
     - exportloopref
     - forcetypeassert
-    - gocritic
     - goconst
+    - gocritic
     - gocyclo
     - godot
     - gofmt
