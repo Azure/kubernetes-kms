@@ -64,6 +64,7 @@ func main() {
 	if *versionInfo {
 		if err := version.PrintVersion(); err != nil {
 			klog.ErrorS(err, "failed to print version")
+			os.Exit(1)
 		}
 		os.Exit(0)
 	}
@@ -120,7 +121,10 @@ func main() {
 
 	klog.InfoS("Listening for connections", "addr", listener.Addr().String())
 	go func() {
-		_ = s.Serve(listener)
+		if err := s.Serve(listener); err != nil {
+		        klog.ErrorS(err, "failed to serve")
+		        os.Exit(1)
+		 }
 	}()
 
 	healthz := &plugin.HealthZ{
