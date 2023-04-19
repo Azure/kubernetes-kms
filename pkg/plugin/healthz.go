@@ -33,7 +33,7 @@ type HealthZ struct {
 	RPCTimeout     time.Duration
 }
 
-// Serve creates the http handler for serving health requests
+// Serve creates the http handler for serving health requests.
 func (h *HealthZ) Serve() {
 	serveMux := http.NewServeMux()
 	serveMux.HandleFunc(h.HealthCheckURL.EscapedPath(), h.ServeHTTP)
@@ -85,7 +85,10 @@ func (h *HealthZ) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("ok"))
+	if _, err = w.Write([]byte("ok")); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	klog.V(5).Info("Completed health check")
 }
 

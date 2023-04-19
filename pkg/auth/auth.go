@@ -23,7 +23,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// GetKeyvaultToken() returns token for Keyvault endpoint
+// GetKeyvaultToken() returns token for Keyvault endpoint.
 func GetKeyvaultToken(config *config.AzureConfig, env *azure.Environment, resource string, proxyMode bool) (authorizer autorest.Authorizer, err error) {
 	servicePrincipalToken, err := GetServicePrincipalToken(config, env.ActiveDirectoryEndpoint, resource, proxyMode)
 	if err != nil {
@@ -33,7 +33,7 @@ func GetKeyvaultToken(config *config.AzureConfig, env *azure.Environment, resour
 	return authorizer, nil
 }
 
-// GetServicePrincipalToken creates a new service principal token based on the configuration
+// GetServicePrincipalToken creates a new service principal token based on the configuration.
 func GetServicePrincipalToken(config *config.AzureConfig, aadEndpoint, resource string, proxyMode bool) (adal.OAuthTokenProvider, error) {
 	oauthConfig, err := adal.NewOAuthConfig(aadEndpoint, config.TenantID)
 	if err != nil {
@@ -106,7 +106,7 @@ func GetServicePrincipalToken(config *config.AzureConfig, aadEndpoint, resource 
 	return nil, fmt.Errorf("no credentials provided for accessing keyvault")
 }
 
-// ParseAzureEnvironment returns azure environment by name
+// ParseAzureEnvironment returns azure environment by name.
 func ParseAzureEnvironment(cloudName string) (*azure.Environment, error) {
 	var env azure.Environment
 	var err error
@@ -119,7 +119,7 @@ func ParseAzureEnvironment(cloudName string) (*azure.Environment, error) {
 }
 
 // decodePkcs12 decodes a PKCS#12 client certificate by extracting the public certificate and
-// the private RSA key
+// the private RSA key.
 func decodePkcs12(pkcs []byte, password string) (*x509.Certificate, *rsa.PrivateKey, error) {
 	privateKey, certificate, err := pkcs12.Decode(pkcs, password)
 	if err != nil {
@@ -133,13 +133,13 @@ func decodePkcs12(pkcs []byte, password string) (*x509.Certificate, *rsa.Private
 	return certificate, rsaPrivateKey, nil
 }
 
-// redactClientCredentials applies regex to a sensitive string and return the redacted value
+// redactClientCredentials applies regex to a sensitive string and return the redacted value.
 func redactClientCredentials(sensitiveString string) string {
-	r, _ := regexp.Compile(`^(\S{4})(\S|\s)*(\S{4})$`)
+	r := regexp.MustCompile(`^(\S{4})(\S|\s)*(\S{4})$`)
 	return r.ReplaceAllString(sensitiveString, "$1##### REDACTED #####$3")
 }
 
-// addTargetTypeHeader adds the target header if proxy mode is enabled
+// addTargetTypeHeader adds the target header if proxy mode is enabled.
 func addTargetTypeHeader(spt *adal.ServicePrincipalToken) *adal.ServicePrincipalToken {
 	spt.SetSender(autorest.CreateSender(
 		(func() autorest.SendDecorator {

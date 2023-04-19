@@ -25,7 +25,7 @@ func TestPrintVersion(t *testing.T) {
 	// copy the output in a separate goroutine so printing can't block indefinitely
 	go func() {
 		var buf bytes.Buffer
-		io.Copy(&buf, r)
+		_, _ = io.Copy(&buf, r)
 		outC <- strings.TrimSpace(buf.String())
 	}()
 
@@ -52,6 +52,5 @@ func TestGetUserAgent(t *testing.T) {
 	expectedUserAgent := fmt.Sprintf("k8s-kms-keyvault/version (%s/%s) hash/Now", runtime.GOOS, runtime.GOARCH)
 	if !strings.EqualFold(userAgent, expectedUserAgent) {
 		t.Fatalf("string doesn't match, expected %s, got %s", expectedUserAgent, userAgent)
-
 	}
 }

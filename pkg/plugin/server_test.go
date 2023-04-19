@@ -6,6 +6,7 @@
 package plugin
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"testing"
@@ -54,7 +55,7 @@ func TestEncrypt(t *testing.T) {
 			if err != test.err {
 				t.Fatalf("expected err: %v, got: %v", test.err, err)
 			}
-			if string(out.GetCipher()) != string(test.output) {
+			if !bytes.Equal(out.GetCipher(), test.output) {
 				t.Fatalf("expected out: %v, got: %v", test.output, out)
 			}
 		})
@@ -98,7 +99,7 @@ func TestDecrypt(t *testing.T) {
 			if err != test.err {
 				t.Fatalf("expected err: %v, got: %v", test.err, err)
 			}
-			if string(out.GetPlain()) != string(test.output) {
+			if !bytes.Equal(out.GetPlain(), test.output) {
 				t.Fatalf("expected out: %v, got: %v", test.output, out)
 			}
 		})

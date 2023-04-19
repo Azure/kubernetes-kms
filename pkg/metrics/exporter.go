@@ -11,7 +11,7 @@ const (
 	prometheusExporter = "prometheus"
 )
 
-// InitMetricsExporter initializes new exporter
+// InitMetricsExporter initializes new exporter.
 func InitMetricsExporter(metricsBackend, metricsAddress string) error {
 	exporter := strings.ToLower(metricsBackend)
 	klog.InfoS("metrics backend", "exporter", exporter)
