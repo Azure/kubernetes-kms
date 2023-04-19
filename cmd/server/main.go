@@ -122,9 +122,9 @@ func main() {
 	klog.InfoS("Listening for connections", "addr", listener.Addr().String())
 	go func() {
 		if err := s.Serve(listener); err != nil {
-		        klog.ErrorS(err, "failed to serve")
-		        os.Exit(1)
-		 }
+			klog.ErrorS(err, "failed to serve")
+			os.Exit(1)
+		}
 	}()
 
 	healthz := &plugin.HealthZ{
