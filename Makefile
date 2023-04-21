@@ -121,8 +121,6 @@ e2e-install-prerequisites:
 	curl -LO https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl && chmod +x ./kubectl && sudo mv kubectl /usr/local/bin/
 	# Download and install bats
 	curl -sSLO https://github.com/bats-core/bats-core/archive/v${BATS_VERSION}.tar.gz && tar -zxvf v${BATS_VERSION}.tar.gz && sudo bash bats-core-${BATS_VERSION}/install.sh /usr/local
-	# Install envsubst
-	sudo tdnf install -y gettext
 
 .PHONY: install-soak-prerequisites
 install-soak-prerequisites: e2e-install-prerequisites
