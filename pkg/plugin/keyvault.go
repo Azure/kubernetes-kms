@@ -24,7 +24,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// Client interface for interacting with Keyvault
+// Client interface for interacting with Keyvault.
 type Client interface {
 	Encrypt(ctx context.Context, cipher []byte) ([]byte, error)
 	Decrypt(ctx context.Context, plain []byte) ([]byte, error)
@@ -40,14 +40,15 @@ type keyVaultClient struct {
 	azureEnvironment *azure.Environment
 }
 
-// NewKeyVaultClient returns a new key vault client to use for kms operations
+// NewKeyVaultClient returns a new key vault client to use for kms operations.
 func newKeyVaultClient(
 	config *config.AzureConfig,
 	vaultName, keyName, keyVersion string,
 	proxyMode bool,
 	proxyAddress string,
 	proxyPort int,
-	managedHSM bool) (*keyVaultClient, error) {
+	managedHSM bool,
+) (*keyVaultClient, error) {
 	// Sanitize vaultName, keyName, keyVersion. (https://github.com/Azure/kubernetes-kms/issues/85)
 	vaultName = utils.SanitizeString(vaultName)
 	keyName = utils.SanitizeString(keyName)

@@ -7,17 +7,17 @@ import (
 )
 
 var (
-	// BuildDate is the date when the binary was built
+	// BuildDate is the date when the binary was built.
 	BuildDate string
-	// GitCommit is the commit hash when the binary was built
+	// GitCommit is the commit hash when the binary was built.
 	GitCommit string
-	// BuildVersion is the version of the KMS binary
+	// BuildVersion is the version of the KMS binary.
 	BuildVersion string
 	APIVersion   = "v1beta1"
 	Runtime      = "Microsoft AzureKMS"
 )
 
-// PrintVersion prints the current KMS plugin version
+// PrintVersion prints the current KMS plugin version.
 func PrintVersion() (err error) {
 	pv := struct {
 		BuildVersion string

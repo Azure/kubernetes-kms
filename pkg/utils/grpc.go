@@ -12,7 +12,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// ParseEndpoint returns unix socket's protocol and address
+// ParseEndpoint returns unix socket's protocol and address.
 func ParseEndpoint(ep string) (string, string, error) {
 	if strings.HasPrefix(strings.ToLower(ep), "unix://") {
 		s := strings.SplitN(ep, "://", 2)

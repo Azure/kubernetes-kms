@@ -14,32 +14,30 @@ const (
 	statusTypeKey        = "status"
 	operationTypeKey     = "operation"
 	kmsRequestMetricName = "kms_request"
-	// ErrorStatusTypeValue sets status tag to "error"
+	// ErrorStatusTypeValue sets status tag to "error".
 	ErrorStatusTypeValue = "error"
-	// SuccessStatusTypeValue sets status tag to "success"
+	// SuccessStatusTypeValue sets status tag to "success".
 	SuccessStatusTypeValue = "success"
-	// EncryptOperationTypeValue sets operation tag to "encrypt"
+	// EncryptOperationTypeValue sets operation tag to "encrypt".
 	EncryptOperationTypeValue = "encrypt"
-	// DecryptOperationTypeValue sets operation tag to "decrypt"
+	// DecryptOperationTypeValue sets operation tag to "decrypt".
 	DecryptOperationTypeValue = "decrypt"
-	// GrpcOperationTypeValue sets operation tag to "grpc"
+	// GrpcOperationTypeValue sets operation tag to "grpc".
 	GrpcOperationTypeValue = "grpc"
 )
 
-var (
-	kmsRequest metric.Float64ValueRecorder
-)
+var kmsRequest metric.Float64ValueRecorder
 
 type reporter struct {
 	meter metric.Meter
 }
 
-// StatsReporter reports metrics
+// StatsReporter reports metrics.
 type StatsReporter interface {
 	ReportRequest(ctx context.Context, operationType, status string, duration float64, errors ...string)
 }
 
-// NewStatsReporter instantiates otel reporter
+// NewStatsReporter instantiates otel reporter.
 func NewStatsReporter() StatsReporter {
 	meter := global.Meter(instrumentationName)
 
