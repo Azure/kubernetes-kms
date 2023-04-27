@@ -4,6 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/Azure/kubernetes-kms)](https://goreportcard.com/report/Azure/kubernetes-kms)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/Azure/kubernetes-kms)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/Azure/kubernetes-kms)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/Azure/kubernetes-kms/badge)](https://api.securityscorecards.dev/projects/github.com/Azure/kubernetes-kms)
 
 Enables encryption at rest of your Kubernetes data in etcd using Azure Key Vault.
 
