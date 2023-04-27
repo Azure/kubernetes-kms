@@ -12,18 +12,23 @@ updates:
         - "version-update:semver-major"
         - "version-update:semver-minor"
 
-
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: daily
-
+    commit-message:
+      prefix: "chore"
+      
   - package-ecosystem: docker
     directory: /
     schedule:
       interval: daily
-
+    commit-message:
+      prefix: "chore"
+      
   - package-ecosystem: gomod
     directory: /tools
     schedule:
       interval: daily
+    commit-message:
+      prefix: "chore"
