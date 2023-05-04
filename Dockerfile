@@ -1,4 +1,4 @@
-FROM golang:1.19-bullseye as builder
+FROM golang:1.19-bullseye@sha256:1370f30629243bb65e3e0f780ae08a54e50fc5b7e96f0b79e62ee846788d1178 as builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -19,7 +19,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} GO111MODULE=on go build -a -ld
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM --platform=${TARGETPLATFORM:-linux/amd64} gcr.io/distroless/static:nonroot
+FROM --platform=${TARGETPLATFORM:-linux/amd64} gcr.io/distroless/static:nonroot@sha256:9ecc53c269509f63c69a266168e4a687c7eb8c0cfd753bd8bfcaa4f58a90876f
 WORKDIR /
 COPY --from=builder /workspace/_output/kubernetes-kms .
 
