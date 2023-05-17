@@ -15,7 +15,7 @@ import (
 	mockkeyvault "github.com/Azure/kubernetes-kms/pkg/plugin/mock_keyvault"
 	"github.com/Azure/kubernetes-kms/pkg/version"
 
-	k8spb "k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1"
+	kmsv1 "k8s.io/kms/apis/v1beta1"
 )
 
 func TestEncrypt(t *testing.T) {
@@ -44,12 +44,17 @@ func TestEncrypt(t *testing.T) {
 			kvClient := &mockkeyvault.KeyVaultClient{}
 			kvClient.SetEncryptResponse(test.output, test.err)
 
-			kmsServer := KeyManagementServiceServer{
-				kvClient: kvClient,
-				reporter: metrics.NewStatsReporter(),
+			statsReporter, err := metrics.NewStatsReporter()
+			if err != nil {
+				t.Fatalf("failed to create stats reporter: %v", err)
 			}
 
-			out, err := kmsServer.Encrypt(context.TODO(), &k8spb.EncryptRequest{
+			kmsServer := KeyManagementServiceServer{
+				kvClient: kvClient,
+				reporter: statsReporter,
+			}
+
+			out, err := kmsServer.Encrypt(context.TODO(), &kmsv1.EncryptRequest{
 				Plain: test.input,
 			})
 			if err != test.err {
@@ -88,12 +93,17 @@ func TestDecrypt(t *testing.T) {
 			kvClient := &mockkeyvault.KeyVaultClient{}
 			kvClient.SetDecryptResponse(test.output, test.err)
 
-			kmsServer := KeyManagementServiceServer{
-				kvClient: kvClient,
-				reporter: metrics.NewStatsReporter(),
+			statsReporter, err := metrics.NewStatsReporter()
+			if err != nil {
+				t.Fatalf("failed to create stats reporter: %v", err)
 			}
 
-			out, err := kmsServer.Decrypt(context.TODO(), &k8spb.DecryptRequest{
+			kmsServer := KeyManagementServiceServer{
+				kvClient: kvClient,
+				reporter: statsReporter,
+			}
+
+			out, err := kmsServer.Decrypt(context.TODO(), &kmsv1.DecryptRequest{
 				Cipher: test.input,
 			})
 			if err != test.err {
@@ -111,12 +121,12 @@ func TestVersion(t *testing.T) {
 
 	version.BuildVersion = "latest"
 
-	v, err := kmsServer.Version(context.TODO(), &k8spb.VersionRequest{})
+	v, err := kmsServer.Version(context.TODO(), &kmsv1.VersionRequest{})
 	if err != nil {
 		t.Fatalf("expected err to be nil, got: %v", err)
 	}
-	if v.Version != version.APIVersion {
-		t.Fatalf("expected version: %s, got: %s", version.APIVersion, v.Version)
+	if v.Version != version.KMSv1APIVersion {
+		t.Fatalf("expected version: %s, got: %s", version.KMSv1APIVersion, v.Version)
 	}
 	if v.RuntimeName != version.Runtime {
 		t.Fatalf("expected runtime: %s, got: %s", version.Runtime, v.RuntimeName)

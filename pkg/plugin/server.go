@@ -7,22 +7,25 @@ package plugin
 
 import (
 	"context"
+	"fmt"
 	"time"
 
-	"github.com/Azure/kubernetes-kms/pkg/config"
 	"github.com/Azure/kubernetes-kms/pkg/metrics"
 	"github.com/Azure/kubernetes-kms/pkg/version"
 
-	k8spb "k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1"
+	"github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
 	"k8s.io/klog/v2"
+	kmsv1 "k8s.io/kms/apis/v1beta1"
 )
 
 // KeyManagementServiceServer is a gRPC server.
 type KeyManagementServiceServer struct {
-	kvClient Client
-	reporter metrics.StatsReporter
+	kvClient            Client
+	reporter            metrics.StatsReporter
+	encryptionAlgorithm keyvault.JSONWebKeyEncryptionAlgorithm
 }
 
+// Config is the configuration for the KMS plugin.
 type Config struct {
 	ConfigFilePath string
 	KeyVaultName   string
@@ -34,33 +37,31 @@ type Config struct {
 	ProxyPort      int
 }
 
-// New creates an instance of the KMS Service Server.
-func New(pc *Config) (*KeyManagementServiceServer, error) {
-	cfg, err := config.GetAzureConfig(pc.ConfigFilePath)
+// NewKMSv1Server creates an instance of the KMS Service Server.
+func NewKMSv1Server(kvClient Client) (*KeyManagementServiceServer, error) {
+	statsReporter, err := metrics.NewStatsReporter()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create stats reporter: %w", err)
 	}
-	kvClient, err := newKeyVaultClient(cfg, pc.KeyVaultName, pc.KeyName, pc.KeyVersion, pc.ProxyMode, pc.ProxyAddress, pc.ProxyPort, pc.ManagedHSM)
-	if err != nil {
-		return nil, err
-	}
+
 	return &KeyManagementServiceServer{
-		kvClient: kvClient,
-		reporter: metrics.NewStatsReporter(),
+		kvClient:            kvClient,
+		reporter:            statsReporter,
+		encryptionAlgorithm: keyvault.RSA15,
 	}, nil
 }
 
 // Version of kms.
-func (s *KeyManagementServiceServer) Version(_ context.Context, _ *k8spb.VersionRequest) (*k8spb.VersionResponse, error) {
-	return &k8spb.VersionResponse{
-		Version:        version.APIVersion,
+func (s *KeyManagementServiceServer) Version(_ context.Context, _ *kmsv1.VersionRequest) (*kmsv1.VersionResponse, error) {
+	return &kmsv1.VersionResponse{
+		Version:        version.KMSv1APIVersion,
 		RuntimeName:    version.Runtime,
 		RuntimeVersion: version.BuildVersion,
 	}, nil
 }
 
 // Encrypt message.
-func (s *KeyManagementServiceServer) Encrypt(ctx context.Context, request *k8spb.EncryptRequest) (*k8spb.EncryptResponse, error) {
+func (s *KeyManagementServiceServer) Encrypt(ctx context.Context, request *kmsv1.EncryptRequest) (*kmsv1.EncryptResponse, error) {
 	start := time.Now()
 
 	var err error
@@ -75,17 +76,19 @@ func (s *KeyManagementServiceServer) Encrypt(ctx context.Context, request *k8spb
 	}()
 
 	klog.V(2).Info("encrypt request started")
-	cipher, err := s.kvClient.Encrypt(ctx, request.Plain)
+	encryptResponse, err := s.kvClient.Encrypt(ctx, request.Plain, s.encryptionAlgorithm)
 	if err != nil {
 		klog.ErrorS(err, "failed to encrypt")
-		return &k8spb.EncryptResponse{}, err
+		return &kmsv1.EncryptResponse{}, err
 	}
 	klog.V(2).Info("encrypt request complete")
-	return &k8spb.EncryptResponse{Cipher: cipher}, nil
+	return &kmsv1.EncryptResponse{
+		Cipher: encryptResponse.Ciphertext,
+	}, nil
 }
 
 // Decrypt message.
-func (s *KeyManagementServiceServer) Decrypt(ctx context.Context, request *k8spb.DecryptRequest) (*k8spb.DecryptResponse, error) {
+func (s *KeyManagementServiceServer) Decrypt(ctx context.Context, request *kmsv1.DecryptRequest) (*kmsv1.DecryptResponse, error) {
 	start := time.Now()
 
 	var err error
@@ -100,11 +103,18 @@ func (s *KeyManagementServiceServer) Decrypt(ctx context.Context, request *k8spb
 	}()
 
 	klog.V(2).Info("decrypt request started")
-	plain, err := s.kvClient.Decrypt(ctx, request.Cipher)
+	plain, err := s.kvClient.Decrypt(
+		ctx,
+		request.Cipher,
+		s.encryptionAlgorithm,
+		request.Version,
+		nil,
+		"",
+	)
 	if err != nil {
 		klog.ErrorS(err, "failed to decrypt")
-		return &k8spb.DecryptResponse{}, err
+		return &kmsv1.DecryptResponse{}, err
 	}
 	klog.V(2).Info("decrypt request complete")
-	return &k8spb.DecryptResponse{Plain: plain}, nil
+	return &kmsv1.DecryptResponse{Plain: plain}, nil
 }

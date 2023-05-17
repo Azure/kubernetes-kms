@@ -7,7 +7,11 @@ package mockkeyvault
 
 import (
 	"context"
+	"fmt"
 	"sync"
+
+	"github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
+	"k8s.io/kms/pkg/service"
 )
 
 type KeyVaultClient struct {
@@ -17,15 +21,25 @@ type KeyVaultClient struct {
 	encryptErr error
 	decryptOut []byte
 	decryptErr error
+	KeyID      string
+	Algorithm  keyvault.JSONWebKeyEncryptionAlgorithm
 }
 
-func (kvc *KeyVaultClient) Encrypt(_ context.Context, _ []byte) ([]byte, error) {
+func (kvc *KeyVaultClient) Encrypt(_ context.Context, _ []byte, _ keyvault.JSONWebKeyEncryptionAlgorithm) (*service.EncryptResponse, error) {
 	kvc.mutex.Lock()
 	defer kvc.mutex.Unlock()
-	return kvc.encryptOut, kvc.encryptErr
+	return &service.EncryptResponse{
+		Ciphertext: kvc.encryptOut,
+		KeyID:      kvc.KeyID,
+		Annotations: map[string][]byte{
+			"key-id.azure.akv.io":    []byte(kvc.KeyID),
+			"algorithm.azure.akv.io": []byte(kvc.Algorithm),
+			"version.azure.akv.io":   []byte("1"),
+		},
+	}, kvc.encryptErr
 }
 
-func (kvc *KeyVaultClient) Decrypt(_ context.Context, _ []byte) ([]byte, error) {
+func (kvc *KeyVaultClient) Decrypt(_ context.Context, _ []byte, _ keyvault.JSONWebKeyEncryptionAlgorithm, _ string, _ map[string][]byte, _ string) ([]byte, error) {
 	kvc.mutex.Lock()
 	defer kvc.mutex.Unlock()
 	return kvc.decryptOut, kvc.decryptErr
@@ -43,4 +57,43 @@ func (kvc *KeyVaultClient) SetDecryptResponse(decryptOut []byte, err error) {
 	defer kvc.mutex.Unlock()
 	kvc.decryptOut = decryptOut
 	kvc.decryptErr = err
+}
+
+func (kvc *KeyVaultClient) ValidateAnnotations(annotations map[string][]byte, keyID string) error {
+	if len(annotations) == 0 {
+		return fmt.Errorf("invalid annotations, annotations cannot be empty")
+	}
+
+	// validate key id
+	if keyID != kvc.KeyID {
+		return fmt.Errorf(
+			"key id %q does not match expected key id %q used for encryption",
+			string(annotations["key-id.azure.akv.io"]),
+			kvc.KeyID,
+		)
+	}
+
+	// validate algorithm
+	if string(annotations["algorithm.azure.akv.io"]) != string(kvc.Algorithm) {
+		return fmt.Errorf("algorithm %q does not match expected algorithm %q used for encryption", string(annotations["algorithm.azure.akv.io"]), kvc.Algorithm)
+	}
+
+	// validate version
+	if string(annotations["version.azure.akv.io"]) != "1" {
+		return fmt.Errorf(
+			"version %q does not match expected version %q used for encryption",
+			string(annotations["version.azure.akv.io"]),
+			"1",
+		)
+	}
+
+	return nil
+}
+
+func (kvc *KeyVaultClient) GetUserAgent() string {
+	return "k8s-kms-keyvault"
+}
+
+func (kvc *KeyVaultClient) GetVaultURL() string {
+	return "https://test.vault.azure.net"
 }

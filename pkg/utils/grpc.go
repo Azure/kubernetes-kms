@@ -25,10 +25,13 @@ func ParseEndpoint(ep string) (string, string, error) {
 
 // UnaryServerInterceptor provides metrics around Unary RPCs.
 func UnaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	start := time.Now()
-	reporter := metrics.NewStatsReporter()
-
 	var err error
+	start := time.Now()
+	reporter, err := metrics.NewStatsReporter()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create stats reporter: %w", err)
+	}
+
 	defer func() {
 		errors := ""
 		status := metrics.SuccessStatusTypeValue

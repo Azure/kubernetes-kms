@@ -20,8 +20,11 @@ import (
 	"github.com/Azure/kubernetes-kms/pkg/metrics"
 	mockkeyvault "github.com/Azure/kubernetes-kms/pkg/plugin/mock_keyvault"
 
+	"github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
 	"google.golang.org/grpc"
-	pb "k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1"
+	"k8s.io/klog/v2"
+	kmsv1 "k8s.io/kms/apis/v1beta1"
+	kmsv2 "k8s.io/kms/apis/v2"
 )
 
 func TestServe(t *testing.T) {
@@ -37,7 +40,7 @@ func TestServe(t *testing.T) {
 			desc:                   "failed to encrypt in health check",
 			setEncryptResponse:     "",
 			setEncryptError:        fmt.Errorf("failed to encrypt"),
-			expectedHTTPStatusCode: http.StatusInternalServerError,
+			expectedHTTPStatusCode: http.StatusServiceUnavailable,
 		},
 		{
 			desc:                   "failed to decrypt in health check",
@@ -45,7 +48,7 @@ func TestServe(t *testing.T) {
 			setEncryptError:        nil,
 			setDecryptResponse:     "",
 			setDecryptError:        fmt.Errorf("failed to decrypt"),
-			expectedHTTPStatusCode: http.StatusInternalServerError,
+			expectedHTTPStatusCode: http.StatusServiceUnavailable,
 		},
 		{
 			desc:                   "encrypt-decrypt mismatch",
@@ -53,7 +56,7 @@ func TestServe(t *testing.T) {
 			setEncryptError:        nil,
 			setDecryptResponse:     "foo",
 			setDecryptError:        nil,
-			expectedHTTPStatusCode: http.StatusInternalServerError,
+			expectedHTTPStatusCode: http.StatusServiceUnavailable,
 		},
 		{
 			desc:                   "successful health check",
@@ -68,7 +71,7 @@ func TestServe(t *testing.T) {
 			socketPath := fmt.Sprintf("%s/kms.sock", getTempTestDir(t))
 			defer os.Remove(socketPath)
 
-			fakeKMSServer, mockKVClient, err := setupFakeKMSServer(socketPath)
+			fakeKMSServer, fakeKMSV2Server, mockKVClient, err := setupFakeKMSServer(socketPath)
 			if err != nil {
 				t.Fatalf("failed to create fake kms server, err: %+v", err)
 			}
@@ -77,7 +80,8 @@ func TestServe(t *testing.T) {
 			mockKVClient.SetDecryptResponse([]byte(test.setDecryptResponse), test.setDecryptError)
 
 			healthz := &HealthZ{
-				KMSServer:      fakeKMSServer,
+				KMSv1Server:    fakeKMSServer,
+				KMSv2Server:    fakeKMSV2Server,
 				UnixSocketPath: socketPath,
 				RPCTimeout:     20 * time.Second,
 				HealthCheckURL: &url.URL{
@@ -105,20 +109,28 @@ func TestCheckRPC(t *testing.T) {
 	socketPath := fmt.Sprintf("%s/kms.sock", getTempTestDir(t))
 	defer os.Remove(socketPath)
 
-	fakeKMSServer, _, err := setupFakeKMSServer(socketPath)
+	fakeKMSV1Server, fakeKMSV2Server, mockKVClient, err := setupFakeKMSServer(socketPath)
 	if err != nil {
 		t.Fatalf("failed to create fake kms server, err: %+v", err)
 	}
 	healthz := &HealthZ{
-		KMSServer:      fakeKMSServer,
+		KMSv1Server:    fakeKMSV1Server,
+		KMSv2Server:    fakeKMSV2Server,
 		UnixSocketPath: socketPath,
 	}
+	mockKVClient.SetEncryptResponse([]byte(healthCheckPlainText), nil)
+	mockKVClient.SetDecryptResponse([]byte(healthCheckPlainText), nil)
 
 	conn, err := healthz.dialUnixSocket()
 	if err != nil {
 		t.Fatalf("failed to create connection, err: %+v", err)
 	}
-	err = healthz.checkRPC(context.TODO(), pb.NewKeyManagementServiceClient(conn))
+
+	err = healthz.checkRPC(
+		context.TODO(),
+		kmsv1.NewKeyManagementServiceClient(conn),
+		kmsv2.NewKeyManagementServiceClient(conn),
+	)
 	if err != nil {
 		t.Fatalf("expected err to be nil, got: %+v", err)
 	}
@@ -132,23 +144,47 @@ func getTempTestDir(t *testing.T) string {
 	return tmpDir
 }
 
-func setupFakeKMSServer(socketPath string) (*KeyManagementServiceServer, *mockkeyvault.KeyVaultClient, error) {
+func setupFakeKMSServer(socketPath string) (
+	*KeyManagementServiceServer,
+	*KeyManagementServiceV2Server,
+	*mockkeyvault.KeyVaultClient,
+	error,
+) {
 	listener, err := net.Listen("unix", socketPath)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	kvClient := &mockkeyvault.KeyVaultClient{}
-	fakeKMSServer := &KeyManagementServiceServer{
+
+	statsReporter, err := metrics.NewStatsReporter()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	kvClient := &mockkeyvault.KeyVaultClient{
+		KeyID:     "mock-key-id",
+		Algorithm: keyvault.RSA15,
+	}
+	fakeKMSV1Server := &KeyManagementServiceServer{
 		kvClient: kvClient,
-		reporter: metrics.NewStatsReporter(),
+		reporter: statsReporter,
 	}
+
+	fakeKMSV2Server := &KeyManagementServiceV2Server{
+		kvClient: kvClient,
+		reporter: statsReporter,
+	}
+
 	s := grpc.NewServer()
-	pb.RegisterKeyManagementServiceServer(s, fakeKMSServer)
+	kmsv1.RegisterKeyManagementServiceServer(s, fakeKMSV1Server)
+	kmsv2.RegisterKeyManagementServiceServer(s, fakeKMSV2Server)
 	go func() {
-		_ = s.Serve(listener)
+		if err := s.Serve(listener); err != nil {
+			klog.ErrorS(err, "failed to serve fake kms server")
+			os.Exit(1)
+		}
 	}()
 
-	return fakeKMSServer, kvClient, nil
+	return fakeKMSV1Server, fakeKMSV2Server, kvClient, nil
 }
 
 func doHealthCheck(t *testing.T, url string) (int, []byte) {

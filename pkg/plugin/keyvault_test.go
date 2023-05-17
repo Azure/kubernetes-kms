@@ -68,7 +68,7 @@ func TestNewKeyVaultClientError(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			if _, err := newKeyVaultClient(test.config, test.vaultName, test.keyName, test.keyVersion, test.proxyMode, test.proxyAddress, test.proxyPort, test.managedHSM); err == nil {
+			if _, err := NewKeyVaultClient(test.config, test.vaultName, test.keyName, test.keyVersion, test.proxyMode, test.proxyAddress, test.proxyPort, test.managedHSM); err == nil {
 				t.Fatalf("newKeyVaultClient() expected error, got nil")
 			}
 		})
@@ -131,18 +131,18 @@ func TestNewKeyVaultClient(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			kvClient, err := newKeyVaultClient(test.config, test.vaultName, test.keyName, test.keyVersion, test.proxyMode, test.proxyAddress, test.proxyPort, test.managedHSM)
+			kvClient, err := NewKeyVaultClient(test.config, test.vaultName, test.keyName, test.keyVersion, test.proxyMode, test.proxyAddress, test.proxyPort, test.managedHSM)
 			if err != nil {
 				t.Fatalf("newKeyVaultClient() failed with error: %v", err)
 			}
 			if kvClient == nil {
 				t.Fatalf("newKeyVaultClient() expected kv client to not be nil")
 			}
-			if !strings.Contains(kvClient.baseClient.UserAgent, "k8s-kms-keyvault") {
+			if !strings.Contains(kvClient.GetUserAgent(), "k8s-kms-keyvault") {
 				t.Fatalf("newKeyVaultClient() expected k8s-kms-keyvault user agent")
 			}
-			if kvClient.vaultURL != test.expectedVaultURL {
-				t.Fatalf("expected vault URL: %v, got vault URL: %v", test.expectedVaultURL, kvClient.vaultURL)
+			if kvClient.GetVaultURL() != test.expectedVaultURL {
+				t.Fatalf("expected vault URL: %v, got vault URL: %v", test.expectedVaultURL, kvClient.GetVaultURL())
 			}
 		})
 	}
@@ -199,6 +199,81 @@ func TestGetVaultURL(t *testing.T) {
 			expectedURL := "https://" + vaultName + "." + vaultDNSSuffix[idx] + "/"
 			if expectedURL != *vaultURL {
 				t.Fatalf("expected vault url: %s, got: %s", expectedURL, *vaultURL)
+			}
+		})
+	}
+}
+
+func TestGetKeyIDHash(t *testing.T) {
+	testCases := []struct {
+		name                string
+		vaultURL            string
+		keyName             string
+		keyVersion          string
+		expectedHash        string
+		expectedError       bool
+		expectedErrorString string
+	}{
+		{
+			name:          "valid hash",
+			vaultURL:      "https://example.vault.azure.net/",
+			keyName:       "mykey",
+			keyVersion:    "ABCD",
+			expectedHash:  "567d783db3043fe298fe0d9eeedb0029a3815cdd4fe4b059d018c91e6acffe3b",
+			expectedError: false,
+		},
+		{
+			name:                "invalid vault URL",
+			vaultURL:            ":invalid-url:",
+			keyName:             "mykey",
+			keyVersion:          "ABCD",
+			expectedHash:        "",
+			expectedError:       true,
+			expectedErrorString: "failed to parse vault url, error: parse \":invalid-url:\": missing protocol scheme",
+		},
+		{
+			name:                "empty vault name",
+			vaultURL:            "",
+			keyName:             "mykey",
+			keyVersion:          "ABCD",
+			expectedHash:        "",
+			expectedError:       true,
+			expectedErrorString: "vault url, key name and key version cannot be empty",
+		},
+		{
+			name:                "empty key name",
+			vaultURL:            "https://example.vault.azure.net/",
+			keyName:             "",
+			keyVersion:          "ABCD",
+			expectedHash:        "",
+			expectedError:       true,
+			expectedErrorString: "vault url, key name and key version cannot be empty",
+		},
+		{
+			name:                "empty key vesion",
+			vaultURL:            "https://example.vault.azure.net/",
+			keyName:             "mykey",
+			keyVersion:          "",
+			expectedHash:        "",
+			expectedError:       true,
+			expectedErrorString: "vault url, key name and key version cannot be empty",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			hash, err := getKeyIDHash(tc.vaultURL, tc.keyName, tc.keyVersion)
+
+			if tc.expectedError {
+				if (err != nil) && (err.Error() != tc.expectedErrorString) {
+					t.Errorf("Expected error: %v, but got: %v", tc.expectedErrorString, err.Error())
+				} else if err == nil {
+					t.Errorf("Expected error: %v, but didn't get any", tc.expectedErrorString)
+				}
+			}
+
+			if hash != tc.expectedHash {
+				t.Errorf("Expected hash: %s, but got: %s", tc.expectedHash, hash)
 			}
 		})
 	}

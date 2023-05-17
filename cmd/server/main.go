@@ -16,16 +16,18 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Azure/kubernetes-kms/pkg/config"
 	"github.com/Azure/kubernetes-kms/pkg/metrics"
 	"github.com/Azure/kubernetes-kms/pkg/plugin"
 	"github.com/Azure/kubernetes-kms/pkg/utils"
 	"github.com/Azure/kubernetes-kms/pkg/version"
 
 	"google.golang.org/grpc"
-	pb "k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1"
 	logsapi "k8s.io/component-base/logs/api/v1"
 	json "k8s.io/component-base/logs/json"
 	"k8s.io/klog/v2"
+	kmsv1 "k8s.io/kms/apis/v1beta1"
+	kmsv2 "k8s.io/kms/apis/v2"
 )
 
 var (
@@ -57,7 +59,12 @@ func main() {
 
 	if *logFormatJSON {
 		jsonFactory := json.Factory{}
-		logger, _ := jsonFactory.Create(logsapi.LoggingConfiguration{Format: "json"})
+		logger, _ := jsonFactory.Create(
+			logsapi.LoggingConfiguration{
+				Format: "json",
+			},
+			logsapi.LoggingOptions{},
+		)
 		klog.SetLogger(logger)
 	}
 
@@ -80,7 +87,7 @@ func main() {
 
 	klog.InfoS("Starting KeyManagementServiceServer service", "version", version.BuildVersion, "buildDate", version.BuildDate)
 
-	pc := &plugin.Config{
+	pluginConfig := &plugin.Config{
 		KeyVaultName:   *keyvaultName,
 		KeyName:        *keyName,
 		KeyVersion:     *keyVersion,
@@ -90,9 +97,25 @@ func main() {
 		ProxyPort:      *proxyPort,
 		ConfigFilePath: *configFilePath,
 	}
-	kmsServer, err := plugin.New(pc)
+
+	azureConfig, err := config.GetAzureConfig(pluginConfig.ConfigFilePath)
 	if err != nil {
-		klog.ErrorS(err, "failed to create server")
+		klog.ErrorS(err, "failed to get azure config")
+		os.Exit(1)
+	}
+
+	kvClient, err := plugin.NewKeyVaultClient(
+		azureConfig,
+		pluginConfig.KeyVaultName,
+		pluginConfig.KeyName,
+		pluginConfig.KeyVersion,
+		pluginConfig.ProxyMode,
+		pluginConfig.ProxyAddress,
+		pluginConfig.ProxyPort,
+		pluginConfig.ManagedHSM,
+	)
+	if err != nil {
+		klog.ErrorS(err, "failed to create key vault client")
 		os.Exit(1)
 	}
 
@@ -112,23 +135,41 @@ func main() {
 		klog.ErrorS(err, "failed to listen", "addr", addr, "proto", proto)
 		os.Exit(1)
 	}
+
 	opts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(utils.UnaryServerInterceptor),
 	}
 
 	s := grpc.NewServer(opts...)
-	pb.RegisterKeyManagementServiceServer(s, kmsServer)
+
+	// register kms v1 server
+	kmsV1Server, err := plugin.NewKMSv1Server(kvClient)
+	if err != nil {
+		klog.ErrorS(err, "failed to create server")
+		os.Exit(1)
+	}
+	kmsv1.RegisterKeyManagementServiceServer(s, kmsV1Server)
+
+	// register kms v2 server
+	kmsV2Server, err := plugin.NewKMSv2Server(kvClient)
+	if err != nil {
+		klog.ErrorS(err, "failed to create kms V2 server")
+		os.Exit(1)
+	}
+	kmsv2.RegisterKeyManagementServiceServer(s, kmsV2Server)
 
 	klog.InfoS("Listening for connections", "addr", listener.Addr().String())
 	go func() {
 		if err := s.Serve(listener); err != nil {
-			klog.ErrorS(err, "failed to serve")
+			klog.ErrorS(err, "failed to serve kms server")
 			os.Exit(1)
 		}
 	}()
 
+	// Health check for kms v1 and v2
 	healthz := &plugin.HealthZ{
-		KMSServer: kmsServer,
+		KMSv1Server: kmsV1Server,
+		KMSv2Server: kmsV2Server,
 		HealthCheckURL: &url.URL{
 			Host: net.JoinHostPort("", strconv.FormatUint(uint64(*healthzPort), 10)),
 			Path: *healthzPath,

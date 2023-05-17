@@ -7,8 +7,11 @@ package plugin
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"net/url"
+	"path"
 	"regexp"
 	"strings"
 
@@ -22,33 +25,64 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"k8s.io/klog/v2"
+	"k8s.io/kms/pkg/service"
+)
+
+// encryptionResponseVersion is validated prior to decryption.
+// This is helpful in case we want to change anything about the data we send in the future.
+var encryptionResponseVersion = "1"
+
+const (
+	dateAnnotationKey             = "date.azure.akv.io"
+	requestIDAnnotationKey        = "x-ms-request-id.azure.akv.io"
+	keyvaultRegionAnnotationKey   = "x-ms-keyvault-region.azure.akv.io"
+	versionAnnotationKey          = "version.azure.akv.io"
+	algorithmAnnotationKey        = "algorithm.azure.akv.io"
+	dateAnnotationValue           = "Date"
+	requestIDAnnotationValue      = "X-Ms-Request-Id"
+	keyvaultRegionAnnotationValue = "X-Ms-Keyvault-Region"
 )
 
 // Client interface for interacting with Keyvault.
 type Client interface {
-	Encrypt(ctx context.Context, cipher []byte) ([]byte, error)
-	Decrypt(ctx context.Context, plain []byte) ([]byte, error)
+	Encrypt(
+		ctx context.Context,
+		plain []byte,
+		encryptionAlgorithm kv.JSONWebKeyEncryptionAlgorithm,
+	) (*service.EncryptResponse, error)
+	Decrypt(
+		ctx context.Context,
+		cipher []byte,
+		encryptionAlgorithm kv.JSONWebKeyEncryptionAlgorithm,
+		apiVersion string,
+		annotations map[string][]byte,
+		decryptRequestKeyID string,
+	) ([]byte, error)
+	GetUserAgent() string
+	GetVaultURL() string
 }
 
-type keyVaultClient struct {
+// KeyVaultClient is a client for interacting with Keyvault.
+type KeyVaultClient struct {
 	baseClient       kv.BaseClient
 	config           *config.AzureConfig
 	vaultName        string
 	keyName          string
 	keyVersion       string
 	vaultURL         string
+	keyIDHash        string
 	azureEnvironment *azure.Environment
 }
 
 // NewKeyVaultClient returns a new key vault client to use for kms operations.
-func newKeyVaultClient(
+func NewKeyVaultClient(
 	config *config.AzureConfig,
 	vaultName, keyName, keyVersion string,
 	proxyMode bool,
 	proxyAddress string,
 	proxyPort int,
 	managedHSM bool,
-) (*keyVaultClient, error) {
+) (Client, error) {
 	// Sanitize vaultName, keyName, keyVersion. (https://github.com/Azure/kubernetes-kms/issues/85)
 	vaultName = utils.SanitizeString(vaultName)
 	keyName = utils.SanitizeString(keyName)
@@ -87,6 +121,11 @@ func newKeyVaultClient(
 		return nil, fmt.Errorf("failed to get vault url, error: %+v", err)
 	}
 
+	keyIDHash, err := getKeyIDHash(*vaultURL, keyName, keyVersion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get key id hash, error: %w", err)
+	}
+
 	if proxyMode {
 		kvClient.RequestInspector = autorest.WithHeader(consts.RequestHeaderTargetType, consts.TargetTypeKeyVault)
 		vaultURL = getProxiedVaultURL(vaultURL, proxyAddress, proxyPort)
@@ -94,7 +133,7 @@ func newKeyVaultClient(
 
 	klog.InfoS("using kms key for encrypt/decrypt", "vaultURL", *vaultURL, "keyName", keyName, "keyVersion", keyVersion)
 
-	client := &keyVaultClient{
+	client := &KeyVaultClient{
 		baseClient:       kvClient,
 		config:           config,
 		vaultName:        vaultName,
@@ -102,29 +141,70 @@ func newKeyVaultClient(
 		keyVersion:       keyVersion,
 		vaultURL:         *vaultURL,
 		azureEnvironment: env,
+		keyIDHash:        keyIDHash,
 	}
 	return client, nil
 }
 
-func (kvc *keyVaultClient) Encrypt(ctx context.Context, cipher []byte) ([]byte, error) {
-	value := base64.RawURLEncoding.EncodeToString(cipher)
+// Encrypt encrypts the given plain text using the keyvault key.
+func (kvc *KeyVaultClient) Encrypt(
+	ctx context.Context,
+	plain []byte,
+	encryptionAlgorithm kv.JSONWebKeyEncryptionAlgorithm,
+) (*service.EncryptResponse, error) {
+	value := base64.RawURLEncoding.EncodeToString(plain)
 
 	params := kv.KeyOperationsParameters{
-		Algorithm: kv.RSA15,
+		Algorithm: encryptionAlgorithm,
 		Value:     &value,
 	}
 	result, err := kvc.baseClient.Encrypt(ctx, kvc.vaultURL, kvc.keyName, kvc.keyVersion, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encrypt, error: %+v", err)
 	}
-	return []byte(*result.Result), nil
+
+	if kvc.keyIDHash != fmt.Sprintf("%x", sha256.Sum256([]byte(*result.Kid))) {
+		return nil, fmt.Errorf(
+			"key id initialized does not match with the key id from encryption result, expected: %s, got: %s",
+			kvc.keyIDHash,
+			*result.Kid,
+		)
+	}
+
+	annotations := map[string][]byte{
+		dateAnnotationKey:           []byte(result.Header.Get(dateAnnotationValue)),
+		requestIDAnnotationKey:      []byte(result.Header.Get(requestIDAnnotationValue)),
+		keyvaultRegionAnnotationKey: []byte(result.Header.Get(keyvaultRegionAnnotationValue)),
+		versionAnnotationKey:        []byte(encryptionResponseVersion),
+		algorithmAnnotationKey:      []byte(encryptionAlgorithm),
+	}
+
+	return &service.EncryptResponse{
+		Ciphertext:  []byte(*result.Result),
+		KeyID:       kvc.keyIDHash,
+		Annotations: annotations,
+	}, nil
 }
 
-func (kvc *keyVaultClient) Decrypt(ctx context.Context, plain []byte) ([]byte, error) {
-	value := string(plain)
+// Decrypt decrypts the given cipher text using the keyvault key.
+func (kvc *KeyVaultClient) Decrypt(
+	ctx context.Context,
+	cipher []byte,
+	encryptionAlgorithm kv.JSONWebKeyEncryptionAlgorithm,
+	apiVersion string,
+	annotations map[string][]byte,
+	decryptRequestKeyID string,
+) ([]byte, error) {
+	if apiVersion == version.KMSv2APIVersion {
+		err := kvc.validateAnnotations(annotations, decryptRequestKeyID, encryptionAlgorithm)
+		if err != nil {
+			return nil, err
+		}
+	}
 
+	value := string(cipher)
 	params := kv.KeyOperationsParameters{
-		Algorithm: kv.RSA15,
+		Algorithm: encryptionAlgorithm,
 		Value:     &value,
 	}
 
@@ -136,7 +216,58 @@ func (kvc *keyVaultClient) Decrypt(ctx context.Context, plain []byte) ([]byte, e
 	if err != nil {
 		return nil, fmt.Errorf("failed to base64 decode result, error: %+v", err)
 	}
+
 	return bytes, nil
+}
+
+func (kvc *KeyVaultClient) GetUserAgent() string {
+	return kvc.baseClient.UserAgent
+}
+
+func (kvc *KeyVaultClient) GetVaultURL() string {
+	return kvc.vaultURL
+}
+
+// ValidateAnnotations validates following annotations before decryption:
+// - Algorithm.
+// - Version.
+// It also validates keyID that the API server checks.
+func (kvc *KeyVaultClient) validateAnnotations(
+	annotations map[string][]byte,
+	keyID string,
+	encryptionAlgorithm kv.JSONWebKeyEncryptionAlgorithm,
+) error {
+	if len(annotations) == 0 {
+		return fmt.Errorf("invalid annotations, annotations cannot be empty")
+	}
+
+	if keyID != kvc.keyIDHash {
+		return fmt.Errorf(
+			"key id %s does not match expected key id %s used for encryption",
+			keyID,
+			kvc.keyIDHash,
+		)
+	}
+
+	algorithm := string(annotations[algorithmAnnotationKey])
+	if algorithm != string(encryptionAlgorithm) {
+		return fmt.Errorf(
+			"algorithm %s does not match expected algorithm %s used for encryption",
+			algorithm,
+			encryptionAlgorithm,
+		)
+	}
+
+	version := string(annotations[versionAnnotationKey])
+	if version != encryptionResponseVersion {
+		return fmt.Errorf(
+			"version %s does not match expected version %s used for encryption",
+			version,
+			encryptionResponseVersion,
+		)
+	}
+
+	return nil
 }
 
 func getVaultURL(vaultName string, managedHSM bool, env *azure.Environment) (vaultURL *string, err error) {
@@ -177,4 +308,24 @@ func getVaultResourceIdentifier(managedHSM bool, env *azure.Environment) string 
 		return env.ResourceIdentifiers.ManagedHSM
 	}
 	return env.ResourceIdentifiers.KeyVault
+}
+
+func getKeyIDHash(vaultURL, keyName, keyVersion string) (string, error) {
+	if vaultURL == "" || keyName == "" || keyVersion == "" {
+		return "", fmt.Errorf("vault url, key name and key version cannot be empty")
+	}
+
+	baseURL, err := url.Parse(vaultURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse vault url, error: %w", err)
+	}
+
+	urlPath := path.Join("keys", keyName, keyVersion)
+	keyID := baseURL.ResolveReference(
+		&url.URL{
+			Path: urlPath,
+		},
+	).String()
+
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(keyID))), nil
 }
