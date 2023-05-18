@@ -14,8 +14,8 @@ import (
 	"github.com/Azure/kubernetes-kms/pkg/version"
 
 	"github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
-	"k8s.io/klog/v2"
 	kmsv2 "k8s.io/kms/apis/v2"
+	"monis.app/mlog"
 )
 
 // KeyManagementServiceV2Server is a gRPC server.
@@ -46,7 +46,7 @@ func (s *KeyManagementServiceV2Server) Status(ctx context.Context, _ *kmsv2.Stat
 	// This volume of calls is well within the permissible limit of Key Vault.
 	encryptResponse, err := s.kvClient.Encrypt(ctx, []byte(healthCheckPlainText), s.encryptionAlgorithm)
 	if err != nil {
-		klog.ErrorS(err, "failed to encrypt healthcheck call")
+		mlog.Error("failed to encrypt healthcheck call", err)
 		return nil, err
 	}
 
@@ -59,13 +59,13 @@ func (s *KeyManagementServiceV2Server) Status(ctx context.Context, _ *kmsv2.Stat
 		encryptResponse.KeyID,
 	)
 	if err != nil {
-		klog.ErrorS(err, "failed to decrypt healthcheck call")
+		mlog.Error("failed to decrypt healthcheck call", err)
 		return nil, err
 	}
 
 	if string(decryptedText) != healthCheckPlainText {
-		err = fmt.Errorf("healthcheck failed, decrypted text does not match")
-		klog.Error(err)
+		err = fmt.Errorf("decrypted text does not match")
+		mlog.Error("healthcheck failed", err)
 		return nil, err
 	}
 
@@ -78,7 +78,7 @@ func (s *KeyManagementServiceV2Server) Status(ctx context.Context, _ *kmsv2.Stat
 
 // Encrypt message.
 func (s *KeyManagementServiceV2Server) Encrypt(ctx context.Context, request *kmsv2.EncryptRequest) (*kmsv2.EncryptResponse, error) {
-	klog.V(4).InfoS("encrypt request received", "uid", request.Uid)
+	mlog.Debug("encrypt request received", "uid", request.Uid)
 	start := time.Now()
 
 	var err error
@@ -92,13 +92,13 @@ func (s *KeyManagementServiceV2Server) Encrypt(ctx context.Context, request *kms
 		s.reporter.ReportRequest(ctx, metrics.EncryptOperationTypeValue, status, time.Since(start).Seconds(), errors)
 	}()
 
-	klog.V(2).InfoS("encrypt request started", "uid", request.Uid)
+	mlog.Info("encrypt request started", "uid", request.Uid)
 	encryptResponse, err := s.kvClient.Encrypt(ctx, request.Plaintext, s.encryptionAlgorithm)
 	if err != nil {
-		klog.ErrorS(err, "failed to encrypt", "uid", request.Uid)
+		mlog.Error("failed to encrypt", err, "uid", request.Uid)
 		return &kmsv2.EncryptResponse{}, err
 	}
-	klog.V(2).InfoS("encrypt request complete", "uid", request.Uid)
+	mlog.Info("encrypt request complete", "uid", request.Uid)
 
 	return &kmsv2.EncryptResponse{
 		Ciphertext:  encryptResponse.Ciphertext,
@@ -109,7 +109,7 @@ func (s *KeyManagementServiceV2Server) Encrypt(ctx context.Context, request *kms
 
 // Decrypt message.
 func (s *KeyManagementServiceV2Server) Decrypt(ctx context.Context, request *kmsv2.DecryptRequest) (*kmsv2.DecryptResponse, error) {
-	klog.V(4).InfoS("decrypt request received", "uid", request.Uid)
+	mlog.Debug("decrypt request received", "uid", request.Uid)
 	start := time.Now()
 
 	var err error
@@ -123,7 +123,7 @@ func (s *KeyManagementServiceV2Server) Decrypt(ctx context.Context, request *kms
 		s.reporter.ReportRequest(ctx, metrics.DecryptOperationTypeValue, status, time.Since(start).Seconds(), errors)
 	}()
 
-	klog.V(2).InfoS("decrypt request started", "uid", request.Uid)
+	mlog.Info("decrypt request started", "uid", request.Uid)
 
 	plainText, err := s.kvClient.Decrypt(
 		ctx,
@@ -134,10 +134,10 @@ func (s *KeyManagementServiceV2Server) Decrypt(ctx context.Context, request *kms
 		request.KeyId,
 	)
 	if err != nil {
-		klog.ErrorS(err, "failed to decrypt", "uid", request.Uid)
+		mlog.Error("failed to decrypt", err, "uid", request.Uid)
 		return &kmsv2.DecryptResponse{}, err
 	}
-	klog.V(2).InfoS("decrypt request complete", "uid", request.Uid)
+	mlog.Info("decrypt request complete", "uid", request.Uid)
 
 	return &kmsv2.DecryptResponse{
 		Plaintext: plainText,

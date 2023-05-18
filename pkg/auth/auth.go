@@ -20,7 +20,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"golang.org/x/crypto/pkcs12"
-	"k8s.io/klog/v2"
+	"monis.app/mlog"
 )
 
 // GetKeyvaultToken() returns token for Keyvault endpoint.
@@ -41,19 +41,19 @@ func GetServicePrincipalToken(config *config.AzureConfig, aadEndpoint, resource 
 	}
 
 	if config.UseManagedIdentityExtension {
-		klog.V(2).Info("using managed identity extension to retrieve access token")
+		mlog.Info("using managed identity extension to retrieve access token")
 		msiEndpoint, err := adal.GetMSIVMEndpoint()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get managed service identity endpoint, error: %v", err)
 		}
 		// using user-assigned managed identity to access keyvault
 		if len(config.UserAssignedIdentityID) > 0 {
-			klog.V(2).InfoS("using User-assigned managed identity to retrieve access token", "clientID", redactClientCredentials(config.UserAssignedIdentityID))
+			mlog.Info("using User-assigned managed identity to retrieve access token", "clientID", redactClientCredentials(config.UserAssignedIdentityID))
 			return adal.NewServicePrincipalTokenFromMSIWithUserAssignedID(msiEndpoint,
 				resource,
 				config.UserAssignedIdentityID)
 		}
-		klog.V(2).InfoS("using system-assigned managed identity to retrieve access token")
+		mlog.Info("using system-assigned managed identity to retrieve access token")
 		// using system-assigned managed identity to access keyvault
 		return adal.NewServicePrincipalTokenFromMSI(
 			msiEndpoint,
@@ -61,7 +61,7 @@ func GetServicePrincipalToken(config *config.AzureConfig, aadEndpoint, resource 
 	}
 
 	if len(config.ClientSecret) > 0 && len(config.ClientID) > 0 {
-		klog.V(2).InfoS("azure: using client_id+client_secret to retrieve access token",
+		mlog.Info("azure: using client_id+client_secret to retrieve access token",
 			"clientID", redactClientCredentials(config.ClientID), "clientSecret", redactClientCredentials(config.ClientSecret))
 
 		spt, err := adal.NewServicePrincipalToken(
@@ -79,7 +79,7 @@ func GetServicePrincipalToken(config *config.AzureConfig, aadEndpoint, resource 
 	}
 
 	if len(config.AADClientCertPath) > 0 && len(config.AADClientCertPassword) > 0 {
-		klog.V(2).Info("using jwt client_assertion (client_cert+client_private_key) to retrieve access token")
+		mlog.Info("using jwt client_assertion (client_cert+client_private_key) to retrieve access token")
 		certData, err := os.ReadFile(config.AADClientCertPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read client certificate from file %s, error: %v", config.AADClientCertPath, err)

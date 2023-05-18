@@ -3,7 +3,6 @@ package metrics
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	cgprometheus "github.com/prometheus/client_golang/prometheus"
@@ -12,7 +11,7 @@ import (
 	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/aggregation"
-	"k8s.io/klog/v2"
+	"monis.app/mlog"
 )
 
 const (
@@ -51,11 +50,10 @@ func initPrometheusExporter(metricsAddress string) error {
 			ReadHeaderTimeout: 5 * time.Second,
 		}
 		if err := server.ListenAndServe(); err != nil {
-			klog.ErrorS(err, "failed to register prometheus endpoint", "metricsAddress", metricsAddress)
-			os.Exit(1)
+			mlog.Fatal(err, "failed to register prometheus endpoint", "metricsAddress", metricsAddress)
 		}
 	}()
-	klog.InfoS("Prometheus metrics server running", "address", metricsAddress)
+	mlog.Always("Prometheus metrics server running", "address", metricsAddress)
 
 	return nil
 }

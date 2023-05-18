@@ -24,8 +24,8 @@ import (
 	kv "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
-	"k8s.io/klog/v2"
 	"k8s.io/kms/pkg/service"
+	"monis.app/mlog"
 )
 
 // encryptionResponseVersion is validated prior to decryption.
@@ -131,7 +131,7 @@ func NewKeyVaultClient(
 		vaultURL = getProxiedVaultURL(vaultURL, proxyAddress, proxyPort)
 	}
 
-	klog.InfoS("using kms key for encrypt/decrypt", "vaultURL", *vaultURL, "keyName", keyName, "keyVersion", keyVersion)
+	mlog.Always("using kms key for encrypt/decrypt", "vaultURL", *vaultURL, "keyName", keyName, "keyVersion", keyVersion)
 
 	client := &KeyVaultClient{
 		baseClient:       kvClient,

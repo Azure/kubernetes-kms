@@ -11,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
 
 	"github.com/Azure/kubernetes-kms/pkg/version"
@@ -19,9 +18,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	"k8s.io/klog/v2"
 	kmsv1 "k8s.io/kms/apis/v1beta1"
 	kmsv2 "k8s.io/kms/apis/v2"
+	"monis.app/mlog"
 )
 
 const (
@@ -47,13 +46,12 @@ func (h *HealthZ) Serve() {
 		Handler:           serveMux,
 	}
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		klog.ErrorS(err, "failed to start health check server", "url", h.HealthCheckURL.String())
-		os.Exit(1)
+		mlog.Fatal(err, "failed to start health check server", "url", h.HealthCheckURL.String())
 	}
 }
 
 func (h *HealthZ) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
-	klog.V(5).Info("Started health check")
+	mlog.Trace("Started health check")
 	ctx, cancel := context.WithTimeout(context.Background(), h.RPCTimeout)
 	defer cancel()
 
@@ -136,7 +134,7 @@ func (h *HealthZ) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	klog.V(5).Info("Completed health check")
+	mlog.Trace("Completed health check")
 }
 
 // checkRPC initiates a grpc request to validate the socket is responding
