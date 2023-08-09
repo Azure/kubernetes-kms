@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"gopkg.in/yaml.v3"
-	"k8s.io/klog/v2"
+	"monis.app/mlog"
 )
 
 // AzureConfig is representing /etc/kubernetes/azure.json.
@@ -24,7 +24,7 @@ type AzureConfig struct {
 func GetAzureConfig(configFile string) (config *AzureConfig, err error) {
 	cfg := AzureConfig{}
 
-	klog.V(5).InfoS("populating AzureConfig from config file", "configFile", configFile)
+	mlog.Trace("populating AzureConfig from config file", "configFile", configFile)
 	bytes, err := os.ReadFile(configFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config file %s, error: %+v", configFile, err)

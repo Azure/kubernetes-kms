@@ -8,6 +8,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"net"
 	"net/url"
 	"os"
@@ -23,11 +24,10 @@ import (
 	"github.com/Azure/kubernetes-kms/pkg/version"
 
 	"google.golang.org/grpc"
-	logsapi "k8s.io/component-base/logs/api/v1"
-	json "k8s.io/component-base/logs/json"
 	"k8s.io/klog/v2"
 	kmsv1 "k8s.io/kms/apis/v1beta1"
 	kmsv2 "k8s.io/kms/apis/v2"
+	"monis.app/mlog"
 )
 
 var (
@@ -37,6 +37,7 @@ var (
 	keyVersion    = flag.String("key-version", "", "Azure Key Vault KMS key version")
 	managedHSM    = flag.Bool("managed-hsm", false, "Azure Key Vault Managed HSM. Refer to https://docs.microsoft.com/en-us/azure/key-vault/managed-hsm/overview for more details.")
 	logFormatJSON = flag.Bool("log-format-json", false, "set log formatter to json")
+	logLevel      = flag.Int("v", 0, "In order of increasing verbosity: 0=warning/error, 2=info, 4=debug, 6=trace, 10=all")
 	// TODO remove this flag in future release.
 	_              = flag.String("configFilePath", "/etc/kubernetes/azure.json", "[DEPRECATED] Path for Azure Cloud Provider config file")
 	configFilePath = flag.String("config-file-path", "/etc/kubernetes/azure.json", "Path for Azure Cloud Provider config file")
@@ -54,38 +55,39 @@ var (
 )
 
 func main() {
-	klog.InitFlags(nil)
-	flag.Parse()
+	if err := setupKMSPlugin(); err != nil {
+		mlog.Fatal(err)
+	}
+}
 
+func setupKMSPlugin() error {
+	defer mlog.Setup()() // set up log flushing and attempt to flush on exit
+	flag.Parse()
+	ctx := withShutdownSignal(context.Background())
+
+	logFormat := mlog.FormatText
 	if *logFormatJSON {
-		jsonFactory := json.Factory{}
-		logger, _ := jsonFactory.Create(
-			logsapi.LoggingConfiguration{
-				Format: "json",
-			},
-			logsapi.LoggingOptions{},
-		)
-		klog.SetLogger(logger)
+		logFormat = mlog.FormatJSON
+	}
+
+	if err := mlog.ValidateAndSetKlogLevelAndFormatGlobally(ctx, klog.Level(*logLevel), logFormat); err != nil {
+		return fmt.Errorf("invalid --log-level set: %w", err)
 	}
 
 	if *versionInfo {
 		if err := version.PrintVersion(); err != nil {
-			klog.ErrorS(err, "failed to print version")
-			os.Exit(1)
+			return fmt.Errorf("failed to print version: %w", err)
 		}
-		os.Exit(0)
+		return nil
 	}
-
-	ctx := withShutdownSignal(context.Background())
 
 	// initialize metrics exporter
 	err := metrics.InitMetricsExporter(*metricsBackend, *metricsAddress)
 	if err != nil {
-		klog.ErrorS(err, "failed to initialize metrics exporter")
-		os.Exit(1)
+		return fmt.Errorf("failed to initialize metrics exporter: %w", err)
 	}
 
-	klog.InfoS("Starting KeyManagementServiceServer service", "version", version.BuildVersion, "buildDate", version.BuildDate)
+	mlog.Always("Starting KeyManagementServiceServer service", "version", version.BuildVersion, "buildDate", version.BuildDate)
 
 	pluginConfig := &plugin.Config{
 		KeyVaultName:   *keyvaultName,
@@ -100,8 +102,7 @@ func main() {
 
 	azureConfig, err := config.GetAzureConfig(pluginConfig.ConfigFilePath)
 	if err != nil {
-		klog.ErrorS(err, "failed to get azure config")
-		os.Exit(1)
+		return fmt.Errorf("failed to get azure config: %w", err)
 	}
 
 	kvClient, err := plugin.NewKeyVaultClient(
@@ -115,25 +116,21 @@ func main() {
 		pluginConfig.ManagedHSM,
 	)
 	if err != nil {
-		klog.ErrorS(err, "failed to create key vault client")
-		os.Exit(1)
+		return fmt.Errorf("failed to create key vault client: %w", err)
 	}
 
 	// Initialize and run the GRPC server
 	proto, addr, err := utils.ParseEndpoint(*listenAddr)
 	if err != nil {
-		klog.ErrorS(err, "failed to parse endpoint")
-		os.Exit(1)
+		return fmt.Errorf("failed to parse endpoint: %w", err)
 	}
 	if err := os.Remove(addr); err != nil && !os.IsNotExist(err) {
-		klog.ErrorS(err, "failed to remove socket file", "addr", addr)
-		os.Exit(1)
+		return fmt.Errorf("failed to remove socket file %s: %w", addr, err)
 	}
 
 	listener, err := net.Listen(proto, addr)
 	if err != nil {
-		klog.ErrorS(err, "failed to listen", "addr", addr, "proto", proto)
-		os.Exit(1)
+		return fmt.Errorf("failed to listen addr: %s, proto: %s: %w", addr, proto, err)
 	}
 
 	opts := []grpc.ServerOption{
@@ -145,24 +142,21 @@ func main() {
 	// register kms v1 server
 	kmsV1Server, err := plugin.NewKMSv1Server(kvClient)
 	if err != nil {
-		klog.ErrorS(err, "failed to create server")
-		os.Exit(1)
+		return fmt.Errorf("failed to create server: %w", err)
 	}
 	kmsv1.RegisterKeyManagementServiceServer(s, kmsV1Server)
 
 	// register kms v2 server
 	kmsV2Server, err := plugin.NewKMSv2Server(kvClient)
 	if err != nil {
-		klog.ErrorS(err, "failed to create kms V2 server")
-		os.Exit(1)
+		return fmt.Errorf("failed to create kms V2 server: %w", err)
 	}
 	kmsv2.RegisterKeyManagementServiceServer(s, kmsV2Server)
 
-	klog.InfoS("Listening for connections", "addr", listener.Addr().String())
+	mlog.Always("Listening for connections", "addr", listener.Addr().String())
 	go func() {
 		if err := s.Serve(listener); err != nil {
-			klog.ErrorS(err, "failed to serve kms server")
-			os.Exit(1)
+			mlog.Fatal(fmt.Errorf("failed to serve kms server: %w", err))
 		}
 	}()
 
@@ -181,12 +175,10 @@ func main() {
 
 	<-ctx.Done()
 	// gracefully stop the grpc server
-	klog.Info("terminating the server")
+	mlog.Always("terminating the server")
 	s.GracefulStop()
 
-	klog.Flush()
-	// using os.Exit skips running deferred functions
-	os.Exit(0)
+	return nil
 }
 
 // withShutdownSignal returns a copy of the parent context that will close if
@@ -199,7 +191,7 @@ func withShutdownSignal(ctx context.Context) context.Context {
 
 	go func() {
 		<-signalChan
-		klog.Info("received shutdown signal")
+		mlog.Always("received shutdown signal")
 		cancel()
 	}()
 	return nctx

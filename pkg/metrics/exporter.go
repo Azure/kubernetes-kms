@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"k8s.io/klog/v2"
+	"monis.app/mlog"
 )
 
 const (
@@ -14,7 +14,7 @@ const (
 // InitMetricsExporter initializes new exporter.
 func InitMetricsExporter(metricsBackend, metricsAddress string) error {
 	exporter := strings.ToLower(metricsBackend)
-	klog.InfoS("metrics backend", "exporter", exporter)
+	mlog.Always("metrics backend", "exporter", exporter)
 
 	switch exporter {
 	// Prometheus is the only exporter supported for now

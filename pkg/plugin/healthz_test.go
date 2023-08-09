@@ -22,9 +22,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
 	"google.golang.org/grpc"
-	"k8s.io/klog/v2"
 	kmsv1 "k8s.io/kms/apis/v1beta1"
 	kmsv2 "k8s.io/kms/apis/v2"
+	"monis.app/mlog"
 )
 
 func TestServe(t *testing.T) {
@@ -179,8 +179,7 @@ func setupFakeKMSServer(socketPath string) (
 	kmsv2.RegisterKeyManagementServiceServer(s, fakeKMSV2Server)
 	go func() {
 		if err := s.Serve(listener); err != nil {
-			klog.ErrorS(err, "failed to serve fake kms server")
-			os.Exit(1)
+			mlog.Fatal(err, "failed to serve fake kms server")
 		}
 	}()
 

@@ -14,8 +14,8 @@ import (
 	"github.com/Azure/kubernetes-kms/pkg/version"
 
 	"github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
-	"k8s.io/klog/v2"
 	kmsv1 "k8s.io/kms/apis/v1beta1"
+	"monis.app/mlog"
 )
 
 // KeyManagementServiceServer is a gRPC server.
@@ -75,13 +75,13 @@ func (s *KeyManagementServiceServer) Encrypt(ctx context.Context, request *kmsv1
 		s.reporter.ReportRequest(ctx, metrics.EncryptOperationTypeValue, status, time.Since(start).Seconds(), errors)
 	}()
 
-	klog.V(2).Info("encrypt request started")
+	mlog.Info("encrypt request started")
 	encryptResponse, err := s.kvClient.Encrypt(ctx, request.Plain, s.encryptionAlgorithm)
 	if err != nil {
-		klog.ErrorS(err, "failed to encrypt")
+		mlog.Error("failed to encrypt", err)
 		return &kmsv1.EncryptResponse{}, err
 	}
-	klog.V(2).Info("encrypt request complete")
+	mlog.Info("encrypt request complete")
 	return &kmsv1.EncryptResponse{
 		Cipher: encryptResponse.Ciphertext,
 	}, nil
@@ -102,7 +102,7 @@ func (s *KeyManagementServiceServer) Decrypt(ctx context.Context, request *kmsv1
 		s.reporter.ReportRequest(ctx, metrics.DecryptOperationTypeValue, status, time.Since(start).Seconds(), errors)
 	}()
 
-	klog.V(2).Info("decrypt request started")
+	mlog.Info("decrypt request started")
 	plain, err := s.kvClient.Decrypt(
 		ctx,
 		request.Cipher,
@@ -112,9 +112,9 @@ func (s *KeyManagementServiceServer) Decrypt(ctx context.Context, request *kmsv1
 		"",
 	)
 	if err != nil {
-		klog.ErrorS(err, "failed to decrypt")
+		mlog.Error("failed to decrypt", err)
 		return &kmsv1.DecryptResponse{}, err
 	}
-	klog.V(2).Info("decrypt request complete")
+	mlog.Info("decrypt request complete")
 	return &kmsv1.DecryptResponse{Plain: plain}, nil
 }
