@@ -13,7 +13,7 @@ This guide demonstrates steps required to update your cluster to use a new KMS k
 
 To rotate the encrypt/decrypt key in the cluster, you'll need to run 2 kms plugin pods simultaneously listening on different unix sockets before making the transition.
 
-For all Kubernetes master nodes, add the static pod manifest to `/etc/kubernetes/manifests`
+For all Kubernetes control plane nodes, add the static pod manifest to `/etc/kubernetes/manifests`
 
 ```yaml
 apiVersion: v1
@@ -122,7 +122,7 @@ resources:
 ### 4. Restart all `kube-apiserver`
 
 * Proceed to the next step if using a single `kube-apiserver`
-* If using multi-master, restart the `kube-apiserver` to ensure each server can still decrypt using the new key in the encryption config.
+* If using multiple control plane nodes, restart the `kube-apiserver` to ensure each server can still decrypt using the new key in the encryption config.
 * To validate the decryption still works, run `kubectl get secret <secret name> -o yaml` with one of the existing secrets to confirm the data is returned and is valid.
 
 ### 5. Switch the order of provider in the encryption config

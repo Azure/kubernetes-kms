@@ -50,7 +50,7 @@ This guide demonstrates steps required to enable the KMS Plugin for Key Vault in
 
 ### 3. Deploy the KMS Plugin
 
-  For all Kubernetes master nodes, add the static pod manifest to `/etc/kubernetes/manifests`
+  For all Kubernetes control plane nodes, add the static pod manifest to `/etc/kubernetes/manifests`
 
   ```yaml
   apiVersion: v1
