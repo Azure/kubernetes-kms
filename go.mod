@@ -11,7 +11,7 @@ require (
 	go.opentelemetry.io/otel/metric v0.38.1
 	golang.org/x/crypto v0.6.0
 	golang.org/x/net v0.8.0
-	google.golang.org/grpc v1.54.0
+	google.golang.org/grpc v1.54.1
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/apimachinery v0.27.1
 	k8s.io/klog/v2 v2.100.1
