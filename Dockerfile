@@ -1,4 +1,4 @@
-FROM golang:1.19-bullseye@sha256:1370f30629243bb65e3e0f780ae08a54e50fc5b7e96f0b79e62ee846788d1178 as builder
+FROM mcr.microsoft.com/oss/go/microsoft/golang:1.21-bookworm@sha256:970e5548a6334a823204db449c8a65678b1f7757104fcf0365a3bd7489b4a321 as builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
