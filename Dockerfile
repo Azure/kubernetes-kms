@@ -19,7 +19,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} GO111MODULE=on go build -a -ld
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM --platform=${TARGETPLATFORM:-linux/amd64} gcr.io/distroless/static:nonroot@sha256:9ecc53c269509f63c69a266168e4a687c7eb8c0cfd753bd8bfcaa4f58a90876f
+FROM --platform=${TARGETPLATFORM:-linux/amd64} mcr.microsoft.com/cbl-mariner/distroless/minimal:2.0-nonroot@sha256:b8e90ab2ad04a18383a5a4f2956a8831d3dfe39544aa0edd82f87dd3c0ffffc9
 WORKDIR /
 COPY --from=builder /workspace/_output/kubernetes-kms .
 
