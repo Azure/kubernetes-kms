@@ -29,7 +29,7 @@ spec:
   hostNetwork: true
   containers:
     - name: azure-kms-provider
-      image: mcr.microsoft.com/oss/azure/kms/keyvault:v0.5.0
+      image: mcr.microsoft.com/oss/azure/kms/keyvault:v0.6.0
       imagePullPolicy: IfNotPresent
       args:
       - --listen-addr=unix:///opt/azurekms2.socket            # unix:///opt/azurekms.socket is used by the primary kms plugin pod. So use a different listen address here for the new kms plugin pod.
