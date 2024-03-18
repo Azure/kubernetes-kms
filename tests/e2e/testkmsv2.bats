@@ -52,6 +52,7 @@ setup() {
 
     hashIDs=$(echo "${metrics}" | grep -oP 'sha256:\K[a-f0-9]+')
     for hash in ${hashIDs}; do
+        echo ${hash}
         [[ "${hash}" == "${expected_hash}" ]]
     done
 }

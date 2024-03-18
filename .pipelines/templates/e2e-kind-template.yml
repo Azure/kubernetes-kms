@@ -35,8 +35,6 @@ jobs:
           KUBERNETES_VERSION: v1.27.11
         kmsv1_kind_v1_28_7:
           KUBERNETES_VERSION: v1.28.7
-        kmsv1_kind_v1_29_2:
-          KUBERNETES_VERSION: v1.29.2
     steps:
       - task: GoTool@0
         inputs:
