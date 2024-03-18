@@ -2,6 +2,10 @@ jobs:
   - job:
     timeoutInMinutes: 15
     cancelTimeoutInMinutes: 5
+    pool:
+      name: staging-pool-amd64-mariner-2
+      demands:
+      - ImageOverride -equals azcu-agent-amd64-mariner-2-cgv2-img
     workspace:
       clean: all
     variables:
@@ -25,14 +29,14 @@ jobs:
     - group: kubernetes-kms
     strategy:
       matrix:
-        kmsv1_kind_v1_24_7:
-          KUBERNETES_VERSION: v1.24.7
-        kmsv1_kind_v1_25_3:
-          KUBERNETES_VERSION: v1.25.3
-        kmsv1_kind_v1_26_0:
-          KUBERNETES_VERSION: v1.26.0
-        kmsv1_kind_v1_27_1:
-          KUBERNETES_VERSION: v1.27.1
+        kmsv1_kind_v1_26_14:
+          KUBERNETES_VERSION: v1.26.14
+        kmsv1_kind_v1_27_11:
+          KUBERNETES_VERSION: v1.27.11
+        kmsv1_kind_v1_28_7:
+          KUBERNETES_VERSION: v1.28.7
+        kmsv1_kind_v1_29_2:
+          KUBERNETES_VERSION: v1.29.2
     steps:
       - task: GoTool@0
         inputs:
@@ -81,8 +85,12 @@ jobs:
     - group: kubernetes-kms
     strategy:
       matrix:
-        kmsv2_kind_v1_27_1:
-          KUBERNETES_VERSION: v1.27.1
+        kmsv2_kind_v1_27_11:
+          KUBERNETES_VERSION: v1.27.11
+        kmsv2_kind_v1_28_7:
+          KUBERNETES_VERSION: v1.28.7
+        kmsv2_kind_v1_29_2:
+          KUBERNETES_VERSION: v1.29.2
     steps:
       - task: GoTool@0
         inputs:
