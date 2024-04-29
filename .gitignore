@@ -14,7 +14,6 @@
 .glide/
 setenv.sh
 kubernetes-kms
-vendor
 *.env
 
 # Vscode files
