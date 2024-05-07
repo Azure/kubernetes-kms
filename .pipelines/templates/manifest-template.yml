@@ -17,6 +17,3 @@ steps:
       echo "##vso[task.setvariable variable=REGISTRY]${{ parameters.registry }}"
       echo "##vso[task.setvariable variable=IMAGE_NAME]${{ parameters.imageName }}"
     displayName: "Generate Manifests"
-    env:
-      AZURE_CLIENT_ID: $(AZURE_CLIENT_ID)
-      AZURE_CLIENT_SECRET: $(AZURE_CLIENT_SECRET)

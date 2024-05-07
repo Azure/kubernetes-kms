@@ -16,12 +16,11 @@ jobs:
     - name: KIND_NETWORK
       value: kind
     # contains the following environment variables:
-    # - AZURE_CLIENT_ID
-    # - AZURE_CLIENT_SECRET
     # - AZURE_TENANT_ID
     # - KEYVAULT_NAME
     # - KEY_NAME
     # - KEY_VERSION
+    # - USER_ASSIGNED_IDENTITY_ID
     - group: kubernetes-kms
     strategy:
       matrix:
@@ -48,8 +47,6 @@ jobs:
           KUBERNETES_VERSION: $(KUBERNETES_VERSION)
           KIND_CLUSTER_NAME: $(KIND_CLUSTER_NAME)
           KIND_NETWORK: $(KIND_NETWORK)
-          AZURE_CLIENT_ID: $(AZURE_CLIENT_ID)
-          AZURE_CLIENT_SECRET: $(AZURE_CLIENT_SECRET)
       - template: cluster-health-template.yml
       - template: kind-debug-template.yml
       - script: make e2e-test
@@ -72,12 +69,11 @@ jobs:
     - name: KIND_NETWORK
       value: kind
     # contains the following environment variables:
-    # - AZURE_CLIENT_ID
-    # - AZURE_CLIENT_SECRET
     # - AZURE_TENANT_ID
     # - KEYVAULT_NAME
     # - KEY_NAME
     # - KEY_VERSION
+    # - USER_ASSIGNED_IDENTITY_ID
     - group: kubernetes-kms
     strategy:
       matrix:
@@ -98,8 +94,6 @@ jobs:
           KUBERNETES_VERSION: $(KUBERNETES_VERSION)
           KIND_CLUSTER_NAME: $(KIND_CLUSTER_NAME)
           KIND_NETWORK: $(KIND_NETWORK)
-          AZURE_CLIENT_ID: $(AZURE_CLIENT_ID)
-          AZURE_CLIENT_SECRET: $(AZURE_CLIENT_SECRET)
       - template: cluster-health-template.yml
       - template: kind-debug-template.yml
       - script: make e2e-kmsv2-test

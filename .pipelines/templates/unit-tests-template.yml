@@ -6,12 +6,11 @@ jobs:
       clean: all
     variables:
       # contains the following environment variables:
-      # - AZURE_CLIENT_ID
-      # - AZURE_CLIENT_SECRET
       # - AZURE_TENANT_ID
       # - KEYVAULT_NAME
       # - KEY_NAME
       # - KEY_VERSION
+      # - USER_ASSIGNED_IDENTITY_ID
     - group: kubernetes-kms
 
     steps:
@@ -26,12 +25,9 @@ jobs:
         displayName: Check binary version
       - script: |
           sudo mkdir /etc/kubernetes
-          echo -e '{\n    "tenantId": "'$AZURE_TENANT_ID'",\n    "aadClientId": "'$AZURE_CLIENT_ID'",\n    "aadClientSecret": "'$AZURE_CLIENT_SECRET'",\n}' | sudo tee --append /etc/kubernetes/azure.json  > /dev/null
+          echo -e '{\n    "tenantId": "'$AZURE_TENANT_ID'",\n    "useManagedIdentityExtension": true,\n    "userAssignedIdentityID": "'$USER_ASSIGNED_IDENTITY_ID'",\n}' | sudo tee --append /etc/kubernetes/azure.json  > /dev/null
           sudo chown root:root /etc/kubernetes/azure.json && sudo chmod 600 /etc/kubernetes/azure.json
         displayName: Setup azure.json on host
-        env:
-          AZURE_CLIENT_ID: $(AZURE_CLIENT_ID)
-          AZURE_CLIENT_SECRET: $(AZURE_CLIENT_SECRET)
       - script: |
           sudo ./_output/kubernetes-kms --keyvault-name $KEYVAULT_NAME --key-name $KEY_NAME --key-version $KEY_VERSION --listen-addr "unix:///opt/azurekms.sock" > /dev/null &
           echo Waiting 2 seconds for the server to start
