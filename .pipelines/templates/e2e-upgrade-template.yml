@@ -16,12 +16,11 @@ jobs:
       - name: KIND_NETWORK
         value: kind
       # contains the following environment variables:
-      # - AZURE_CLIENT_ID
-      # - AZURE_CLIENT_SECRET
       # - AZURE_TENANT_ID
       # - KEYVAULT_NAME
       # - KEY_NAME
       # - KEY_VERSION
+      # - USER_ASSIGNED_IDENTITY_ID
       - group: kubernetes-kms
 
     steps:
