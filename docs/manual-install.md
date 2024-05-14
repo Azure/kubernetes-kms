@@ -137,7 +137,7 @@ This guide demonstrates steps required to enable the KMS Plugin for Key Vault in
 
 ### 4. Create encryption configuration
 
-  Create a new encryption configuration file `/etc/kubernetes/manifests/encryptionconfig.yaml` using the appropriate properties for the `kms` provider:
+  Create a new encryption configuration file `/etc/kubernetes/enc/encryptionconfig.yaml` using the appropriate properties for the `kms` provider:
 
   ```yaml
   kind: EncryptionConfiguration
@@ -147,6 +147,8 @@ This guide demonstrates steps required to enable the KMS Plugin for Key Vault in
         - secrets
       providers:
         - kms:
+            # if you are using KMSv2, please specify the api version
+            # apiVersion: v2
             name: azurekmsprovider
             endpoint: unix:///opt/azurekms.socket       # This endpoint must match the value defined in --listen-addr for the KMS plugin
             cachesize: 1000
@@ -155,12 +157,12 @@ This guide demonstrates steps required to enable the KMS Plugin for Key Vault in
 
   The encryption configuration file needs to be accessible by all the api servers.
 
-### 5. Modify `/etc/kubernetes/kube-apiserver.yaml`
+### 5. Modify `/etc/kubernetes/manifests/kube-apiserver.yaml`
 
   Add the following flag:
 
   ```yaml
-  --encryption-provider-config=/etc/kubernetes/encryptionconfig.yaml
+  --encryption-provider-config=/etc/kubernetes/enc/encryptionconfig.yaml
   ```
 
   Mount `/opt` to access the socket:
@@ -168,10 +170,17 @@ This guide demonstrates steps required to enable the KMS Plugin for Key Vault in
   ```yaml
   ...
   volumeMounts:
+  - name: enc
+    mountPath: /etc/kubernetes/enc
+    readOnly: true
   - name: "sock"
     mountPath: "/opt"
   ...
   volumes:
+    - name: enc
+      hostPath:
+        path: /etc/kubernetes/enc
+        type: DirectoryOrCreate
     - name: "sock"
       hostPath:
         path: "/opt"
