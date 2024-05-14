@@ -27,11 +27,11 @@ This guide demonstrates steps required to enable the KMS Plugin for Key Vault in
 
   [`/etc/kubernetes/azure.json`](https://kubernetes-sigs.github.io/cloud-provider-azure/install/configs/) is a well-known JSON file in each node that provides the details about which method KMS Plugin uses for access to Keyvault:
 
-  | Authentication method            | `/etc/kubernetes/azure.json` fields used                                                    |
-  | -------------------------------- | ------------------------------------------------------------------------------------------- |
-  | System-assigned managed identity | `useManagedIdentityExtension: true` and `userAssignedIdentityID:""`                         |
-  | User-assigned managed identity   | `useManagedIdentityExtension: true` and `userAssignedIdentityID:"<UserAssignedIdentityID>"` |
-  | Service principal (default)      | `aadClientID: "<AADClientID>"` and `aadClientSecret: "<AADClientSecret>"`                   |
+  | Authentication method            | `/etc/kubernetes/azure.json` fields used                                                               |
+  | -------------------------------- | ------------------------------------------------------------------------------------------------------ |
+  | System-assigned managed identity | `useManagedIdentityExtension: true` and `userAssignedIdentityID:""`                                    |
+  | User-assigned managed identity   | `useManagedIdentityExtension: true` and `userAssignedIdentityID:"<UserAssignedIdentityID>"`            |
+  | Service principal (default)      | `tenantId: "<AADTenantID>"`, `aadClientId: "<AADClientID>"` and `aadClientSecret: "<AADClientSecret>"` |
 
   #### Obtaining the ID of the cluster managed identity/service principal
 
