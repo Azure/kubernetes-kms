@@ -9,6 +9,6 @@ RUN go build -o _output/kubernetes-kms ./cmd/server/
 FROM registry.access.redhat.com/ubi9:latest
 COPY --from=builder /go/src/github.com/Azure/kubernetes-kms/_output/kubernetes-kms /usr/bin/kubernetes-kms
 
-ENTRYPOINT /usr/bin/kubernetes-kms
+ENTRYPOINT [ "/usr/bin/kubernetes-kms" ]
 
 LABEL io.openshift.release.operator=true
