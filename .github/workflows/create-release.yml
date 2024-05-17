@@ -18,7 +18,7 @@ jobs:
 
       - name: Checkout
       # pinning to the sha ec3a7ce113134d7a93b817d10a8272cb61118579 from https://github.com/actions/checkout/releases/tag/v2.4.0
-        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
         with:
           fetch-depth: 0
       # pinning to the sha b953231f81b8dfd023c58e0854a721e35037f28b from https://github.com/goreleaser/goreleaser-action/releases/tag/v2.9.1
