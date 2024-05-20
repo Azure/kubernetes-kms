@@ -13,7 +13,7 @@ require (
 	golang.org/x/net v0.24.0
 	google.golang.org/grpc v1.58.3
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/apimachinery v0.27.1
+	k8s.io/apimachinery v0.27.14
 	k8s.io/klog/v2 v2.100.1
 	k8s.io/kms v0.27.1
 	monis.app/mlog v0.0.4
@@ -35,7 +35,7 @@ require (
 	github.com/go-logr/zapr v1.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
