@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@6b3083af2869dc3314a0257a42f4af696cc79ba3 # v2.3.1
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
         with:
           egress-policy: audit
 
