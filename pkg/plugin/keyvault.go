@@ -138,7 +138,7 @@ func NewKeyVaultClient(
 		config:           config,
 		vaultName:        vaultName,
 		keyName:          keyName,
-		keyVersion:       keyVersion,
+		keyVersion:       "",
 		vaultURL:         *vaultURL,
 		azureEnvironment: env,
 		keyIDHash:        keyIDHash,
