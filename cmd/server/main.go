@@ -9,6 +9,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"math"
 	"net"
 	"net/url"
 	"os"
@@ -37,13 +38,13 @@ var (
 	keyVersion    = flag.String("key-version", "", "Azure Key Vault KMS key version")
 	managedHSM    = flag.Bool("managed-hsm", false, "Azure Key Vault Managed HSM. Refer to https://docs.microsoft.com/en-us/azure/key-vault/managed-hsm/overview for more details.")
 	logFormatJSON = flag.Bool("log-format-json", false, "set log formatter to json")
-	logLevel      = flag.Int("v", 0, "In order of increasing verbosity: 0=warning/error, 2=info, 4=debug, 6=trace, 10=all")
+	logLevel      = flag.Uint("v", 0, "In order of increasing verbosity: 0=warning/error, 2=info, 4=debug, 6=trace, 10=all")
 	// TODO remove this flag in future release.
 	_              = flag.String("configFilePath", "/etc/kubernetes/azure.json", "[DEPRECATED] Path for Azure Cloud Provider config file")
 	configFilePath = flag.String("config-file-path", "/etc/kubernetes/azure.json", "Path for Azure Cloud Provider config file")
 	versionInfo    = flag.Bool("version", false, "Prints the version information")
 
-	healthzPort    = flag.Int("healthz-port", 8787, "port for health check")
+	healthzPort    = flag.Uint("healthz-port", 8787, "port for health check")
 	healthzPath    = flag.String("healthz-path", "/healthz", "path for health check")
 	healthzTimeout = flag.Duration("healthz-timeout", 20*time.Second, "RPC timeout for health check")
 	metricsBackend = flag.String("metrics-backend", "prometheus", "Backend used for metrics")
@@ -70,7 +71,11 @@ func setupKMSPlugin() error {
 		logFormat = mlog.FormatJSON
 	}
 
-	if err := mlog.ValidateAndSetKlogLevelAndFormatGlobally(ctx, klog.Level(*logLevel), logFormat); err != nil {
+	if *logLevel > math.MaxUint8 {
+		return fmt.Errorf("invalid log level: %d", *logLevel)
+	}
+
+	if err := mlog.ValidateAndSetKlogLevelAndFormatGlobally(ctx, klog.Level(uint8(*logLevel)), logFormat); err != nil {
 		return fmt.Errorf("invalid --log-level set: %w", err)
 	}
 
