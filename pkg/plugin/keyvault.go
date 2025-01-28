@@ -38,6 +38,7 @@ const (
 	keyvaultRegionAnnotationKey   = "x-ms-keyvault-region.azure.akv.io"
 	versionAnnotationKey          = "version.azure.akv.io"
 	algorithmAnnotationKey        = "algorithm.azure.akv.io"
+	keyVersionAnnotationKey       = "keyversion.azure.akv.io"
 	dateAnnotationValue           = "Date"
 	requestIDAnnotationValue      = "X-Ms-Request-Id"
 	keyvaultRegionAnnotationValue = "X-Ms-Keyvault-Region"
@@ -70,7 +71,7 @@ type KeyVaultClient struct {
 	keyName          string
 	keyVersion       string
 	vaultURL         string
-	keyIDHash        string
+	keyIDHash        string // keyIDHash is used when key version-less is disabled
 	azureEnvironment *azure.Environment
 }
 
@@ -90,9 +91,10 @@ func NewKeyVaultClient(
 
 	// this should be the case for bring your own key, clusters bootstrapped with
 	// aks-engine or aks and standalone kms plugin deployments
-	if len(vaultName) == 0 || len(keyName) == 0 || len(keyVersion) == 0 {
-		return nil, fmt.Errorf("key vault name, key name and key version are required")
+	if len(vaultName) == 0 || len(keyName) == 0 {
+		return nil, fmt.Errorf("key vault name and key name are required")
 	}
+
 	kvClient := kv.New()
 	err := kvClient.AddToUserAgent(version.GetUserAgent())
 	if err != nil {
@@ -121,9 +123,12 @@ func NewKeyVaultClient(
 		return nil, fmt.Errorf("failed to get vault url, error: %+v", err)
 	}
 
-	keyIDHash, err := getKeyIDHash(*vaultURL, keyName, keyVersion)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get key id hash, error: %w", err)
+	keyIDHash := ""
+	if len(keyVersion) != 0 {
+		keyIDHash, err = getKeyIDHash(*vaultURL, keyName, keyVersion)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get key id hash, error: %w", err)
+		}
 	}
 
 	if proxyMode {
@@ -158,17 +163,39 @@ func (kvc *KeyVaultClient) Encrypt(
 		Algorithm: encryptionAlgorithm,
 		Value:     &value,
 	}
-	result, err := kvc.baseClient.Encrypt(ctx, kvc.vaultURL, kvc.keyName, kvc.keyVersion, params)
+
+	keyVersion := kvc.keyVersion
+	result, err := kvc.baseClient.Encrypt(ctx, kvc.vaultURL, kvc.keyName, keyVersion, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encrypt, error: %+v", err)
 	}
 
-	if kvc.keyIDHash != fmt.Sprintf("%x", sha256.Sum256([]byte(*result.Kid))) {
-		return nil, fmt.Errorf(
-			"key id initialized does not match with the key id from encryption result, expected: %s, got: %s",
-			kvc.keyIDHash,
-			*result.Kid,
-		)
+	keyIDHash := ""
+	if result.Kid == nil {
+		return nil, fmt.Errorf("key id is nil in encryption result")
+	}
+	if len(keyVersion) == 0 {
+		keyVersion = path.Base(strings.TrimSuffix(*result.Kid, "/"))
+		keyIDHash, err = getKeyIDHash(kvc.vaultURL, kvc.keyName, keyVersion)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get key id hash, error: %w", err)
+		}
+		if keyIDHash != fmt.Sprintf("%x", sha256.Sum256([]byte(*result.Kid))) {
+			return nil, fmt.Errorf(
+				"key id initialized does not match with the key id from encryption result, expected: %s, got: %s",
+				keyIDHash,
+				*result.Kid,
+			)
+		}
+	} else {
+		if kvc.keyIDHash != fmt.Sprintf("%x", sha256.Sum256([]byte(*result.Kid))) {
+			return nil, fmt.Errorf(
+				"key id initialized does not match with the key id from encryption result, expected: %s, got: %s",
+				kvc.keyIDHash,
+				*result.Kid,
+			)
+		}
+		keyIDHash = kvc.keyIDHash
 	}
 
 	annotations := map[string][]byte{
@@ -177,11 +204,13 @@ func (kvc *KeyVaultClient) Encrypt(
 		keyvaultRegionAnnotationKey: []byte(result.Header.Get(keyvaultRegionAnnotationValue)),
 		versionAnnotationKey:        []byte(encryptionResponseVersion),
 		algorithmAnnotationKey:      []byte(encryptionAlgorithm),
+		keyVersionAnnotationKey:     []byte(keyVersion),
 	}
 
+	mlog.Info("Encryption succeeded", "vaultName", kvc.vaultName, "keyName", kvc.keyName, "keyVersion", keyVersion)
 	return &service.EncryptResponse{
 		Ciphertext:  []byte(*result.Result),
-		KeyID:       kvc.keyIDHash,
+		KeyID:       keyIDHash,
 		Annotations: annotations,
 	}, nil
 }
@@ -208,7 +237,12 @@ func (kvc *KeyVaultClient) Decrypt(
 		Value:     &value,
 	}
 
-	result, err := kvc.baseClient.Decrypt(ctx, kvc.vaultURL, kvc.keyName, kvc.keyVersion, params)
+	keyVersion := kvc.keyVersion
+	if len(annotations[keyVersionAnnotationKey]) != 0 {
+		keyVersion = string(annotations[keyVersionAnnotationKey])
+	}
+
+	result, err := kvc.baseClient.Decrypt(ctx, kvc.vaultURL, kvc.keyName, keyVersion, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt, error: %+v", err)
 	}
@@ -217,6 +251,7 @@ func (kvc *KeyVaultClient) Decrypt(
 		return nil, fmt.Errorf("failed to base64 decode result, error: %+v", err)
 	}
 
+	mlog.Info("Decryption succeeded", "vaultName", kvc.vaultName, "keyName", kvc.keyName, "keyVersion", keyVersion)
 	return bytes, nil
 }
 
@@ -234,19 +269,33 @@ func (kvc *KeyVaultClient) GetVaultURL() string {
 // It also validates keyID that the API server checks.
 func (kvc *KeyVaultClient) validateAnnotations(
 	annotations map[string][]byte,
-	keyID string,
+	keyIDHash string,
 	encryptionAlgorithm kv.JSONWebKeyEncryptionAlgorithm,
 ) error {
 	if len(annotations) == 0 {
 		return fmt.Errorf("invalid annotations, annotations cannot be empty")
 	}
 
-	if keyID != kvc.keyIDHash {
-		return fmt.Errorf(
-			"key id %s does not match expected key id %s used for encryption",
-			keyID,
-			kvc.keyIDHash,
-		)
+	if len(annotations[keyVersionAnnotationKey]) == 0 {
+		if keyIDHash != kvc.keyIDHash {
+			return fmt.Errorf(
+				"key id %s does not match expected key id %s used for encryption",
+				keyIDHash,
+				kvc.keyIDHash,
+			)
+		}
+	} else {
+		keyIDHashLocal, err := getKeyIDHash(kvc.vaultURL, kvc.keyName, string(annotations[keyVersionAnnotationKey]))
+		if err != nil {
+			return fmt.Errorf("failed to get key id hash, error: %w", err)
+		}
+		if keyIDHashLocal != keyIDHash {
+			return fmt.Errorf(
+				"key id %s does not match expected key id %s used for encryption",
+				keyIDHash,
+				keyIDHashLocal,
+			)
+		}
 	}
 
 	algorithm := string(annotations[algorithmAnnotationKey])

@@ -32,9 +32,10 @@ import (
 )
 
 var (
-	listenAddr    = flag.String("listen-addr", "unix:///opt/azurekms.socket", "gRPC listen address")
-	keyvaultName  = flag.String("keyvault-name", "", "Azure Key Vault name")
-	keyName       = flag.String("key-name", "", "Azure Key Vault KMS key name")
+	listenAddr   = flag.String("listen-addr", "unix:///opt/azurekms.socket", "gRPC listen address")
+	keyvaultName = flag.String("keyvault-name", "", "Azure Key Vault name")
+	keyName      = flag.String("key-name", "", "Azure Key Vault KMS key name")
+	// If --key-version not set or is empty, the plugin will use the latest version of the key.
 	keyVersion    = flag.String("key-version", "", "Azure Key Vault KMS key version")
 	managedHSM    = flag.Bool("managed-hsm", false, "Azure Key Vault Managed HSM. Refer to https://docs.microsoft.com/en-us/azure/key-vault/managed-hsm/overview for more details.")
 	logFormatJSON = flag.Bool("log-format-json", false, "set log formatter to json")
