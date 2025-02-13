@@ -32,7 +32,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"k8s.io/apiserver/pkg/storage/value"
+	"k8s.io/kms/pkg/value"
 )
 
 func TestGCMDataStable(t *testing.T) {

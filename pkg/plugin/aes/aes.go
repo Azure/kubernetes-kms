@@ -30,8 +30,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"k8s.io/apiserver/pkg/storage/value"
 	"k8s.io/klog/v2"
+	"k8s.io/kms/pkg/value"
 )
 
 // commonSize is the length of various security sensitive byte slices such as encryption keys.

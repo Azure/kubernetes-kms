@@ -28,7 +28,7 @@ import (
 
 	"golang.org/x/crypto/hkdf"
 
-	"k8s.io/apiserver/pkg/storage/value"
+	"k8s.io/kms/pkg/value"
 	"k8s.io/utils/clock"
 )
 
