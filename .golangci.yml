@@ -37,3 +37,7 @@ linters:
     - typecheck
     - unused
     - whitespace
+
+issues:
+  exclude-dirs:
+    - pkg/plugin/aes
