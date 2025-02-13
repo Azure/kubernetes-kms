@@ -134,7 +134,7 @@ func die(msg string) {
 // GenerateKey generates a random key using system randomness.
 func GenerateKey(length int) (key []byte, err error) {
 	defer func(start time.Time) {
-		value.RecordDataKeyGeneration(start, err)
+		// value.RecordDataKeyGeneration(start, err)
 	}(time.Now())
 	key = make([]byte, length)
 	if _, err = rand.Read(key); err != nil {
