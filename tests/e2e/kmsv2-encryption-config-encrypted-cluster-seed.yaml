@@ -1,0 +1,14 @@
+kind: EncryptionConfiguration
+apiVersion: apiserver.config.k8s.io/v1
+resources:
+  - resources:
+      - secrets
+    providers:
+      - kms:
+          apiVersion: v2
+          name: akv-encrypted-cluster-seed  # use a different prefix so we can detect it in tests easier
+          endpoint: unix:///opt/azurekms-encrypted-cluster-seed.socket
+      - kms:
+          apiVersion: v2
+          name: azurekmsprovider  # does not matter for the tests but shows how we expect the config to look like
+          endpoint: unix:///opt/azurekms.socket
