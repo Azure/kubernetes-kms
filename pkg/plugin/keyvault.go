@@ -38,6 +38,7 @@ const (
 	keyvaultRegionAnnotationKey   = "x-ms-keyvault-region.azure.akv.io"
 	versionAnnotationKey          = "version.azure.akv.io"
 	algorithmAnnotationKey        = "algorithm.azure.akv.io"
+	akvKey                        = "key.azure.akv.io"
 	dateAnnotationValue           = "Date"
 	requestIDAnnotationValue      = "X-Ms-Request-Id"
 	keyvaultRegionAnnotationValue = "X-Ms-Keyvault-Region"
@@ -177,6 +178,7 @@ func (kvc *KeyVaultClient) Encrypt(
 		keyvaultRegionAnnotationKey: []byte(result.Header.Get(keyvaultRegionAnnotationValue)),
 		versionAnnotationKey:        []byte(encryptionResponseVersion),
 		algorithmAnnotationKey:      []byte(encryptionAlgorithm),
+		akvKey:                      []byte(fmt.Sprintf("%s/%s/%s", kvc.vaultName, kvc.keyName, kvc.keyVersion)),
 	}
 
 	return &service.EncryptResponse{
