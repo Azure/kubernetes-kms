@@ -7,6 +7,7 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"flag"
 	"fmt"
 	"math"
@@ -22,6 +23,7 @@ import (
 	"github.com/Azure/kubernetes-kms/pkg/config"
 	"github.com/Azure/kubernetes-kms/pkg/metrics"
 	"github.com/Azure/kubernetes-kms/pkg/plugin"
+	"github.com/Azure/kubernetes-kms/pkg/plugin/aes"
 	"github.com/Azure/kubernetes-kms/pkg/utils"
 	"github.com/Azure/kubernetes-kms/pkg/version"
 	"google.golang.org/grpc"
@@ -56,6 +58,8 @@ var (
 	proxyPort    = flag.Int("proxy-port", 7788, "port for proxy")
 
 	encryptedClusterSeedFile = flag.String("encrypted-cluster-seed-file", "", "File with encrypted cluster seed used to generate KEKs to encrypt API server DEK seeds")
+
+	generateEncryptedClusterSeed = flag.String("generate-encrypted-cluster-seed-file-for-tests", "", "File to write encrypted cluster seed")
 )
 
 func main() {
@@ -125,6 +129,33 @@ func setupKMSPlugin() error {
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create key vault client: %w", err)
+	}
+
+	if len(*generateEncryptedClusterSeed) != 0 {
+		clusterSeed, err := aes.GenerateKey(sha256.BlockSize) // larger seeds will be hashed down to this size
+		if err != nil {
+			return fmt.Errorf("failed to generate cluster seed: %w", err)
+		}
+
+		ctx, cancel := context.WithTimeout(ctx, time.Minute)
+		defer cancel()
+
+		encryptedClusterSeedResp, err := kvClient.Encrypt(ctx, clusterSeed, kv.RSAOAEP256)
+		if err != nil {
+			return fmt.Errorf("failed to encrypt cluster seed: %w", err)
+		}
+
+		// this command is for tests only so we make the assumption that the key ID does not change
+		// and that the annotations do not contain any data needed to decrypt the cluster seed
+		// we could always just store the entire response and take that as input if we wanted to
+		_ = encryptedClusterSeedResp.KeyID
+		_ = encryptedClusterSeedResp.Annotations
+
+		if err := os.WriteFile(*generateEncryptedClusterSeed, encryptedClusterSeedResp.Ciphertext, 0o600); err != nil {
+			return fmt.Errorf("failed to write cluster seed file: %w", err)
+		}
+
+		return nil
 	}
 
 	// Initialize and run the GRPC server
