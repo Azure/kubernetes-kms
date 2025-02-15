@@ -99,3 +99,50 @@ jobs:
       - script: make e2e-kmsv2-test
         displayName: "Run e2e tests for KMS v2"
       - template: cleanup-template.yml
+  - job:
+    timeoutInMinutes: 15
+    cancelTimeoutInMinutes: 5
+    workspace:
+      clean: all
+    variables:
+    - name: REGISTRY_NAME
+      value: kind-registry
+    - name: REGISTRY_PORT
+      value: 5000
+    - name: KUBERNETES_VERSION
+      value: v1.27.1
+    - name: KIND_CLUSTER_NAME
+      value: kms
+    - name: KIND_NETWORK
+      value: kind
+    # contains the following environment variables:
+    # - AZURE_TENANT_ID
+    # - KEYVAULT_NAME
+    # - KEY_NAME
+    # - KEY_VERSION
+    # - USER_ASSIGNED_IDENTITY_ID
+    - group: kubernetes-kms
+    strategy:
+      matrix:
+        kmsv2_kind_v1_27_1:
+          KUBERNETES_VERSION: v1.27.1
+    steps:
+      - task: GoTool@0
+        inputs:
+          version: 1.19
+      - script: make e2e-install-prerequisites
+        displayName: "Install e2e test prerequisites"
+      - script: |
+          make e2e-kmsv2-setup-kind-encrypted-cluster-seed
+        displayName: "Setup kind cluster with azure kms plugin and encrypted cluster seed"
+        env:
+          REGISTRY_NAME: $(REGISTRY_NAME)
+          REGISTRY_PORT: $(REGISTRY_PORT)
+          KUBERNETES_VERSION: $(KUBERNETES_VERSION)
+          KIND_CLUSTER_NAME: $(KIND_CLUSTER_NAME)
+          KIND_NETWORK: $(KIND_NETWORK)
+      - template: cluster-health-template.yml
+      - template: kind-debug-template.yml
+      - script: make e2e-kmsv2-test-encrypted-cluster-seed
+        displayName: "Run e2e tests for KMS v2 with encrypted seed"
+      - template: cleanup-template.yml

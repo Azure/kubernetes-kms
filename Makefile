@@ -137,6 +137,11 @@ e2e-kmsv2-setup-kind: setup-local-registry
 	./scripts/connect-registry.sh &
 	sleep 90s
 
+e2e-kmsv2-setup-kind-encrypted-cluster-seed: setup-local-registry
+	./scripts/setup-kmsv2-kind-cluster-encrypted-cluster-seed.sh &
+	./scripts/connect-registry.sh &
+	sleep 90s
+
 .PHONY: setup-local-registry
 setup-local-registry:
 	./scripts/setup-local-registry.sh
@@ -157,3 +162,7 @@ e2e-test:
 e2e-kmsv2-test:
 	# Run test suite with kind cluster
 	bats -t tests/e2e/testkmsv2.bats
+
+e2e-kmsv2-test-encrypted-cluster-seed:
+	# Run test suite with kind cluster
+	bats -t tests/e2e/testkmsv2-encrypted-cluster-seed.bats

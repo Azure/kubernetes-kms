@@ -9,6 +9,43 @@ metadata:
 spec:
   priorityClassName: system-node-critical
   hostNetwork: true
+  initContainers:
+    - name: azure-kms-provider-generate-encrypted-cluster-seed-file
+      image: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_VERSION}
+      imagePullPolicy: IfNotPresent
+      args:
+        - --keyvault-name=${KEYVAULT_NAME}
+        - --key-name=${KEY_NAME}
+        - --key-version=${KEY_VERSION}
+        - --managed-hsm=false
+        - --generate-encrypted-cluster-seed-file-for-tests=/data/encrypted_cluster_seed
+        - -v=5
+      env:
+      # setting this env var so we get debug logs in SDK from CI runs
+      - name: AZURE_GO_SDK_LOG_LEVEL
+        value: DEBUG
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        readOnlyRootFilesystem: true
+        runAsUser: 0
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: "4"
+          memory: 2Gi
+      volumeMounts:
+        - name: etc-kubernetes
+          mountPath: /etc/kubernetes
+        - name: etc-ssl
+          mountPath: /etc/ssl
+          readOnly: true
+        - name: data
+          mountPath: /data
   containers:
     - name: azure-kms-provider
       image: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_VERSION}
@@ -54,6 +91,56 @@ spec:
           readOnly: true
         - name: sock
           mountPath: /opt
+    - name: azure-kms-provider-encrypted-cluster-seed
+      image: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_VERSION}
+      imagePullPolicy: IfNotPresent
+      args:
+        - --keyvault-name=${KEYVAULT_NAME}
+        - --key-name=${KEY_NAME}
+        - --key-version=${KEY_VERSION}
+        - --managed-hsm=false
+        - --healthz-port=8788
+        - --metrics-addr=8096
+        - --listen-addr=unix:///opt/azurekms-encrypted-cluster-seed.socket
+        - --encrypted-cluster-seed-file=/data/encrypted_cluster_seed
+        - -v=5
+      env:
+      # setting this env var so we get debug logs in SDK from CI runs
+      - name: AZURE_GO_SDK_LOG_LEVEL
+        value: DEBUG
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        readOnlyRootFilesystem: true
+        runAsUser: 0
+      ports:
+        - containerPort: 8788
+          protocol: TCP
+      livenessProbe:
+        httpGet:
+          path: /healthz
+          port: 8788
+        failureThreshold: 2
+        periodSeconds: 10
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: "4"
+          memory: 2Gi
+      volumeMounts:
+        - name: etc-kubernetes
+          mountPath: /etc/kubernetes
+        - name: etc-ssl
+          mountPath: /etc/ssl
+          readOnly: true
+        - name: sock
+          mountPath: /opt
+        - name: data
+          mountPath: /data
   volumes:
     - name: etc-kubernetes
       hostPath:
@@ -64,5 +151,8 @@ spec:
     - name: sock
       hostPath:
         path: /opt
+    - name: data
+      hostPath:
+        path: /akv-data
   nodeSelector:
     kubernetes.io/os: linux

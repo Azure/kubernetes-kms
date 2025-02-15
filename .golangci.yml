@@ -37,3 +37,9 @@ linters:
     - typecheck
     - unused
     - whitespace
+
+issues:
+  exclude-dirs:
+    - pkg/plugin/aes
+  exclude:
+    - "KMSv1 is deprecated in v1.28 and will only receive security updates going forward. Use KMSv2 instead."
