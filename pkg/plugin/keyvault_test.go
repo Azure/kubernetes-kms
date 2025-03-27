@@ -6,6 +6,7 @@
 package plugin
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -68,7 +69,7 @@ func TestNewKeyVaultClientError(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			if _, err := NewKeyVaultClient(test.config, test.vaultName, test.keyName, test.keyVersion, test.proxyMode, test.proxyAddress, test.proxyPort, test.managedHSM); err == nil {
+			if _, err := NewKeyVaultClient(context.TODO(), test.config, test.vaultName, test.keyName, test.keyVersion, test.proxyMode, test.proxyAddress, test.proxyPort, test.managedHSM); err == nil {
 				t.Fatalf("newKeyVaultClient() expected error, got nil")
 			}
 		})
@@ -131,7 +132,7 @@ func TestNewKeyVaultClient(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			kvClient, err := NewKeyVaultClient(test.config, test.vaultName, test.keyName, test.keyVersion, test.proxyMode, test.proxyAddress, test.proxyPort, test.managedHSM)
+			kvClient, err := NewKeyVaultClient(context.TODO(), test.config, test.vaultName, test.keyName, test.keyVersion, test.proxyMode, test.proxyAddress, test.proxyPort, test.managedHSM)
 			if err != nil {
 				t.Fatalf("newKeyVaultClient() failed with error: %v", err)
 			}

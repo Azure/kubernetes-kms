@@ -6,6 +6,7 @@
 package auth
 
 import (
+	"context"
 	"reflect"
 	"strings"
 	"testing"
@@ -91,7 +92,7 @@ func TestGetServicePrincipalTokenFromMSIWithUserAssignedID(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			token, err := GetServicePrincipalToken(test.config, "https://login.microsoftonline.com/", "https://vault.azure.net", test.proxyMode)
+			token, _, err := GetServicePrincipalToken(context.TODO(), test.config, "https://login.microsoftonline.com/", "https://vault.azure.net", test.proxyMode)
 			if err != nil {
 				t.Fatalf("expected err to be nil, got: %v", err)
 			}
@@ -139,7 +140,7 @@ func TestGetServicePrincipalTokenFromMSI(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			token, err := GetServicePrincipalToken(test.config, "https://login.microsoftonline.com/", "https://vault.azure.net", test.proxyMode)
+			token, _, err := GetServicePrincipalToken(context.TODO(), test.config, "https://login.microsoftonline.com/", "https://vault.azure.net", test.proxyMode)
 			if err != nil {
 				t.Fatalf("expected err to be nil, got: %v", err)
 			}
@@ -175,7 +176,7 @@ func TestGetServicePrincipalToken(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			token, err := GetServicePrincipalToken(test.config, "https://login.microsoftonline.com/", "https://vault.azure.net", false)
+			token, _, err := GetServicePrincipalToken(context.TODO(), test.config, "https://login.microsoftonline.com/", "https://vault.azure.net", false)
 			if err != nil {
 				t.Fatalf("expected err to be nil, got: %v", err)
 			}

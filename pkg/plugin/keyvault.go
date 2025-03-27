@@ -76,6 +76,7 @@ type KeyVaultClient struct {
 
 // NewKeyVaultClient returns a new key vault client to use for kms operations.
 func NewKeyVaultClient(
+	ctx context.Context,
 	config *config.AzureConfig,
 	vaultName, keyName, keyVersion string,
 	proxyMode bool,
@@ -110,7 +111,7 @@ func NewKeyVaultClient(
 	if vaultResourceURL == azure.NotAvailable {
 		return nil, fmt.Errorf("keyvault resource identifier not available for cloud: %s", env.Name)
 	}
-	token, err := auth.GetKeyvaultToken(config, env, vaultResourceURL, proxyMode)
+	token, err := auth.GetKeyvaultToken(ctx, config, env, vaultResourceURL, proxyMode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get key vault token, error: %+v", err)
 	}

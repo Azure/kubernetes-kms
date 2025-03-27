@@ -111,6 +111,7 @@ func setupKMSPlugin() error {
 	}
 
 	kvClient, err := plugin.NewKeyVaultClient(
+		ctx,
 		azureConfig,
 		pluginConfig.KeyVaultName,
 		pluginConfig.KeyName,
