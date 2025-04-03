@@ -17,10 +17,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azkeys"
 	"github.com/Azure/kubernetes-kms/pkg/metrics"
 	mockkeyvault "github.com/Azure/kubernetes-kms/pkg/plugin/mock_keyvault"
 
-	"github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
 	"google.golang.org/grpc"
 	kmsv1 "k8s.io/kms/apis/v1beta1"
 	kmsv2 "k8s.io/kms/apis/v2"
@@ -162,7 +162,7 @@ func setupFakeKMSServer(socketPath string) (
 
 	kvClient := &mockkeyvault.KeyVaultClient{
 		KeyID:     "mock-key-id",
-		Algorithm: keyvault.RSA15,
+		Algorithm: azkeys.EncryptionAlgorithmRSA15,
 	}
 	fakeKMSV1Server := &KeyManagementServiceServer{
 		kvClient: kvClient,
