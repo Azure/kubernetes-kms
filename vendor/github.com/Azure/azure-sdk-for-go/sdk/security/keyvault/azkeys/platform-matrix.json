@@ -1,0 +1,17 @@
+{
+    "displayNames": {
+        "@{ enableHsm = $true }": "HSM"
+    },
+    "include": [
+        {
+            "Agent": {
+                "ubuntu-20.04": {
+                    "OSVmImage": "env:LINUXVMIMAGE",
+                    "Pool": "env:LINUXPOOL"
+                }
+            },
+            "ArmTemplateParameters": "@{ enableHsm = $true }",
+            "GoVersion": ["1.18"]
+        }
+    ]
+}

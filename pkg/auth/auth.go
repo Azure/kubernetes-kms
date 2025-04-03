@@ -13,109 +13,75 @@ import (
 	"os"
 	"regexp"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/kubernetes-kms/pkg/config"
 	"github.com/Azure/kubernetes-kms/pkg/consts"
-
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/adal"
-	"github.com/Azure/go-autorest/autorest/azure"
 	"golang.org/x/crypto/pkcs12"
 	"monis.app/mlog"
 )
 
-// GetKeyvaultToken() returns token for Keyvault endpoint.
-func GetKeyvaultToken(config *config.AzureConfig, env *azure.Environment, resource string, proxyMode bool) (authorizer autorest.Authorizer, err error) {
-	servicePrincipalToken, err := GetServicePrincipalToken(config, env.ActiveDirectoryEndpoint, resource, proxyMode)
-	if err != nil {
-		return nil, err
-	}
-	authorizer = autorest.NewBearerAuthorizer(servicePrincipalToken)
-	return authorizer, nil
+// GetKeyvaultToken returns a token for the Keyvault endpoint.
+func GetKeyvaultToken(config *config.AzureConfig, aadEndpoint string, proxyMode bool) (cred azcore.TokenCredential, err error) {
+	return getCredential(config, aadEndpoint, proxyMode)
 }
 
-// GetServicePrincipalToken creates a new service principal token based on the configuration.
-func GetServicePrincipalToken(config *config.AzureConfig, aadEndpoint, resource string, proxyMode bool) (adal.OAuthTokenProvider, error) {
-	oauthConfig, err := adal.NewOAuthConfig(aadEndpoint, config.TenantID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create OAuth config, error: %v", err)
-	}
-
+// getCredential returns a token provider for the specified resource.
+func getCredential(config *config.AzureConfig, aadEndpoint string, proxyMode bool) (azcore.TokenCredential, error) {
 	if config.UseManagedIdentityExtension {
-		mlog.Info("using managed identity extension to retrieve access token")
-		msiEndpoint, err := adal.GetMSIVMEndpoint()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get managed service identity endpoint, error: %v", err)
+		mlog.Info("using managed identity to retrieve access token", "clientID", redactClientCredentials(config.UserAssignedIdentityID))
+		opts := &azidentity.ManagedIdentityCredentialOptions{
+			ID: azidentity.ClientID(config.UserAssignedIdentityID),
 		}
-		// using user-assigned managed identity to access keyvault
-		if len(config.UserAssignedIdentityID) > 0 {
-			mlog.Info("using User-assigned managed identity to retrieve access token", "clientID", redactClientCredentials(config.UserAssignedIdentityID))
-			return adal.NewServicePrincipalTokenFromMSIWithUserAssignedID(msiEndpoint,
-				resource,
-				config.UserAssignedIdentityID)
-		}
-		mlog.Info("using system-assigned managed identity to retrieve access token")
-		// using system-assigned managed identity to access keyvault
-		return adal.NewServicePrincipalTokenFromMSI(
-			msiEndpoint,
-			resource)
+		return azidentity.NewManagedIdentityCredential(opts)
 	}
 
 	if len(config.ClientSecret) > 0 && len(config.ClientID) > 0 {
-		mlog.Info("azure: using client_id+client_secret to retrieve access token",
+		mlog.Info("using client_id+client_secret to retrieve access token",
 			"clientID", redactClientCredentials(config.ClientID), "clientSecret", redactClientCredentials(config.ClientSecret))
 
-		spt, err := adal.NewServicePrincipalToken(
-			*oauthConfig,
-			config.ClientID,
-			config.ClientSecret,
-			resource)
-		if err != nil {
-			return nil, err
+		opts := &azidentity.ClientSecretCredentialOptions{
+			ClientOptions: azcore.ClientOptions{
+				Cloud: cloud.Configuration{
+					ActiveDirectoryAuthorityHost: aadEndpoint,
+				},
+			},
 		}
+
 		if proxyMode {
-			return addTargetTypeHeader(spt), nil
+			opts.ClientOptions.Transport = &transporter{}
 		}
-		return spt, nil
+		return azidentity.NewClientSecretCredential(config.TenantID, config.ClientID, config.ClientSecret, opts)
 	}
 
 	if len(config.AADClientCertPath) > 0 && len(config.AADClientCertPassword) > 0 {
 		mlog.Info("using jwt client_assertion (client_cert+client_private_key) to retrieve access token")
 		certData, err := os.ReadFile(config.AADClientCertPath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read client certificate from file %s, error: %v", config.AADClientCertPath, err)
+			return nil, fmt.Errorf("failed to read client certificate from file %s, error: %w", config.AADClientCertPath, err)
 		}
 		certificate, privateKey, err := decodePkcs12(certData, config.AADClientCertPassword)
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode the client certificate, error: %v", err)
 		}
-		spt, err := adal.NewServicePrincipalTokenFromCertificate(
-			*oauthConfig,
-			config.ClientID,
-			certificate,
-			privateKey,
-			resource)
-		if err != nil {
-			return nil, err
+
+		opts := &azidentity.ClientCertificateCredentialOptions{
+			ClientOptions: azcore.ClientOptions{
+				Cloud: cloud.Configuration{
+					ActiveDirectoryAuthorityHost: aadEndpoint,
+				},
+			},
 		}
+
 		if proxyMode {
-			return addTargetTypeHeader(spt), nil
+			opts.ClientOptions.Transport = &transporter{}
 		}
-		return spt, nil
+
+		return azidentity.NewClientCertificateCredential(config.TenantID, config.ClientID, []*x509.Certificate{certificate}, privateKey, opts)
 	}
 
 	return nil, fmt.Errorf("no credentials provided for accessing keyvault")
-}
-
-// ParseAzureEnvironment returns azure environment by name.
-func ParseAzureEnvironment(cloudName string) (*azure.Environment, error) {
-	var env azure.Environment
-	var err error
-	if cloudName == "" {
-		env = azure.PublicCloud
-	} else {
-		env, err = azure.EnvironmentFromName(cloudName)
-	}
-	return &env, err
 }
 
 // decodePkcs12 decodes a PKCS#12 client certificate by extracting the public certificate and
@@ -139,16 +105,10 @@ func redactClientCredentials(sensitiveString string) string {
 	return r.ReplaceAllString(sensitiveString, "$1##### REDACTED #####$3")
 }
 
-// addTargetTypeHeader adds the target header if proxy mode is enabled.
-func addTargetTypeHeader(spt *adal.ServicePrincipalToken) *adal.ServicePrincipalToken {
-	spt.SetSender(autorest.CreateSender(
-		(func() autorest.SendDecorator {
-			return func(s autorest.Sender) autorest.Sender {
-				return autorest.SenderFunc(func(r *http.Request) (*http.Response, error) {
-					r.Header.Set(consts.RequestHeaderTargetType, consts.TargetTypeAzureActiveDirectory)
-					return s.Do(r)
-				})
-			}
-		})()))
-	return spt
+type transporter struct{}
+
+func (t *transporter) Do(req *http.Request) (*http.Response, error) {
+	// adds the target header if proxy mode is enabled
+	req.Header.Set(consts.RequestHeaderTargetType, consts.TargetTypeAzureActiveDirectory)
+	return http.DefaultClient.Do(req)
 }
