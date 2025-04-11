@@ -29,8 +29,8 @@ DOCKER_BUILDKIT = 1
 export DOCKER_BUILDKIT
 
 # Testing var
-KIND_VERSION ?= 0.18.0
-KUBERNETES_VERSION ?= v1.27.1
+KIND_VERSION ?= 0.27.0
+KUBERNETES_VERSION ?= v1.32.3
 BATS_VERSION ?= 1.4.1
 
 ## --------------------------------------
@@ -65,7 +65,7 @@ build:
 .PHONY: docker-init-buildx
 docker-init-buildx:
 	@if ! docker buildx ls | grep $(BUILDX_BUILDER_NAME); then \
-		docker run --rm --privileged multiarch/qemu-user-static:$(QEMU_VERSION) --reset -p yes; \
+		docker run --rm --privileged mirror.gcr.io/multiarch/qemu-user-static:$(QEMU_VERSION) --reset -p yes; \
 		docker buildx create --name $(BUILDX_BUILDER_NAME) --use; \
 		docker buildx inspect $(BUILDX_BUILDER_NAME) --bootstrap; \
 	fi

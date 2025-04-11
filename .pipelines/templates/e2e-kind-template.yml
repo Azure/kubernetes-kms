@@ -10,7 +10,7 @@ jobs:
     - name: REGISTRY_PORT
       value: 5000
     - name: KUBERNETES_VERSION
-      value: v1.27.1
+      value: v1.32.3
     - name: KIND_CLUSTER_NAME
       value: kms
     - name: KIND_NETWORK
@@ -24,18 +24,16 @@ jobs:
     - group: kubernetes-kms
     strategy:
       matrix:
-        kmsv1_kind_v1_24_7:
-          KUBERNETES_VERSION: v1.24.7
-        kmsv1_kind_v1_25_3:
-          KUBERNETES_VERSION: v1.25.3
-        kmsv1_kind_v1_26_0:
-          KUBERNETES_VERSION: v1.26.0
-        kmsv1_kind_v1_27_1:
-          KUBERNETES_VERSION: v1.27.1
+        kmsv1_kind_v1_30_10:
+          KUBERNETES_VERSION: v1.30.10
+        kmsv1_kind_v1_31_6:
+          KUBERNETES_VERSION: v1.31.6
+        kmsv1_kind_v1_32_3:
+          KUBERNETES_VERSION: v1.32.3
     steps:
       - task: GoTool@0
         inputs:
-          version: 1.19
+          version: 1.23.8
       - script: make e2e-install-prerequisites
         displayName: "Install e2e test prerequisites"
       - script: |
@@ -63,7 +61,7 @@ jobs:
     - name: REGISTRY_PORT
       value: 5000
     - name: KUBERNETES_VERSION
-      value: v1.27.1
+      value: v1.32.3
     - name: KIND_CLUSTER_NAME
       value: kms
     - name: KIND_NETWORK
@@ -77,12 +75,16 @@ jobs:
     - group: kubernetes-kms
     strategy:
       matrix:
-        kmsv2_kind_v1_27_1:
-          KUBERNETES_VERSION: v1.27.1
+        kmsv2_kind_v1_30_10:
+          KUBERNETES_VERSION: v1.30.10
+        kmsv2_kind_v1_31_6:
+          KUBERNETES_VERSION: v1.31.6
+        kmsv2_kind_v1_32_3:
+          KUBERNETES_VERSION: v1.32.3
     steps:
       - task: GoTool@0
         inputs:
-          version: 1.19
+          version: 1.23.8
       - script: make e2e-install-prerequisites
         displayName: "Install e2e test prerequisites"
       - script: |

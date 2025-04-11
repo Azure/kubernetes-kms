@@ -10,7 +10,7 @@ if [ "${running}" != 'true' ]; then
   echo "Creating local registry"
   docker run \
     -d --restart=always -p "${REGISTRY_PORT}:5000" --name "${REGISTRY_NAME}" \
-    registry:2
+    mirror.gcr.io/registry:2
 fi
 
 # Build and push kms image

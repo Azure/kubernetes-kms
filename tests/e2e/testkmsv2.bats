@@ -47,13 +47,10 @@ setup() {
 @test "check keyID hash used for encrypt/decrypt" {
     # expected_hash value is computed based on the key used in CI.
     # this needs to be updated when we rotate that key.
-    local expected_hash="cbda52be2f8c13d323a3b17c4679118a60b91d29454305e02ee485185b6e386f"
-    local metrics=$(kubectl get --raw /metrics)
-
-    hashIDs=$(echo "${metrics}" | grep -oP 'sha256:\K[a-f0-9]+')
-    for hash in ${hashIDs}; do
-        [[ "${hash}" == "${expected_hash}" ]]
-    done
+    local expected_hash="sha256:cbda52be2f8c13d323a3b17c4679118a60b91d29454305e02ee485185b6e386f"
+    local metrics=$(kubectl get --raw /metrics) 
+    got_hash_id=$(echo "${metrics}" | grep 'apiserver_envelope_encryption_key_id_hash_last_timestamp_seconds' | sed -n 's/.*key_id_hash="\([^"]*\)".*/\1/p' | sort -u)
+    [[ "${got_hash_id}" == "${expected_hash}" ]]
 }
 
 @test "check if metrics endpoint works" {

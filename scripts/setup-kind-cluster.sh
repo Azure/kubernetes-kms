@@ -9,4 +9,4 @@ envsubst < ./tests/e2e/kind-config.yaml > ./tests/e2e/generated_manifests/kind-c
 
 # create a cluster with the local registry enabled in containerd
 # add encryption config and the kms static pod manifest with custom image
-kind create cluster --retain --image kindest/node:"${KUBERNETES_VERSION}" --name "${KIND_CLUSTER_NAME}" --wait 2m --config=./tests/e2e/generated_manifests/kind-config.yaml
+kind create cluster --retain --image mcr.microsoft.com/mirror/kindest/node:"${KUBERNETES_VERSION}" --name "${KIND_CLUSTER_NAME}" --wait 2m --config=./tests/e2e/generated_manifests/kind-config.yaml
