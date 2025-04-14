@@ -43,7 +43,7 @@ jobs:
       
       - template: manifest-template.yml
         parameters:
-          registry: mcr.microsoft.com/oss/azure/kms
+          registry: mcr.microsoft.com/oss/v2/azure/kms
           imageName: keyvault
           imageVersion: $(LATEST_KMS_VERSION)
 
