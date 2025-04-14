@@ -66,7 +66,7 @@ This guide demonstrates steps required to enable the KMS Plugin for Key Vault in
     hostNetwork: true
     containers:
       - name: azure-kms-provider
-        image: mcr.microsoft.com/oss/azure/kms/keyvault:v0.7.0
+        image: mcr.microsoft.com/oss/v2/azure/kms/keyvault:v0.8.0
         imagePullPolicy: IfNotPresent
         args:
           - --listen-addr=unix:///opt/azurekms.socket             # [OPTIONAL] gRPC listen address. Default is unix:///opt/azurekms.socket
