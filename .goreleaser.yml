@@ -7,7 +7,7 @@ release:
   header: |
     ## {{.Tag}} - {{ time "2006-01-02" }}
 changelog:
-  disabled: false
+  disable: false
   groups:
     - title: Bug Fixes 🐞
       regexp: ^.*fix[(\\w)]*:+.*$
