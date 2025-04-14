@@ -6,6 +6,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
@@ -18,6 +19,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/kubernetes-kms/pkg/config"
 	"github.com/Azure/kubernetes-kms/pkg/consts"
+	"github.com/Azure/msi-dataplane/pkg/dataplane"
 	"golang.org/x/crypto/pkcs12"
 	"monis.app/mlog"
 )
@@ -79,6 +81,22 @@ func getCredential(config *config.AzureConfig, aadEndpoint string, proxyMode boo
 		}
 
 		return azidentity.NewClientCertificateCredential(config.TenantID, config.ClientID, []*x509.Certificate{certificate}, privateKey, opts)
+	}
+
+	if len(config.AADMSIDataPlaneIdentityPath) > 0 {
+		mlog.Info("using MSI Data Plane Identity to retrieve access token")
+
+		opts := azcore.ClientOptions{
+			Cloud: cloud.Configuration{
+				ActiveDirectoryAuthorityHost: aadEndpoint,
+			},
+		}
+		cred, err := dataplane.NewUserAssignedIdentityCredential(context.Background(), config.AADMSIDataPlaneIdentityPath, dataplane.WithClientOpts(opts))
+		if err != nil {
+			return nil, err
+		}
+
+		return cred, nil
 	}
 
 	return nil, fmt.Errorf("no credentials provided for accessing keyvault")
