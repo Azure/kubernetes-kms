@@ -11,7 +11,7 @@ spec:
   hostNetwork: true
   containers:
     - name: azure-kms-provider
-      image: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_VERSION}
+      image: mcr.microsoft.com/oss/v2/azure/kms/keyvault:v0.7.0
       imagePullPolicy: IfNotPresent
       args:
         - --keyvault-name=${KEYVAULT_NAME}
