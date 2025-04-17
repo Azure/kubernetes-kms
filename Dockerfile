@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/oss/go/microsoft/golang:1.21-bookworm@sha256:970e5548a6334a823204db449c8a65678b1f7757104fcf0365a3bd7489b4a321 as builder
+FROM mcr.microsoft.com/oss/go/microsoft/golang:1.23.8-bookworm@sha256:df6c0a931c3646afea9d9858a40985a613f692467da696ef8ffc4d1996d7a6bb AS builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -19,7 +19,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} GO111MODULE=on go build -a -ld
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM --platform=${TARGETPLATFORM:-linux/amd64} mcr.microsoft.com/cbl-mariner/distroless/minimal:2.0-nonroot@sha256:b8e90ab2ad04a18383a5a4f2956a8831d3dfe39544aa0edd82f87dd3c0ffffc9
+FROM --platform=${TARGETPLATFORM:-linux/amd64} mcr.microsoft.com/cbl-mariner/distroless/minimal:2.0-nonroot.20250402@sha256:c5e349966c9a8ffe5af65970300d2b6899592da1714490b46561f5d86a0ab1e0
 WORKDIR /
 COPY --from=builder /workspace/_output/kubernetes-kms .
 
