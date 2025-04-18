@@ -18,6 +18,7 @@ type AzureConfig struct {
 	UserAssignedIdentityID      string `json:"userAssignedIdentityID,omitempty" yaml:"userAssignedIdentityID,omitempty"`
 	AADClientCertPath           string `json:"aadClientCertPath" yaml:"aadClientCertPath"`
 	AADClientCertPassword       string `json:"aadClientCertPassword" yaml:"aadClientCertPassword"`
+	AADMSIDataPlaneIdentityPath string `json:"aadMSIDataPlaneIdentityPath,omitempty" yaml:"aadMSIDataPlaneIdentityPath,omitempty"`
 }
 
 // GetAzureConfig returns configs in the azure.json cloud provider file.

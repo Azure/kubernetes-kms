@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
+	"github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azkeys"
 	"k8s.io/kms/pkg/service"
 )
 
@@ -22,10 +22,10 @@ type KeyVaultClient struct {
 	decryptOut []byte
 	decryptErr error
 	KeyID      string
-	Algorithm  keyvault.JSONWebKeyEncryptionAlgorithm
+	Algorithm  azkeys.EncryptionAlgorithm
 }
 
-func (kvc *KeyVaultClient) Encrypt(_ context.Context, _ []byte, _ keyvault.JSONWebKeyEncryptionAlgorithm) (*service.EncryptResponse, error) {
+func (kvc *KeyVaultClient) Encrypt(_ context.Context, _ []byte, _ azkeys.EncryptionAlgorithm) (*service.EncryptResponse, error) {
 	kvc.mutex.Lock()
 	defer kvc.mutex.Unlock()
 	return &service.EncryptResponse{
@@ -39,7 +39,7 @@ func (kvc *KeyVaultClient) Encrypt(_ context.Context, _ []byte, _ keyvault.JSONW
 	}, kvc.encryptErr
 }
 
-func (kvc *KeyVaultClient) Decrypt(_ context.Context, _ []byte, _ keyvault.JSONWebKeyEncryptionAlgorithm, _ string, _ map[string][]byte, _ string) ([]byte, error) {
+func (kvc *KeyVaultClient) Decrypt(_ context.Context, _ []byte, _ azkeys.EncryptionAlgorithm, _ string, _ map[string][]byte, _ string) ([]byte, error) {
 	kvc.mutex.Lock()
 	defer kvc.mutex.Unlock()
 	return kvc.decryptOut, kvc.decryptErr
@@ -88,12 +88,4 @@ func (kvc *KeyVaultClient) ValidateAnnotations(annotations map[string][]byte, ke
 	}
 
 	return nil
-}
-
-func (kvc *KeyVaultClient) GetUserAgent() string {
-	return "k8s-kms-keyvault"
-}
-
-func (kvc *KeyVaultClient) GetVaultURL() string {
-	return "https://test.vault.azure.net"
 }
