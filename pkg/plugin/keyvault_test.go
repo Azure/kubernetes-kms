@@ -21,15 +21,16 @@ var (
 
 func TestNewKeyVaultClientError(t *testing.T) {
 	tests := []struct {
-		desc         string
-		config       *config.AzureConfig
-		vaultName    string
-		keyName      string
-		keyVersion   string
-		proxyMode    bool
-		proxyAddress string
-		proxyPort    int
-		managedHSM   bool
+		desc                  string
+		config                *config.AzureConfig
+		vaultName             string
+		keyName               string
+		keyVersion            string
+		keyVersionlessEnabled bool
+		proxyMode             bool
+		proxyAddress          string
+		proxyPort             int
+		managedHSM            bool
 	}{
 		{
 			desc:      "vault name not provided",
@@ -43,7 +44,7 @@ func TestNewKeyVaultClientError(t *testing.T) {
 			proxyMode: false,
 		},
 		{
-			desc:      "key version not provided",
+			desc:      "key version not provided when not keyVersionlessEnabled",
 			config:    &config.AzureConfig{},
 			vaultName: "testkv",
 			keyName:   "k8s",
@@ -126,6 +127,15 @@ func TestNewKeyVaultClient(t *testing.T) {
 			managedHSM:       true,
 			proxyMode:        false,
 			expectedVaultURL: "https://testkv.managedhsm.azure.net/",
+		},
+		{
+			desc:             "no error when no key version (version-less)",
+			config:           &config.AzureConfig{ClientID: "clientid", ClientSecret: "clientsecret"},
+			vaultName:        "testkv",
+			keyName:          "key1",
+			keyVersion:       "",
+			proxyMode:        false,
+			expectedVaultURL: "https://testkv.vault.azure.net/",
 		},
 	}
 
