@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azkeys"
 	"github.com/Azure/kubernetes-kms/pkg/config"
 	"github.com/Azure/kubernetes-kms/pkg/metrics"
 	"github.com/Azure/kubernetes-kms/pkg/plugin"
@@ -52,6 +53,8 @@ var (
 	proxyMode    = flag.Bool("proxy-mode", false, "Proxy mode")
 	proxyAddress = flag.String("proxy-address", "", "proxy address")
 	proxyPort    = flag.Int("proxy-port", 7788, "port for proxy")
+
+	encryptedClusterSeedFile = flag.String("encrypted-cluster-seed-file", "", "File with encrypted cluster seed used to generate KEKs to encrypt API server DEK seeds")
 )
 
 func main() {
@@ -139,19 +142,66 @@ func setupKMSPlugin() error {
 
 	s := grpc.NewServer(opts...)
 
-	// register kms v1 server
-	kmsV1Server, err := plugin.NewKMSv1Server(kvClient)
-	if err != nil {
-		return fmt.Errorf("failed to create server: %w", err)
-	}
-	kmsv1.RegisterKeyManagementServiceServer(s, kmsV1Server)
+	// legacy path
+	if len(*encryptedClusterSeedFile) == 0 {
+		// register kms v1 server
+		kmsV1Server, err := plugin.NewKMSv1Server(kvClient)
+		if err != nil {
+			return fmt.Errorf("failed to create server: %w", err)
+		}
+		kmsv1.RegisterKeyManagementServiceServer(s, kmsV1Server)
 
-	// register kms v2 server
-	kmsV2Server, err := plugin.NewKMSv2Server(kvClient)
-	if err != nil {
-		return fmt.Errorf("failed to create kms V2 server: %w", err)
+		// register kms v2 server
+		kmsV2Server, err := plugin.NewKMSv2Server(kvClient)
+		if err != nil {
+			return fmt.Errorf("failed to create kms V2 server: %w", err)
+		}
+		kmsv2.RegisterKeyManagementServiceServer(s, kmsV2Server)
+
+		// Health check for kms v1 and v2
+		healthz := &plugin.HealthZ{
+			KMSv1Server: kmsV1Server,
+			KMSv2Server: kmsV2Server,
+			HealthCheckURL: &url.URL{
+				Host: net.JoinHostPort("", strconv.FormatUint(uint64(*healthzPort), 10)),
+				Path: *healthzPath,
+			},
+			UnixSocketPath: listener.Addr().String(),
+			RPCTimeout:     *healthzTimeout,
+		}
+		go healthz.Serve()
+	} else {
+		// note that this really should be a different plugin altogether, but doing it here lets me re-use CI for a POC
+
+		encryptedClusterSeed, err := os.ReadFile(*encryptedClusterSeedFile)
+		if err != nil {
+			return fmt.Errorf("failed to read encrypted cluster seed file: %w", err)
+		}
+
+		ctx, cancel := context.WithTimeout(ctx, time.Minute)
+		defer cancel()
+
+		// attempt to bootstrap by decrypting the cluster seed
+		clusterSeed, err := kvClient.Decrypt(ctx, encryptedClusterSeed, azkeys.EncryptionAlgorithmRSAOAEP256, "", nil, "")
+		if err != nil {
+			return fmt.Errorf("failed to decrypt cluster seed: %w", err)
+		}
+		cancel()
+
+		kmsV2ServerWrapped, err := plugin.NewKMSv2ServerWrapped(clusterSeed)
+		if err != nil {
+			return fmt.Errorf("failed to create kms V2 server: %w", err)
+		}
+		kmsv2.RegisterKeyManagementServiceServer(s, kmsV2ServerWrapped)
+
+		healthCheckURL := &url.URL{
+			Host: net.JoinHostPort("", strconv.FormatUint(uint64(*healthzPort), 10)),
+			Path: *healthzPath,
+		}
+
+		// if we bootstrap, we are always healthy because the crypto is all local
+		go plugin.BlockingRunAlwaysHealthyServer(healthCheckURL)
 	}
-	kmsv2.RegisterKeyManagementServiceServer(s, kmsV2Server)
 
 	mlog.Always("Listening for connections", "addr", listener.Addr().String())
 	go func() {
@@ -159,19 +209,6 @@ func setupKMSPlugin() error {
 			mlog.Fatal(fmt.Errorf("failed to serve kms server: %w", err))
 		}
 	}()
-
-	// Health check for kms v1 and v2
-	healthz := &plugin.HealthZ{
-		KMSv1Server: kmsV1Server,
-		KMSv2Server: kmsV2Server,
-		HealthCheckURL: &url.URL{
-			Host: net.JoinHostPort("", strconv.FormatUint(uint64(*healthzPort), 10)),
-			Path: *healthzPath,
-		},
-		UnixSocketPath: listener.Addr().String(),
-		RPCTimeout:     *healthzTimeout,
-	}
-	go healthz.Serve()
 
 	<-ctx.Done()
 	// gracefully stop the grpc server
