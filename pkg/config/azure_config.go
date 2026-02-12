@@ -27,10 +27,10 @@ func GetAzureConfig(configFile string) (config *AzureConfig, err error) {
 	mlog.Trace("populating AzureConfig from config file", "configFile", configFile)
 	bytes, err := os.ReadFile(configFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load config file %s, error: %+v", configFile, err)
+		return nil, fmt.Errorf("failed to load config file %s, error: %w", configFile, err)
 	}
 	if err = yaml.Unmarshal(bytes, &cfg); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal azure.json, error: %+v", err)
+		return nil, fmt.Errorf("failed to unmarshal azure.json, error: %w", err)
 	}
 	return &cfg, nil
 }

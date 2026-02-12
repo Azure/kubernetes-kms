@@ -8,6 +8,7 @@ package plugin
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -61,7 +62,7 @@ func TestV2Encrypt(t *testing.T) {
 			out, err := kmsV2Server.Encrypt(context.TODO(), &kmsv2.EncryptRequest{
 				Plaintext: test.input,
 			})
-			if err != test.err {
+			if !errors.Is(err, test.err) {
 				t.Fatalf("expected err: %v, got: %v", test.err, err)
 			}
 			if !bytes.Equal(out.GetCiphertext(), test.output) {

@@ -96,11 +96,11 @@ func NewKeyVaultClient(
 	kvClient := kv.New()
 	err := kvClient.AddToUserAgent(version.GetUserAgent())
 	if err != nil {
-		return nil, fmt.Errorf("failed to add user agent to keyvault client, error: %+v", err)
+		return nil, fmt.Errorf("failed to add user agent to keyvault client, error: %w", err)
 	}
 	env, err := auth.ParseAzureEnvironment(config.Cloud)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse cloud environment: %s, error: %+v", config.Cloud, err)
+		return nil, fmt.Errorf("failed to parse cloud environment: %s, error: %w", config.Cloud, err)
 	}
 	if proxyMode {
 		env.ActiveDirectoryEndpoint = fmt.Sprintf("http://%s:%d/", proxyAddress, proxyPort)
@@ -112,13 +112,13 @@ func NewKeyVaultClient(
 	}
 	token, err := auth.GetKeyvaultToken(config, env, vaultResourceURL, proxyMode)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get key vault token, error: %+v", err)
+		return nil, fmt.Errorf("failed to get key vault token, error: %w", err)
 	}
 	kvClient.Authorizer = token
 
 	vaultURL, err := getVaultURL(vaultName, managedHSM, env)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get vault url, error: %+v", err)
+		return nil, fmt.Errorf("failed to get vault url, error: %w", err)
 	}
 
 	keyIDHash, err := getKeyIDHash(*vaultURL, keyName, keyVersion)
@@ -160,7 +160,7 @@ func (kvc *KeyVaultClient) Encrypt(
 	}
 	result, err := kvc.baseClient.Encrypt(ctx, kvc.vaultURL, kvc.keyName, kvc.keyVersion, params)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encrypt, error: %+v", err)
+		return nil, fmt.Errorf("failed to encrypt, error: %w", err)
 	}
 
 	if kvc.keyIDHash != fmt.Sprintf("%x", sha256.Sum256([]byte(*result.Kid))) {
@@ -210,11 +210,11 @@ func (kvc *KeyVaultClient) Decrypt(
 
 	result, err := kvc.baseClient.Decrypt(ctx, kvc.vaultURL, kvc.keyName, kvc.keyVersion, params)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt, error: %+v", err)
+		return nil, fmt.Errorf("failed to decrypt, error: %w", err)
 	}
 	bytes, err := base64.RawURLEncoding.DecodeString(*result.Result)
 	if err != nil {
-		return nil, fmt.Errorf("failed to base64 decode result, error: %+v", err)
+		return nil, fmt.Errorf("failed to base64 decode result, error: %w", err)
 	}
 
 	return bytes, nil

@@ -3,9 +3,9 @@ package metrics
 import (
 	"context"
 
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/global"
 )
 
 const (
@@ -37,7 +37,7 @@ type StatsReporter interface {
 
 // NewStatsReporter instantiates otel reporter.
 func NewStatsReporter() (StatsReporter, error) {
-	meter := global.Meter(instrumentationName)
+	meter := otel.GetMeterProvider().Meter(instrumentationName)
 
 	metricCounter, err := meter.Float64Histogram(
 		kmsRequestMetricName,

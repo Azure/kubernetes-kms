@@ -8,6 +8,7 @@ package plugin
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -57,7 +58,7 @@ func TestEncrypt(t *testing.T) {
 			out, err := kmsServer.Encrypt(context.TODO(), &kmsv1.EncryptRequest{
 				Plain: test.input,
 			})
-			if err != test.err {
+			if !errors.Is(err, test.err) {
 				t.Fatalf("expected err: %v, got: %v", test.err, err)
 			}
 			if !bytes.Equal(out.GetCipher(), test.output) {
@@ -106,7 +107,7 @@ func TestDecrypt(t *testing.T) {
 			out, err := kmsServer.Decrypt(context.TODO(), &kmsv1.DecryptRequest{
 				Cipher: test.input,
 			})
-			if err != test.err {
+			if !errors.Is(err, test.err) {
 				t.Fatalf("expected err: %v, got: %v", test.err, err)
 			}
 			if !bytes.Equal(out.GetPlain(), test.output) {

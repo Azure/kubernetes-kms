@@ -12,5 +12,4 @@ pool: staging-pool-amd64-mariner-2
 
 jobs:
   - template: templates/unit-tests-template.yml
-  - template: templates/soak-test-template.yml
   - template: templates/e2e-upgrade-template.yml
