@@ -29,8 +29,8 @@ DOCKER_BUILDKIT = 1
 export DOCKER_BUILDKIT
 
 # Testing var
-KIND_VERSION ?= 0.27.0
-KUBERNETES_VERSION ?= v1.32.3
+KIND_VERSION ?= 0.31.0
+KUBERNETES_VERSION ?= v1.35.0
 BATS_VERSION ?= 1.4.1
 
 ## --------------------------------------

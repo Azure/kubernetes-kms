@@ -24,12 +24,12 @@ jobs:
     - group: kubernetes-kms
     strategy:
       matrix:
-        kmsv1_kind_v1_30_10:
-          KUBERNETES_VERSION: v1.30.10
-        kmsv1_kind_v1_31_6:
-          KUBERNETES_VERSION: v1.31.6
-        kmsv1_kind_v1_32_3:
-          KUBERNETES_VERSION: v1.32.3
+        kmsv1_kind_v1_33_7:
+          KUBERNETES_VERSION: v1.33.7
+        kmsv1_kind_v1_34_3:
+          KUBERNETES_VERSION: v1.34.3
+        kmsv1_kind_v1_35_0:
+          KUBERNETES_VERSION: v1.35.0
     steps:
       - task: GoTool@0
         inputs:
@@ -76,16 +76,17 @@ jobs:
     - group: kubernetes-kms
     strategy:
       matrix:
-        kmsv2_kind_v1_30_10:
-          KUBERNETES_VERSION: v1.30.10
-        kmsv2_kind_v1_31_6:
-          KUBERNETES_VERSION: v1.31.6
-        kmsv2_kind_v1_32_3:
-          KUBERNETES_VERSION: v1.32.3
+        kmsv2_kind_v1_33_7:
+          KUBERNETES_VERSION: v1.33.7
+        kmsv2_kind_v1_34_3:
+          KUBERNETES_VERSION: v1.34.3
+        kmsv2_kind_v1_35_0:
+          KUBERNETES_VERSION: v1.35.0
     steps:
       - task: GoTool@0
         inputs:
           version: 1.25.7
+      - template: prepare-deps.yaml
       - script: make e2e-install-prerequisites
         displayName: "Install e2e test prerequisites"
       - script: |
