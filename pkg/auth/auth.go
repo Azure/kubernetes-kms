@@ -37,14 +37,14 @@ func GetKeyvaultToken(config *config.AzureConfig, env *azure.Environment, resour
 func GetServicePrincipalToken(config *config.AzureConfig, aadEndpoint, resource string, proxyMode bool) (adal.OAuthTokenProvider, error) {
 	oauthConfig, err := adal.NewOAuthConfig(aadEndpoint, config.TenantID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create OAuth config, error: %v", err)
+		return nil, fmt.Errorf("failed to create OAuth config, error: %w", err)
 	}
 
 	if config.UseManagedIdentityExtension {
 		mlog.Info("using managed identity extension to retrieve access token")
 		msiEndpoint, err := adal.GetMSIVMEndpoint()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get managed service identity endpoint, error: %v", err)
+			return nil, fmt.Errorf("failed to get managed service identity endpoint, error: %w", err)
 		}
 		// using user-assigned managed identity to access keyvault
 		if len(config.UserAssignedIdentityID) > 0 {
@@ -82,11 +82,11 @@ func GetServicePrincipalToken(config *config.AzureConfig, aadEndpoint, resource 
 		mlog.Info("using jwt client_assertion (client_cert+client_private_key) to retrieve access token")
 		certData, err := os.ReadFile(config.AADClientCertPath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read client certificate from file %s, error: %v", config.AADClientCertPath, err)
+			return nil, fmt.Errorf("failed to read client certificate from file %s, error: %w", config.AADClientCertPath, err)
 		}
 		certificate, privateKey, err := decodePkcs12(certData, config.AADClientCertPassword)
 		if err != nil {
-			return nil, fmt.Errorf("failed to decode the client certificate, error: %v", err)
+			return nil, fmt.Errorf("failed to decode the client certificate, error: %w", err)
 		}
 		spt, err := adal.NewServicePrincipalTokenFromCertificate(
 			*oauthConfig,
@@ -123,7 +123,7 @@ func ParseAzureEnvironment(cloudName string) (*azure.Environment, error) {
 func decodePkcs12(pkcs []byte, password string) (*x509.Certificate, *rsa.PrivateKey, error) {
 	privateKey, certificate, err := pkcs12.Decode(pkcs, password)
 	if err != nil {
-		return nil, nil, fmt.Errorf("decoding the PKCS#12 client certificate: %v", err)
+		return nil, nil, fmt.Errorf("decoding the PKCS#12 client certificate: %w", err)
 	}
 	rsaPrivateKey, isRsaKey := privateKey.(*rsa.PrivateKey)
 	if !isRsaKey {

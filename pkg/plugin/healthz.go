@@ -8,7 +8,6 @@ package plugin
 import (
 	"context"
 	"fmt"
-	"net"
 	"net/http"
 	"net/url"
 	"time"
@@ -168,11 +167,6 @@ func (h *HealthZ) checkRPC(
 }
 
 func (h *HealthZ) dialUnixSocket() (*grpc.ClientConn, error) {
-	return grpc.Dial(
-		h.UnixSocketPath,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithContextDialer(func(ctx context.Context, target string) (net.Conn, error) {
-			return (&net.Dialer{}).DialContext(ctx, "unix", target)
-		}),
-	)
+	return grpc.NewClient("unix://"+h.UnixSocketPath,
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
 }

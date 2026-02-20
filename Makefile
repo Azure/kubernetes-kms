@@ -29,8 +29,8 @@ DOCKER_BUILDKIT = 1
 export DOCKER_BUILDKIT
 
 # Testing var
-KIND_VERSION ?= 0.27.0
-KUBERNETES_VERSION ?= v1.32.3
+KIND_VERSION ?= 0.31.0
+KUBERNETES_VERSION ?= v1.35.0
 BATS_VERSION ?= 1.4.1
 
 ## --------------------------------------
@@ -39,7 +39,7 @@ BATS_VERSION ?= 1.4.1
 
 $(TOOLS_DIR)/golangci-lint: $(TOOLS_MOD_DIR)/go.mod $(TOOLS_MOD_DIR)/go.sum $(TOOLS_MOD_DIR)/tools.go
 	cd $(TOOLS_MOD_DIR) && \
-	go build -o $(TOOLS_DIR)/golangci-lint github.com/golangci/golangci-lint/cmd/golangci-lint
+	go build -o $(TOOLS_DIR)/golangci-lint github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 
 .PHONY: lint
 lint: $(TOOLS_DIR)/golangci-lint
@@ -121,11 +121,6 @@ e2e-install-prerequisites:
 	curl -LO https://dl.k8s.io/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl && chmod +x ./kubectl && sudo mv kubectl /usr/local/bin/
 	# Download and install bats
 	curl -sSLO https://github.com/bats-core/bats-core/archive/v${BATS_VERSION}.tar.gz && tar -zxvf v${BATS_VERSION}.tar.gz && sudo bash bats-core-${BATS_VERSION}/install.sh /usr/local
-
-.PHONY: install-soak-prerequisites
-install-soak-prerequisites: e2e-install-prerequisites
-	# Download and install node-shell
-	curl -LO https://github.com/kvaps/kubectl-node-shell/raw/master/kubectl-node_shell && chmod +x ./kubectl-node_shell && sudo mv ./kubectl-node_shell /usr/local/bin/kubectl-node_shell
 
 e2e-setup-kind: setup-local-registry
 	./scripts/setup-kind-cluster.sh &

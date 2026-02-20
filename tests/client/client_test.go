@@ -2,12 +2,11 @@ package test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
-	"net"
 	"testing"
 	"time"
 
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -171,16 +170,6 @@ func TestMain(m *testing.M) {
 }
 
 func newUnixSocketConnection(path string) (*grpc.ClientConn, error) {
-	addr := path
-	dialer := func(ctx context.Context, addr string) (net.Conn, error) {
-		return (&net.Dialer{}).DialContext(ctx, netProtocol, addr)
-	}
-	connection, err := grpc.Dial(
-		addr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithContextDialer(dialer))
-	if err != nil {
-		return nil, err
-	}
-	return connection, nil
+	return grpc.NewClient("unix://"+path,
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
 }

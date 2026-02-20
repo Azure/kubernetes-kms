@@ -20,6 +20,7 @@ import (
 
 // KeyManagementServiceServer is a gRPC server.
 type KeyManagementServiceServer struct {
+	kmsv1.UnimplementedKeyManagementServiceServer
 	kvClient            Client
 	reporter            metrics.StatsReporter
 	encryptionAlgorithm keyvault.JSONWebKeyEncryptionAlgorithm

@@ -5,15 +5,9 @@ load helpers
 WAIT_TIME=120
 SLEEP_TIME=1
 
-if [[ ${IS_SOAK_TEST} = true ]]; then
-    export ETCD_CA_CERT=/etc/kubernetes/certs/ca.crt
-    export ETCD_CERT=/etc/kubernetes/certs/etcdclient.crt
-    export ETCD_KEY=/etc/kubernetes/certs/etcdclient.key
-else
-    export ETCD_CA_CERT=/etc/kubernetes/pki/etcd/ca.crt
-    export ETCD_CERT=/etc/kubernetes/pki/etcd/server.crt
-    export ETCD_KEY=/etc/kubernetes/pki/etcd/server.key
-fi
+export ETCD_CA_CERT=/etc/kubernetes/pki/etcd/ca.crt
+export ETCD_CERT=/etc/kubernetes/pki/etcd/server.crt
+export ETCD_KEY=/etc/kubernetes/pki/etcd/server.key
 
 @test "azure keyvault kms plugin is running" {
     wait_for_process ${WAIT_TIME} ${SLEEP_TIME} "kubectl -n kube-system wait --for=condition=Ready --timeout=60s pod -l component=azure-kms-provider"
@@ -30,17 +24,10 @@ fi
 }
 
 @test "check if secret is encrypted in etcd" {
-    if [ ${IS_SOAK_TEST} = true ]; then
-      local node_name=$(kubectl get nodes -l kubernetes.azure.com/role=master -o jsonpath="{.items[0].metadata.name}")
-      run kubectl node-shell ${node_name} -- sh -c "ETCDCTL_API=3 etcdctl --cacert=${ETCD_CA_CERT} --cert=${ETCD_CERT} --key=${ETCD_KEY} get /registry/secrets/default/secret1"
-      assert_match "k8s:enc:kms:v1:azurekmsprovider" "${output}"
-      assert_success
-    else
-      local pod_name=$(kubectl get pod -n kube-system -l component=etcd -o jsonpath="{.items[0].metadata.name}")
-      run kubectl exec ${pod_name} -n kube-system -- etcdctl --cacert=${ETCD_CA_CERT} --cert=${ETCD_CERT} --key=${ETCD_KEY} get /registry/secrets/default/secret1
-      assert_match "k8s:enc:kms:v1:azurekmsprovider" "${output}"
-      assert_success
-    fi
+    local pod_name=$(kubectl get pod -n kube-system -l component=etcd -o jsonpath="{.items[0].metadata.name}")
+    run kubectl exec ${pod_name} -n kube-system -- etcdctl --cacert=${ETCD_CA_CERT} --cert=${ETCD_CERT} --key=${ETCD_KEY} get /registry/secrets/default/secret1
+    assert_match "k8s:enc:kms:v1:azurekmsprovider" "${output}"
+    assert_success
 }
 
 @test "check if metrics endpoint works" {

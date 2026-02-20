@@ -14,6 +14,10 @@ jobs:
     - group: kubernetes-kms
 
     steps:
+      - task: GoTool@0
+        inputs:
+          version: 1.25.7
+      - template: prepare-deps.yaml
       - script: make lint
         displayName: Run lint
       - script: make unit-test
@@ -32,6 +36,6 @@ jobs:
           sudo ./_output/kubernetes-kms --keyvault-name $KEYVAULT_NAME --key-name $KEY_NAME --key-version $KEY_VERSION --listen-addr "unix:///opt/azurekms.sock" > /dev/null &
           echo Waiting 2 seconds for the server to start
           sleep 2
-          sudo make integration-test
+          sudo env "PATH=$PATH" make integration-test
         displayName: Run integration tests
       - template: scan-images-template.yml
