@@ -14,7 +14,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/apimachinery v0.27.1
 	k8s.io/klog/v2 v2.100.1
-	k8s.io/kms v0.35.1
+	k8s.io/kms v0.35.5
 	monis.app/mlog v0.0.4
 )
 
