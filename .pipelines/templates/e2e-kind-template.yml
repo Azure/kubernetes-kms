@@ -33,7 +33,7 @@ jobs:
     steps:
       - task: GoTool@0
         inputs:
-          version: 1.26.2
+          version: 1.26.3
       - template: prepare-deps.yaml
       - script: make e2e-install-prerequisites
         displayName: "Install e2e test prerequisites"
@@ -85,7 +85,7 @@ jobs:
     steps:
       - task: GoTool@0
         inputs:
-          version: 1.26.2
+          version: 1.26.3
       - template: prepare-deps.yaml
       - script: make e2e-install-prerequisites
         displayName: "Install e2e test prerequisites"
