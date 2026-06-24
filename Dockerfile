@@ -19,7 +19,7 @@ RUN MS_GO_NOSYSTEMCRYPTO=1 CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} GO111MO
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM --platform=${TARGETPLATFORM:-linux/amd64} mcr.microsoft.com/cbl-mariner/distroless/minimal:2.0-nonroot.20250402@sha256:c5e349966c9a8ffe5af65970300d2b6899592da1714490b46561f5d86a0ab1e0
+FROM --platform=${TARGETPLATFORM:-linux/amd64} mcr.microsoft.com/cbl-mariner/distroless/minimal:2.0-nonroot.20260304@sha256:6725a75fb21b0bef01473a1083939b9bd4d43c660d8d89e98906cbcfe717b548
 WORKDIR /
 COPY --from=builder /workspace/_output/kubernetes-kms .
 
