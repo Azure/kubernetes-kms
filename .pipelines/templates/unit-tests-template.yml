@@ -19,7 +19,7 @@ jobs:
     steps:
       - task: GoTool@0
         inputs:
-          version: 1.26.3
+          version: 1.26.4
       - template: prepare-deps.yaml
       - script: make lint
         displayName: Run lint
