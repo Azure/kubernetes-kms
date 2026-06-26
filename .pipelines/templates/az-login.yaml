@@ -1,0 +1,41 @@
+# Logs in to Azure using Workload Identity Federation (WIF) so that subsequent
+# steps (notably the mock IMDS server in scripts/mock-imds.sh) can mint Key Vault
+# access tokens without a pool managed identity or a stored client secret/cert.
+#
+# Mirrors Azure/azure-workload-identity#1733: the WIF service connection is passed
+# as a template parameter (runtime variables are not valid in AzureCLI@2's
+# azureSubscription input). The task exposes the federated idToken via
+# addSpnToEnvironment, which we use for `az login --service-principal`.
+parameters:
+  - name: serviceConnection
+    type: string
+
+steps:
+  - script: az --version || sudo tdnf install -y azure-cli
+    displayName: "Install azure-cli (if missing)"
+
+  - task: AzureCLI@2
+    displayName: "Extract WIF identity"
+    inputs:
+      azureSubscription: ${{ parameters.serviceConnection }}
+      addSpnToEnvironment: true
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        set -u
+        echo "servicePrincipalId set: ${servicePrincipalId:+yes} (len=${#servicePrincipalId})"
+        echo "tenantId set:           ${tenantId:+yes} (len=${#tenantId})"
+        echo "idToken set:            ${idToken:+yes} (len=${#idToken})"
+        echo "##vso[task.setvariable variable=ARM_CLIENT_ID]$servicePrincipalId"
+        echo "##vso[task.setvariable variable=ARM_ID_TOKEN;issecret=true]$idToken"
+        echo "##vso[task.setvariable variable=ARM_TENANT_ID]$tenantId"
+
+  - bash: |
+      set -eu
+      az login \
+        --service-principal \
+        -u "$(ARM_CLIENT_ID)" \
+        --tenant "$(ARM_TENANT_ID)" \
+        --allow-no-subscriptions \
+        --federated-token "$(ARM_ID_TOKEN)" > /dev/null
+    displayName: "az login (WIF)"

@@ -1,3 +1,7 @@
+parameters:
+  - name: serviceConnection
+    type: string
+
 jobs:
   - job: e2e_upgrade_tests
     timeoutInMinutes: 10
@@ -20,17 +24,20 @@ jobs:
       # - KEYVAULT_NAME
       # - KEY_NAME
       # - KEY_VERSION
-      # - USER_ASSIGNED_IDENTITY_ID
       - group: kubernetes-kms
 
     steps:
       - task: GoTool@0
         inputs:
-          version: 1.26.3
+          version: 1.26.4
       - template: prepare-deps.yaml
 
       - script: make e2e-install-prerequisites
         displayName: "Install e2e test prerequisites"
+
+      - template: az-login.yaml
+        parameters:
+          serviceConnection: ${{ parameters.serviceConnection }}
 
       - script: |
           . scripts/setup-local-registry.sh
@@ -52,6 +59,11 @@ jobs:
           imageName: keyvault
           imageVersion: $(LATEST_KMS_VERSION)
 
+      - script: ./scripts/mock-imds.sh up kind
+        displayName: "Start mock IMDS (WIF)"
+        env:
+          KIND_NETWORK: $(KIND_NETWORK)
+
       - script: |
           . scripts/setup-kind-cluster.sh &
           . scripts/connect-registry.sh &
@@ -63,6 +75,15 @@ jobs:
           KUBERNETES_VERSION: $(KUBERNETES_VERSION)
           KIND_CLUSTER_NAME: $(KIND_CLUSTER_NAME)
           KIND_NETWORK: $(KIND_NETWORK)
+
+      - script: |
+          if ! kubectl wait pod -n kube-system -l component=azure-kms-provider --for=condition=Ready --timeout=300s; then
+            echo "=== mock-imds.log ==="; cat tests/e2e/generated_manifests/mock-imds.log 2>/dev/null || echo "(no mock-imds.log; watcher may not have run)"
+            echo "=== node nat OUTPUT ==="; docker exec kms-control-plane iptables -t nat -L OUTPUT -n -v 2>/dev/null || echo "(no node)"
+            echo "=== kms pod ==="; kubectl describe pod -n kube-system -l component=azure-kms-provider 2>/dev/null || true
+            exit 1
+          fi
+        displayName: "Wait for KMS pod readiness"
 
       - template: cluster-health-template.yml
       - template: kind-debug-template.yml
@@ -105,5 +126,9 @@ jobs:
 
       - script: make e2e-test
         displayName: "Run e2e tests"
+
+      - script: ./scripts/mock-imds.sh down
+        displayName: "Stop mock IMDS"
+        condition: always()
 
       - template: cleanup-template.yml
