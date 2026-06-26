@@ -1,7 +1,6 @@
 {
     "cloud": "AzurePublicCloud",
     "tenantId": "$AZURE_TENANT_ID",
-    "useManagedIdentityExtension": true,
-    "userAssignedIdentityID": "$USER_ASSIGNED_IDENTITY_ID"
+    "useManagedIdentityExtension": true
 }
 

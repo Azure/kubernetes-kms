@@ -10,6 +10,18 @@ schedules:
 
 pool: staging-pool-amd64-mariner-2
 
+parameters:
+  # WIF (Workload Identity Federation) service connection used to log in to Azure
+  # and mint Key Vault tokens for the tests. Must be passed as a compile-time
+  # parameter (runtime variables are not valid in AzureCLI@2's azureSubscription).
+  - name: serviceConnection
+    type: string
+    default: 'Upstream-CI-ServiceConnection'
+
 jobs:
   - template: templates/unit-tests-template.yml
+    parameters:
+      serviceConnection: ${{ parameters.serviceConnection }}
   - template: templates/e2e-upgrade-template.yml
+    parameters:
+      serviceConnection: ${{ parameters.serviceConnection }}
