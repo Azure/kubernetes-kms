@@ -1,6 +1,6 @@
 module github.com/Azure/kubernetes-kms
 
-go 1.26.4
+go 1.26.5
 
 require (
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
